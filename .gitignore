@@ -1,0 +1,11 @@
+# mac file
+.DS_Store
+._*
+
+# vim file
+.*.swp
+.*.un~
+
+# output file
+*.htm
+*.html
