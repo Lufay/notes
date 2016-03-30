@@ -121,7 +121,7 @@ Rmd
 R 语言
 兼容LaTeX
 WizNote:
-支持Mathjax 公式、[流程图](http://adrai.github.io/flowchart.js/)、[时序图](http://bramp.github.io/js-sequence-diagrams/)
+支持Mathjax 公式、[流程图](http://adrai.github.io/flowchart.js/)、[时序图](http://bramp.github.io/js-sequence-diagrams/)、甘特图
 
 编写工具：
 Windows: MarkdownPad
