@@ -33,3 +33,5 @@ row必须包含在container容器中
 <http://www.runoob.com/bootstrap/bootstrap-tutorial.html>
 模态框
 <http://www.runoob.com/bootstrap/bootstrap-modal-plugin.html>
+导航
+<http://www.runoob.com/bootstrap/bootstrap-tab-plugin.html>

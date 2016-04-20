@@ -23,7 +23,7 @@ jQuery 的 action() 执行对元素的操作: 指定遍历行为
 基于id：`$("#test")`
 基于属性：`$("[href]")    $("[href='#']")    $("[href!='#']")    $("[href$='.jpg']")`
 基于条件：`$(':first')    $(':last')`
-后四种可以连接使用，表示"且"的关系；可以用逗号连接，表示"或"的关系
+后四种可以连接使用，表示"且"的关系；用逗号连接，表示"或"的关系；用空格分隔，表示对后代标签进行筛选
 <http://www.w3school.com.cn/jquery/jquery_ref_selectors.asp>
 #### js与jQuery、Prototype等库的对比
 在Prototype，`$('#id')`等于document.getElementById('id')，即DOM对象。
@@ -70,6 +70,9 @@ before()：插入被选元素之前
 #### 删
 remove()：删除被选元素（可以用一个选择器做参数进行过滤）
 empty()：清空被选元素的所有子元素
+
+#### 拷贝
+clone(with, deepWith)：克隆当前元素集合的一个副本（jQuery对象）两个参数可选，都是bool，前者表示是否复制元素的附加数据和绑定事件，默认为false；后者表示是否复制所有子元素的附加数据和绑定事件，默认为前者的值
 
 #### 判断
 is(selector)：判断是否满足一个选择器

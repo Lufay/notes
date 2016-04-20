@@ -12,6 +12,7 @@
 ### 使用
 图表的大小是根据容器设定的
 
+#### 配置
 ```
 $("#container").highcharts("StockChart", {
     chart: {
@@ -33,10 +34,20 @@ $("#container").highcharts("StockChart", {
         labels: {               //x轴标记
             format: '{value}',
             formatter: function() {},   //自定义标记内容
-            style:
+            style: {"color":"#6D869F", "fontWeight":"bold"}
         },
-        tickInterval: 60000,    //x轴时间标记之间的间隔，单位毫秒
-        dateTimeLabelFormats:   //不同时间单位下的日期格式
+        tickInterval: 60000,    //固定x轴时间标记之间的间隔，单位毫秒
+        minTickInterval: 60000, //时间标记之间的最小间隔，单位毫秒，默认为两个点之间距离
+        dateTimeLabelFormats: { //不同时间单位下的日期格式
+			millisecond: '%H:%M:%S.%L',
+			second: '%H:%M:%S',
+			minute: '%H:%M',
+			hour: '%H:%M',
+			day: '%e. %b',
+			week: '%e. %b',
+			month: '%b \'%y',
+			year: '%Y'
+		},
         plotLines: [],          //垂直标示线，每个数组元素标识一条特殊意义的x值
         plotBands: [],          //垂直标示区
         breaks:                 //x轴打断
@@ -97,10 +108,15 @@ $("#container").highcharts("StockChart", {
         buttons: [],            //预置的区间按钮
         selected:               //预选按钮
     },
-    scrollbar: {}               //水平拖动条
+    scrollbar: {},               //水平拖动条
+
 });
 ```
-
 [Highcharts配置](http://www.hcharts.cn/api/index.php)
 [Highstock配置](http://www.hcharts.cn/api/highstock.php)
+
+### API
+*获取chart对象：`$('.chart').highcharts()`*
+reflow()：让图大小适应容器。默认情形下，图可以自动响应 window.resize 事件而自动调整大小，但如果仅仅是容器大小调整，而窗口并未调整，图无法自动适应，此时就要显示调用该函数。
+setSize(width, height, [Mixed animation])：固定图的大小，宽高单位为pixel，animation默认为true，表示使用默认animation配置，该参数也可以指定为一个配置对象（包括duration 和easing 属性）
 
