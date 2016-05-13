@@ -18,6 +18,15 @@ renderFile：上面三个方法最终都会调用该方法，因为上面使用�
 Widget只有 render 和 renderFile 两个方法，通过调用视图的方法来实现
 视图拥有除 renderPartial 以外的三个方法(render/renderAjax/renderFile)，因此，可以在视图中渲染另一个视图（通过`$this`调用）
 
+#### 视图路径解析
+当使用前三个render函数时，都需要通过findViewFile函数进行视图路径解析
+`@`开头的视图名是别名，使用别名解析获得路径名
+`//`开头的视图名，是指定在`@app\views\`下的对应视图文件
+`/`开头的视图名，可以指定多级的模块，如果在模块中找不到，再到`@app\views\`下对应controller目录中去找
+其他的，视图名就直接是文件名，差别只在所在目录：
+如果传入了一个ViewContextInterface（controller就是该接口的一个实现），就调用其getViewPath方法获得所在目录；
+如果调用视图本身的getViewFile方法，如果不是false，就使用该文件的所在目录。
+最后如果解析完含路径的视图文件名没有后缀，就会加上后缀。
 
 ### 布局
 布局也是一种视图，用于提取视图中公共的框架的内容

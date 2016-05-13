@@ -23,7 +23,7 @@ g++ -isystem ${GTEST_DIR}/include -pthread path/to/your_test.cc libgtest.a \
 make gtest_main.a
 make gtest.a
 ```
-联编前者的测试代码可以不必写main() 函数，而后者需要自己写（前面直接编译得到的 libgtest.a 就是 gtest.a 差别只是 gtest.a 没有-pthread。
+联编前者的测试代码可以不必写main() 函数，而后者需要自己写（前面直接编译得到的 libgtest.a 就是 gtest.a）
 
 ### 使用CMake
 CMake 是一个跨平台的编译、安装工具，通过编写CMakeLists.txt，可以控制生成的Makefile，从而控制编译过程。

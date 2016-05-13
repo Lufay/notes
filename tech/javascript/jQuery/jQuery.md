@@ -19,8 +19,8 @@ jQuery 的 action() 执行对元素的操作: 指定遍历行为
 ### jQuery的选择器
 内置对象：`$(this)    $(document)    $(window)`
 基于标签：`$("p")` ，特别的`$('*')`表示所有元素
-基于class：`$(".test")`
 基于id：`$("#test")`
+基于class：`$(".test")`
 基于属性：`$("[href]")    $("[href='#']")    $("[href!='#']")    $("[href$='.jpg']")`
 基于条件：`$(':first')    $(':last')`
 后四种可以连接使用，表示"且"的关系；用逗号连接，表示"或"的关系；用空格分隔，表示对后代标签进行筛选
@@ -107,6 +107,10 @@ map：把每个被选元素传入function执行，返回一组新的jQuery对象
 如果iter是Array：index, element
 如果iter是Object：name, value
 function中可以使用this引用当前的被选元素，可以使用return true达到continue的效果，return false达到break的效果。
+`$.extend(recur=false, dest [, src1] [, ...])`
+默认将src1, ...的成员合并到dest上，如果key冲突，则后者覆盖前者，最后返回dest的值
+如果recur为true，则当key冲突，而value又是一个object，则进行递归合并
+如果只有dest，则将dest直接合并到this对象上（即调用extend的对象）
 
 ### DOM交互
 get(index)：获得jQuery对象指定的DOM元素
@@ -114,8 +118,20 @@ size()：获取匹配元素数量（指的是DOM元素）
 toArray()：返回DOM元素数组
 
 ### Ajax
-load(url, [data, ] [callback])：将Url载入被选元素中
-`$.get(url, [callback])`：请求Url，成功后执行callback（第一个参数包括请求返回的内容，第二个参数返回请求的状态）
-`$.post(url, [data, ] [callback])`：请求Url发送data数据，成功后执行callback（第一个参数包括请求返回的内容，第二个参数返回请求的状态）
-`$.ajax({})`
+`load(url [, data] [, callback])`：将Url载入被选元素中
+`$.get(url [, data] [, callback] [, type])`：请求Url发送data数据，，成功后执行callback: function(response, status, xhr)（第一个参数包括请求返回的内容，第二个参数返回请求的状态，第三个参数是XMLHttpRequest 对象），type为返回数据类型
+`$.post(url [, data] [, callback] [, type])`：同时，方式为POST
+```
+$.ajax({
+    url: '?r=controller/action',    //请求的URL
+    //type: "GET",
+    //async: true,
+    data: {},                       //请求的数据
+    dataType: 'json',               //请求返回的数据类型
+    //timeout: 60000,               //请求的超时时间
+    success: function(res) {},      //成功回调（res为返回的数据，类型根据dataType决定）
+    error: function(xhr, err, errType) {},  //错误回调（xhr为XMLHttpRequest 对象，可以通过查询status、statusText和responseText得到返回码和状态信息，err可能包含错误信息名）
+    complete: function(xhr, statusStr) {}   //总是执行的回调（在上面两个回调之后执行）
+})
+```
 
