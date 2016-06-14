@@ -43,6 +43,8 @@ row必须包含在container容器中
 ### 输入框组
 <http://www.runoob.com/bootstrap/bootstrap-input-groups.html>
 
+## 标签页
+<http://www.runoob.com/bootstrap/bootstrap-tab-plugin.html>
 
 ## 字体图标(Glyphicons)
 <http://www.runoob.com/bootstrap/bootstrap-glyphicons.html>

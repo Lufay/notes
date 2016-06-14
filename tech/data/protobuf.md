@@ -185,6 +185,8 @@ service FooService {
     3. 设置RPC参数，调用抽象接口的服务(MyRpcController，input，output，NewCallback)
 
 google RPC 的官方实现：gRPC，推荐使用proto3 去定义服务
+<http://www.grpc.io/docs/>
+<http://doc.oschina.net/grpc>
 
 
 #### 选项

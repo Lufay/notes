@@ -120,3 +120,7 @@ $("#container").highcharts("StockChart", {
 reflow()：让图大小适应容器。默认情形下，图可以自动响应 window.resize 事件而自动调整大小，但如果仅仅是容器大小调整，而窗口并未调整，图无法自动适应，此时就要显示调用该函数。
 setSize(width, height, [Mixed animation])：固定图的大小，宽高单位为pixel，animation默认为true，表示使用默认animation配置，该参数也可以指定为一个配置对象（包括duration 和easing 属性）
 
+*获取series对象：`chart.series`*
+*此外，还可以通过series在配置中的id 获取：`chart.get(id)`*
+`addPoint(point, b_redraw=true, b_shift=false, animation=true)`：point可以是一个数（y值，被插入图的最后），[x, y]，或[x, open, high, low, close]，obj。`b_redraw`表示插入点后是否进行图形重绘，`b_shift`表示插入点后是否进行图形平移，animation可以是一个obj，包含duration 和easing 配置
+`removePoint(index, b_redraw, animation)`：

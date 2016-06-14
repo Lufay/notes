@@ -23,7 +23,7 @@ jQuery 的 action() 执行对元素的操作: 指定遍历行为
 基于class：`$(".test")`
 基于属性：`$("[href]")    $("[href='#']")    $("[href!='#']")    $("[href$='.jpg']")`
 基于条件：`$(':first')    $(':last')`
-后四种可以连接使用，表示"且"的关系；用逗号连接，表示"或"的关系；用空格分隔，表示对后代标签进行筛选
+可以连接使用，表示"且"的关系；用逗号连接，表示"或"的关系（并）；用空格分隔，表示对后代标签进行筛选
 <http://www.w3school.com.cn/jquery/jquery_ref_selectors.asp>
 #### js与jQuery、Prototype等库的对比
 在Prototype，`$('#id')`等于document.getElementById('id')，即DOM对象。
@@ -67,6 +67,8 @@ prepend()：插入到被选元素之内的开头（作为子元素）
 after()：插入被选元素之后
 before()：插入被选元素之前
 
+data()：向元素附加数据和取回附加的数据（数据可以是任意的js 变量）
+
 #### 删
 remove()：删除被选元素（可以用一个选择器做参数进行过滤）
 empty()：清空被选元素的所有子元素
@@ -101,16 +103,6 @@ length属性：选择器中元素的数量
 each：为被选的每个元素执行function(index, element)，其中index这些元素的索引（从0起），ele是索引的元素亦即$(this)
 map：把每个被选元素传入function执行，返回一组新的jQuery对象（在function中，可以通过this访问当前被选元素）
 ******
-`$.each(iter, func, arg)`
-其中iter可以是js的Array和Object：
-如果function有参数，可以通过arg(Array)传入，也可以是：
-如果iter是Array：index, element
-如果iter是Object：name, value
-function中可以使用this引用当前的被选元素，可以使用return true达到continue的效果，return false达到break的效果。
-`$.extend(recur=false, dest [, src1] [, ...])`
-默认将src1, ...的成员合并到dest上，如果key冲突，则后者覆盖前者，最后返回dest的值
-如果recur为true，则当key冲突，而value又是一个object，则进行递归合并
-如果只有dest，则将dest直接合并到this对象上（即调用extend的对象）
 
 ### DOM交互
 get(index)：获得jQuery对象指定的DOM元素
@@ -134,4 +126,25 @@ $.ajax({
     complete: function(xhr, statusStr) {}   //总是执行的回调（在上面两个回调之后执行）
 })
 ```
+
+### Utilities
+`$.inArray(value, arr, fromIndex=0)`
+判断value是否在数组arr中，如果在返回其索引位置，否则返回-1，fromIndex表示从哪个索引位置开始找
+*注*：这里使用的是严格的比较，即`===`
+
+`$.each(iter, func, arg)`
+其中iter可以是js的Array和Object：
+如果function有参数，可以通过arg(Array)传入，也可以是：
+如果iter是Array：index, element
+如果iter是Object：name, value
+function中可以使用this引用当前的被选元素，可以使用return true达到continue的效果，return false达到break的效果。
+
+`$.extend(recur=false, dest [, src1] [, ...])`
+默认将src1, ...的成员合并到dest上，如果key冲突，则后者覆盖前者，最后返回dest的值
+如果recur为true，则当key冲突，而value又是一个object，则进行递归合并
+如果只有dest，则将dest直接合并到this对象上（即调用extend的对象）
+
+`$.trim(str)`
+去除字符串两端的空白符
+
 

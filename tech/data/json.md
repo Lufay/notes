@@ -141,4 +141,10 @@ ss = '{"jsonrpc":"2.0","error":{"code":7,"message":"service on specified stub no
 dd = json.loads(ss)
 ```
 
+### shell 解析
+工具jq
+
+### cpp 解析
+使用rapidjson 性能好，更符合标准，[中文文档](http://rapidjson.org/zh-cn/index.html)
+使用jsoncpp 接口友好
 

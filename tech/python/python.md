@@ -1,4 +1,5 @@
 # Python
+[TOC]
 
 ## 第一章. Python特性
 
@@ -688,3 +689,557 @@ hotshot：较新，C实现，生成结果时间长
 cProfile：新，C实现，分析时间长
 
 ## 第三章. 数据类型
+### 1. 基本数据类型
+
+#### 1.1 数值类型
+这些类型都是不可变类型
+
+##### 1.1.1 int
++ 十进制：1~9 开头
++ 八进制： 0 打头，且后一个数小于8。
+可以使用`oct()`将一个十进制数转换为八进制字符串
++ 十六进制：0x 或0X 打头（字母大小写均可）
+可以使用`hex()`将一个十进制数转换为十六进制字符串
+
+使用print显示默认均为十进制
+
+构造函数
+int()           0
+int(12)         12
+int("100", 5)   25 注：100为5进制表示（如果该表示非法则抛出ValueError异常），生成其对应的整数
+
+其宽度取决于环境，比如32位环境（机器和编译器）宽度为32位，只不过当计算溢出后，结果会自动转变为long
+
+##### 1.1.2 long
+后缀l或L（也支持十进制、八进制、十六进制表示）
+
+构造函数
+long()              0L
+long("100", 5)      25L
+
+其宽度仅受限于用户计算机的虚拟内存大小，类似于 Java 中的 BigInteger 类型
+
+##### 1.1.3 bool（布尔值）
+只有两个实例：True（数值1）、False（数值0）
+是整形的子类，但不能被继承
+
+构造函数：
+bool()          False
+
+所有标准对象都可用于布尔测试，因为可以隐式对其调用bool(obj)。
+该函数的作用是调用类的`__nonzero__()`方法
+对于内建类型：None，值为零的任何数字，空字符串、空列表、空元祖、空字典的布尔值都是False。其他都是True。
+对于自定义的类的实例，如果类实现了`__nonzero__()`方法（返回类型为int或bool），则返回其返回值，如果没有实现该方法，而实现了`__len__()`方法（返回类型为非负整数），则返回其返回值，否则都没有时，为True。
+
+##### 1.1.4 float（浮点数）
+支持e和E的科学计数法
+
+构造函数：
+float()         0.0
+
+占8个字节，遵守IEEE754规范（52M底/11E指/1S符）
+然而实际精度依赖于机器架构和编译Python解释器的编译器
+
+###### decimal
+还有一种十进制浮点数decimal，比float有着更大的取值范围或精度，但不是内建类型：
+```
+import decimal
+decimal.Decimal('1.1')  # 获得一个该类型的值
+```
+为什么要有十进制浮点数呢，是因为float表示精度有限，而且是基于二进制的，因此即便`0.1` 这种简单的浮点数，实际上都有着精度误差，可以通过`decimal.Decimal(.1)`看到，而decimal可以构造出十进制上无误差的小数。于是，要构造这种小数就不能用浮点数来构造，而应该用字符串，即如上。同理，这种类型不能和float进行运算，可以和整数进行运算，因为和float进行运算会导致不精确的结果，污染decimal，而和整形数则不会。
+
+##### 1.1.5 complex（复数）
+使用j或J表示虚数的单位，实部real和虚部imag都是float
+不支持比较运算
+
+构造函数：
+complex()               0j
+complex(3.6)            (3.6+0j)
+complex(1.2, 4.5)       (1.2+4.5j)
+
+conjugate()方法：返回共轭复数
+
+##### 1.1.6 相关模块
++ decimal		十进制浮点运算类
++ array			高效数值数组
++ math/cmath	标准C数学函数库，前者是常规运算，后者是复数运算
++ operator		函数形式调用操作符（不仅仅是数值运算可以，下面的容器运算也可以使用该模块）
++ random		多种分布的伪随机数发生器
+该模块有很多直接可用的函数，但实际上这些函数都是Random这个类的方法，它们被关联到一个共享状态的实例上，当多线程需要随机数可以使用多个实例，并用jumpahead()方法确保生成不重叠的随机序列。
+这些函数以random()为基础：该函数以当前时间为随机数种子，返回`[0, 1)`中的一个随机浮点数
+其他常用的方法还有：
+    - uniform(a, b)：a, b是上下限，顺序可换，返回a、b之间的浮点数（即`a + (b - a)*random()`）
+    - randint(a, b)：返回[a, b]中的一个随机整数
+    - randrange([start,] stop [, step])：在range(start, stop, step)生成的列表中随机选择一项（并不实际生成列表）
+    - choice(seq)：从非空序列seq中随机选出一个元素
+    - shuffle(x [, random])：将序列x原地打乱，random是一个0元函数返回`[0, 1)`之间的随机数，默认使用random()函数。
+    - sample(population, k)：从序列population中随机选取k个元素组成一个新的序列返回
+[参考](https://docs.python.org/2/library/random.html)
+
+第三方包：
+NumPy可以高效地存储和处理大型矩阵
+SciPy有最优化、线性代数、积分、插值、特殊函数、快速傅里叶变换、信号处理和图像处理、常微分方程求解和其他科学与工程中常用的计算。
+
+#### 1.2 容器类型
++ 可变类型：list、set、dict（key不可变，value可变）
++ 不可变类型：string、unicode、tuple、frozenset
+不能改变容器的数量和每个的引用，但可以改变每个对象的内容
+
+容器通用操作
+1. 可以使用 len() 函数获得一个**序列（字符串、列表、元组）**或字典、集合的长度（大小）
+len()函数实际上是调用对象类中的`__len__()`方法
+2. obj [not] in container，判断obj是否是序列或集合的元素，或者obj是否是字典的键
+
+序列通用操作
+1. `+` 序列连接（类似的也支持`+=`运算）
+2. `* n` 重复 n 次进行连接（类似的也支持`*=`运算）
+*注意*：连接只能在同类型进行
+3. `[n]` 索引某个元素
+索引值n，正向从0递增，反向从 -1 递减——相当于加上len做偏移
+4. `[start:end:step]` 切分出子序列，前闭后开区间，表示将从序列中选取从索引为start开始的元素，每次步进step，不到索引为end的元素的这些元素组成一个新的序列
+step缺省或为None时默认为1；
+当step为正时，start缺省或为None时默认为0，end缺省或为None时默认为len；
+当step为负时，start缺省或为None时默认为-1，end缺省或为None时默认为0-1
+索引规则同上
+
+容器的构造和转换，实际上执行的是浅拷贝，即重新生成一个目标容器，而后将组成元素的引用插入到这个新生成的目标容器中
+（如果是重新生成了组成元素，再将新生成的元素插入目标容器就叫深拷贝）
+
+相关模块
+copy        提供浅拷贝copy(obj)和深拷贝deepcopy(obj)的能力（为了优化深拷贝的性能，对于包含的完全是不可变类型的对象，即使使用深拷贝，执行的也是浅拷贝）
+collections 高性能容器数据类型
+
+##### 1.2.1 字符串
+引号之间的字符集合（单引号和双引号均可）。
+*注*：如果两个字符串写在一起，如"aa" 'bb'，这两个字符串将在编译时就连接为一个字符串了，这种写法便于分行写字符串，并给以行注释）。
+
+###### Unicode字符串
+引号前面使用u 前缀
+因为python的字符串可以保存任何字符，所以对于str串更应该称为字节串；而unicode字符串才是python内部真正的字符串（不必考虑其内部表示），这也就是之所以`s->u`叫做解码decode，反之`u->s`叫做编码encode。
+通常在进行IO（包括存储和网络传输），是以字节流进行，而python进行处理的时候将其解码为Unicode串，处理完后重新编码进行IO
+
+###### raw string
+引号前面使用r 前缀（u在r前）
+字符串中的所有字符都直接按照字面值给出，不存在转义或不能打印的字符（常用于构造正则表达式import re）。
+转义方法类同标准C，有点不同就是，如果"\"和后面无法匹配转义，则"\"将保留在字符串中。（使用ASCII码表示的字符，可以使用八进制如\134或十六进制如\x5C表示；使用Unicode表示的字符，可以使用\u1234表示）
+
+###### 三引号字符串
+三引号（三个连续的单引号或者双引号）之间的字符是一种所见即所得的字符串，因为该串中的换行，制表和引号等特殊字符无需转义。
+对于长字符串，需要跨行写的情况，如果用普通字符串，则在换行前使用"\"（此时，"\"和换行都将忽略，而不会出现在字符串中），否则会有语法错误。而使用三引号字符串，则可以直接跨多行书写（此时，换行将以"\n"保留在字符串中）。
+
+###### 构造函数
+str()               ''（空串）（如果对对象使用该函数，则调用对象的`__str__()`方法）
+unicode()           u''（Unicode空字符串）（如果对对象使用该函数，则调用对象的`__unicode__()`方法）
+basestring()        抽象工厂函数，作用仅仅是为前两者提供父类，因此，不能调用实例化
+
+###### 字符操作
+Python没有字符类型，所以字符串可以被视为一种自包含的容器。不过，却有以下函数：
+ord(ch)：ch是一个单字符的字符串（ASCII或Unicode），该函数返回相应的ASCII或Unicode值。
+chr(num)：返回给定数字（0<=num<=255）对应的ASCII字符。
+unichr(num)：返回给定数字对应的Unicode字符，接受的码值范围依赖于Python是构建于UCS-2（0x0000-0xFFFF）还是UCS-4（0x000000-0x110000）
+
+由于字符串的自包含特性，所以，对于[not] in运算符，不仅支持单字符的判断，还支持子串的判断。
+
+###### 字符串格式化
+格式为：`template_string % fill_data`
+其中
+`template_string`是模板字符串，在模板字符串中可以使用占位符，用于填充，占位符的格式为`%[(name)][flag][width.precision]typecode`
++ (name) 中name是当`fill_data`使用字典时对应的key，而后就用相应的val填充
++ flag 可以使用
+    - `-` 表示当宽度过大时左对齐（默认右对齐）
+    - `+` 正数前显示加号
+    - ` ` 宽度过大时使用空格填充
+    - `0` 宽度过大时使用0填充
+    - `#` 在八进制数前显示0，在十六进制数前显示0x
++ width 表示显示的最小总宽度（字符数，默认是0）不足补空格
++ precision 表示小数点后的位数（浮点，默认是6）或至少的数字宽度（整数，不足补0）或至多的数据宽度（字符串，超出将尾截断）
+width 和 precision 可以使用 `*` 表示宽度和精度的设置来自于`fill_data`，即`*`也会消耗一个`fill_data`中的一个成员（必须是整数）
++ typecode 可以是
+    - %s 字符串（优先用str()进行转换），%c 转换成字符（单字符的字符串），%r（优先用repr()进行转换）
+    - %d 有符号十进制整数，%u 无符号十进制整数，%o 无符号八进制整数，%x 无符号十六进制整数
+    - %f 浮点数（小数部分自然截断），%e 科学计数法，%g 表示自动选择%f或%e
+    - %% 单个%
+`fill_data`是填充数据，可以是元组或字典，元组是按序和占位符对应，字典是使用name 和占位符对应
+无论`template_string`还是`fill_data`只要有一个包含Unicode字符串，结果就返回Unicode字符串，否则返回字节串
+
+###### 判断
+`startswith(obj, start=0, end=len)`方法：检查字符串的指定子串是否以obj开头
+`endswith(obj, start=0, end=len)`方法：检查字符串的指定子串是否以obj结尾
+`isalpha()`方法：是否是非空字母串
+`isdigit()`方法：是否是数字串
+`isnumeric()`方法：是否只含数字字符（目前只对Unicode字符串存在）
+`isalnum()`方法：是否是非空字母或数字串
+`isdecimal()`方法：是否只含十进制数
+`islower()`方法：是否是非空小写字符串
+`isupper()`方法：是否是非空大写字符串
+`isspace()`方法：是否只含空格
+`istitle()`方法：是否是标题化（见title()）的字符串
+
+###### 查找
+`find(substr, start=0, end=len)`方法：正向查找子串，找到返回开始的索引值，找不到返回-1
+`rfind(substr, start=0, end=len)`方法：反向查找子串
+`index(substr, start=0, end=len)`方法：同find，只不过，找不到抛出ValueError异常
+`rindex(substr, start=0, end=-1)`方法：同rfind，只不过，找不到抛出ValueError异常
+`count(substr, start=0, end=len)`方法：查找子串，返回找到的个数
+
+###### 串变换
+`upper()`/`lower()`方法：将所有字符变成大写/小写
+`swapcase()`方法：大小写互换
+`capitalize()`方法：首字母大写
+`title()`方法：所有单词首字母大写，其他字母为小写
+`expandtabs(tabsize=8)`方法：把字符串中的tab符号转换为指定数量的空格
+`lstrip()`方法：把字符串中左侧的空格去除
+`rstrip()`方法：把字符串中右侧的空格去除
+`strip()`方法：同时执行lstripe()和rstripe()方法
+`center(width)`方法：返回一个原字符居中，并使用空格填充至给定长度width的新字符串。
+`ljust(width)`方法：同上，左对齐
+`rjust(width)`方法：同上，右对齐
+`zfill(width)`方法：返回一个原字符右对齐，前面填充0的新字符串
+`replace(str1, str2, num=count)`方法：把串中str1替换为str2，如果指定num，则替换不超过num次
+`translate(table, [dels])`方法：table是一个长度为256的字符串，用于提供一个字符映射表，该方法就将字符串中的字符，去掉dels中出现的字符，再按给定的字符映射表进行转换；如果table是个None，则只做删除，不做映射。
+
+###### 合并与拆分
+`join(str_seq)`方法：参数是一个字符串构成的序列，该方法将序列按序用该字符串连接起来。（比+运算符更高效，因为+需要为每一个参与连接的字符串重新分配内存，以产生新的字符串）
+`split(str, num=count)`方法：分割字符串为列表，默认按一个或多个空白字符分割，如果给定一个字符串参数，则按该字符串作为分割元；如果指定num，则仅分割为num个子串
+`splitlines(num=count)`方法：把字符串按行分割为列表，如果指定num，则仅分割为num个子串
+`partition(str)`方法：把字符串分成字符串三元组，即str前部分，str（从左侧首次出现），str后部分，如果字符串中找不到str这个字符，则str前部分为原串，后两项为空串
+`rpartition(str)`方法：同上，不过从右边查找str（于是，如果找不到，则str后部分为原串，前两项为空）
+
+###### 编码
+`decode(encoding='UTF-8', errors='strict')`方法：对字节串按encoding解码为python的unicode串（和unicode(str, encoding)等效）。如果转码失败，除非errors指定为'ignore'或'replace'，否则出错抛出ValueError异常。注意：该方法仅对str串有效，因此，如果unicode串调用该方法，实际上是先str(unicode)转为str串（默认ascii编码）而后进行解码的。
+`encode(encoding='UTF-8', errors='strict')`方法：以encoding指定方式编码字符串为str字节串。如果转码失败，除非errors指定为'ignore'或'replace'，否则出错抛出ValueError异常。注意：该方法仅对unicode串有效，因此，如果str串调用该方法，实际上是先unicode(str)转为unicode串而后进行编码的。
+******
+字节串可能有多重编码方式，如UTF-8、UTF-16、ISO8859-1/Latin-1SCII码
+UTF-8使用的是变长编码方式，可以完全兼容ASCII码
+UTF-16是定长的16位编码（易于读写）（这里的定长是针对基本多文种平面BMP，而其他的平面一般很少使用），由于是多字节表示，故而，需要一个BOM（Byte Order Mark）或者显式定义LE（小端）或BE（大端）
+当需要将Unicode字符串写入文件时，就需要指定一个编码方式，这时就需要使用encode函数；反之，需要从文件中读取Unicode字符串时，必须进行解码
+若将Unicode字符串和字节串连接，会将字节串转换为Unicode字符串
+1. 不要将Unicode字符串传给非Unicode兼容的函数（比如string模块，pickle模块。前者已经有Unicode版本，而后者可以不使用文本格式，而使用二进制格式）
+2. 在Web应用中，数据库这边只需确保每张表都用UTF-8编码即可。数据库适配器（如MySQLdb）需要考察其是否支持Unicode，以及需要哪些设置来配置为Unicode字符串。Web开发框架方面（如Django、`mod_python`、cgi、Zope、Plane）同样需要考察哪些配置来支持Unicode。
+
+注意：python代码中的字符串字面值是以文件本身的编码进行保存的，为了让python解析器识别其编码，需要在源码文件中的第一行或第二行指定（以cp936为例）：
+```
+# coding=cp936
+# -*- coding: cp936 -*-
+# vim: set fileencoding=cp936 :
+```
+以上三种格式选一即可
+如果在命令行直接使用python，则需要考虑命令行的编码（Windows下为gbk，也即cp936）
+******
+此外，python，还有一些非字符的编码集(non-character-encoding-codecs)：
+比如16进制的编码：
+```
+'\n'.encode('hex') == '0a'
+u'\n'.encode('hex') == '0a'
+'0a'.decode('hex') == '\n'
+u'0a'.decode('hex') == '\n'
+```
+比如MIME编码base64、quopri
+比如压缩的：zlib、gzip、bz2
+比如回转13编码：rot13
+比如`string_escape`、uu
+再比如：
+```
+print u'\\u0203'.decode('unicode-escape')
+print u'\\u53eb\\u6211'.decode('unicode-escape')
+```
+参考
+<http://docs.python.org/library/codecs.html>
+<http://wiki.woodpecker.org.cn/moin/PyCkBk-3-18>
+******
+sys模块有个sys.setdefaultencodeding方法，该方法可以修改解释器对字符的默认编码
+但在python的启动过程中，自动执行的site.py脚本会`del sys.setdefaultencodeding`，所以查看sys模块找不到该方法
+可以通过`reload(sys)`重获该方法，但在IDLE 环境下，由于sys.stdout/sys.stderr/sys.stdin都是特定的，如果reload之后，这三个变量都会被重置导致IDLE下IO都失灵，因此，需要在reload之前先将这三个变量保存一下，在reload之后用保存的值进行恢复即可（最好使用其他方法解决编码问题，因为reload(sys)会衍生一些问题）
+
+###### string 模块
+import string
+预制的字符串：
+`string.ascii_uppercase`（ASCII大写字母串）string.uppercase（Unicode大写字母串）
+`string.ascii_lowercase`（ASCII小写字母串）string.lowercase（Unicode小写字母串）
+`string.ascii_letters`（ASCII字母串）string.letters（Unicode字母串）
+string.digits（数字串）
+方法：
+string.upper(str)	返回str的大写字符串
+`string.join(str_seq, sep=' ')`	等价于`sep.join(str_seq)`
+
+###### 字符串模板类（比字典格式化更简单的替换方式，不用指定格式化类型）
+例如：s = string.Template('There are ${howmany} ${lang} Quotation Symbols')
+s.substitute(lang='Python', howmany=3)，必须给出全部$变量的替换，否则将跑出KeyError异常
+`s.safe_substitute(lang='Python')`，可以不给出全部的$变量，仅作部分替换
+
+
+###### 相关模块
+re          正则表达式
+struct      字符串和二进制之间的转换
+StringIO/cStringIO      字符串缓冲对象，操作方法类似file对象（后者是C版本，更快一些，但不能被继承）
+base64      Base 16/32/64数据编解码
+baseascii       ASCII编解码
+uu          格式编解码
+codecs      解码器注册和基类
+crypt       进行单方面加密
+difflib     找出序列间的不同
+hashlib     多种不同安全哈希算法和信息摘要算法的API
+hma         HMAC信息鉴权算法
+md5         RSA的MD5信息摘要鉴权
+rotor       提供多平台的加解密服务
+sha         NIAT的安全哈希算法SHA
+stringprep  提供用于IP协议的Unicode字符串
+textwrap        文本打包和填充
+unicodedata Unicode数据库
+
+##### 1.2.2 列表
+列表（[a, b, c]）能保存任意数量任意类型的 Python 对象（有序）
+
+###### 构造函数
+list()					[]
+list((1, 2, 3))			[1, 2, 3]（浅拷贝构造，即元素使用引用原容器元素）
+list("fjal")			['f', 'j', 'a', 'l']（可将其他可迭代对象转换为列表）
+
+###### 数字列表生成器
+```
+range([start,] stop[, step])
+```
+start默认为0，stop标定终止数字（结果不含该数字），step是步进值，可正可负，默认为1。它将生成从start开始的，每项递增step，最后一项小于（step为正）或大于（step为负）的列表
+
+###### 方法
+append(x)：追加一个元素
+extend(iter)：追加一个可迭代对象的所有元素（比+=运算符更高效，因为+=会创建一个新list，而extend是本地操作）
+insert(i, x)：在i位置插入元素
+pop(i=-1)：删除位置为i的元素并返回之
+remove(x)：删除第一个值为x的元素，不存在则抛异常
+index(x, start=0, stop=len)：在[start:stop]范围内返回第一个值为x的元素的位置，不存在则抛异常
+count(x)：返回,值为x的元素在列表中出现的次数
+sort(cmp=None, key=None, reverse=False)：排序，cmp是一个类似cmp(x,y)的比较函数，reverse为True时，表示反序排序
+reverse()：反转序列
+del alist：销毁列表
+del alist[i]：删除列表的第i项（还可以删除一个切片）
+alist[1:3] = []：切片更新操作（等号右侧必须是一个可迭代对象），将指定切片替换为赋值的列表，例子所示为删除，[1:1]相当于在1的位置插入，其他相当于替换（区别[1:2]和[1]，前者的替换是扩展式的，即右侧的可迭代对象的元素替换切片元素；而后者单索引替换则是使用右侧的对象整体替换索引位置的元素）
+
+###### 列表解析
+```
+[expression for var1 in iterable1 if cond1
+			for var2 in iterable2 if cond2
+			...
+]
+```
+这里，expression是var1, var2, ...组成的表达式（可以应用函数），其中var1从iterable1中取得，并满足cond1，var2从iterable2中取得，并满足cond2。注意：这里两个循环虽然是并列的，但内部是一个嵌套关系，即var1先取得一个值后遍历var2的所有值。
+例如：`[x ** 2 for x in range(8) if not x % 2]`，该列表含有x取值 0~7 的满足条件的x的平方
+注：若expression不含某个迭代变量，则相当于在该迭代变量变化中，取得的值都是相同的。
+
+###### 生成器表达式
+由于列表解析意味着必须生成整个列表，也就意味着可能需要占用大量的内存，而实际使用的可能仅仅是遍历其元素，而不是真的需要整个列表。于是就有了更节省内存的生成器表达式，即为列表解析中去掉 [] ，只不过为避免语法错误，通常在外面加上一个括号 ()。
+生成器表达式每次仅仅产生（yield）一个元素，非常适合于迭代。只不过，生成器表达式返回的是一个生成器（generator），也是一种可迭代对象。
+
+###### array 模块
+一种受限的可变序列类型array，要求所有元素都必须是同一类型，它需要在构造时，指定它受限的类型：
+|代码 | 等价的C类型 | 最小字节数 |
+|---|---|---|
+|c		|char					|1|
+|u		|chaunicode char		|2|
+|b/B	|chabyte/unsigned byte	|1|
+|h/H	|chashort/unsigned short|2|
+|i/I	|chaint/unsigned int	|2|
+|l/L	|chalong/unsigned long	|4|
+|f		|float					|4|
+|d		|double					|8|
+例如：
+```
+import array
+a = array.array('B')			# 构造一个空数组，受限为unsigned byte
+a = array.array('h', [3, 5])		# 构造一个初始化的数组，受限为short
+```
+索引、切片、len、append、extend、insert、pop、remove、index、count、reverse		都同list（sort不行）
+其他：
+a.itemsize				# 返回上述的最小字节数
+a.tolist()					# 转换一个list返回
+a.fromlist([3, 4])			# 同extend
+a.tostring()				# 将数组转换为字节序列字符串
+a.fromstring(buffer)		# 将一段buffer或str追加到数组尾
+a.tofile(file)				# 将数组转换为字节序列写入到指定的文件对象中
+a.fromfiles(file, count)		# 从文件对象中读取count个元素追加到数组尾
+a.byteswap()				# 交换数组中元素的字节顺序
+
+##### 1.2.3	元组
+元组（(a, b, c)，括号在不引起歧义的情形下是可选的）能保存固定数量任意类型的 Python 对象（有序）（注意：只有一个元素的元祖也要保留一个逗号，用以区分括号中的标量）
+元组就是一个const语义的list，也就是说它只能保证自己是不可变的，而如果其中有可变对象，如果该可变对象变化，而由于可变对象的id没有变化，并不与元组的不可变性矛盾。
+
+###### 构造函数
+tuple()				()
+tuple([1, 2, 3])	(1, 2, 3) （浅拷贝构造，即元素使用引用原容器元素）
+tuple("fjal")		('f', 'j', 'a', 'l')（可将其他可迭代对象转换为元组）
+
+###### 多元赋值
+实际上是隐式的元组赋值
+例如：`x, y, z = 1, 2, 'a string'`，也即圆括号是可以被省略的。并且一个变量出现在右侧不会因左侧的变化而受影响，也就是其结果好像是同一计算好了右值构造了一个新的元组对象赋给左侧的各个对象。（这样就可以使用一条语句进行变量值交换）
+
+##### 1.2.4	字典
+字典（{ak:av, bk:bv, ck:cv}）保存无序的键值映射，几乎所有不可变类型（可哈希类型）都可以作为键，一般常用整数和字符串，值可以是任何类型。各个元素的键的类型都可以不同，同样值的类型也都可以不同
+
+###### 构造函数
+dict()						{}
+dict(x=1, y=2)				{'x':1, 'y':2}
+dict([(ak, av), (bk, bv)])	{ak:av, bk:bv}（二元可迭代对象构造字典，二元不一定是元组）
+dict(d)				使用另一个字典构造，比copy方法慢
+
+###### 方法
+d[key] = value：有则改值，无则添加key:value（注：当aaa[key]不存在且作为右值时，则将抛出KeyError，不会添加）
+setdefault(key, default=None)方法：有则返回对应值，无则将key:default加入字典，返回default
+get(key, default=None)方法：类似[key]，如果存在该key则返回value；如果不存在，get返回default 
+key in d：判断key是否是字典的一个键
+`has_key(key)`方法：判断字典中是否有这个key（推荐使用in 运算符）
+keys()方法：返回所有key的列表
+values()方法：返回所有value的列表
+items()方法：返回一个将字典的每一项变为一个二元组组成的一个列表
+iterkeys()方法：同上，只不过返回的是一个迭代子，而不是列表
+itervalues()方法：同上，只不过返回的是一个迭代子，而不是列表
+iteritems()方法：同上，只不过返回的是一个迭代子，而不是列表
+update(dict)方法：将另一个字典dict合并到本词典中，冲突的键，则覆盖之
+del d[key]：将key对应的键值对从字典中删除，若key不存在则抛出KeyError
+pop(key[, default])方法：如果key存在，将key对应的键值对从字典中删除，并返回对应值；否则，如果给出default，返回default，否则就抛出KeyError异常
+popitem()方法：按print序删除并返回一个元素（作为二元组形式），若字典为空，则抛出KeyError异常
+clear()方法：清空字典
+copy()方法：返回一个和自己一样的字典（浅拷贝）
+fromkeys(iterkey, value=None)方法：返回一个字典，字典的值来自于iterkey（可迭代对象），值都是value
+
+注意：
++ 不支持连接`+`和重复`*`操作
++ 不支持一到多的映射，相同的key，会用后value覆盖前value，即使在一个{}中，靠后的也会覆盖前面的同key项。还要注意的是相同的key不是指id相同，而是指hash相同，于是，即使类型不同，只要哈希相同，就被认定为同key.
+
+##### 1.2.5	集合
+一组无序可哈希的对象。
+集合有两种：
+可变集合set和不可变集合frozenset
+只能使用上面两种名字的构造函数进行构造，数据源（参数）可以来自可迭代对象
+
+###### 集合运算
+比较运算符表示集合的包含关系
+`&`	表示交运算
+`|`	表示合运算
+`-`	表示差运算
+`^`	表示对称差分
+这些运算和集合的类型无关
+
+###### 可变集合方法
+`add(obj)`方法：向集合增添一个元素，如果已存在则无效果
+`remove(obj)`方法：从集合中删除一个元素，如果不存在，则抛出KeyError
+`discard(obj)`方法：从集合中删除一个元素，如果不存在则无效果
+`pop()`方法：从集合中删除任意一个元素并返回，如果集合为空，则抛出KeyError
+`update(iter)`方法：向集合添加一组元素（做合运算，等价于|=）
+`intersection_update(iter)`方法：仅保留共有元素（做交运算，等价于&=）
+`difference_update(iter)`方法：剔除包含在iter中的元素（做差运算，等价于-=）
+`symmetric_difference_update(iter)`方法：剔除共有元素，加上iter独有元素（做差分运算，等价于^=）
+`clear()`方法：清空集合
+
+###### 通用方法
+`issubset(iter)`方法：本集合是否是s集合的子集，即<=运算
+`issuperset(iter)`方法：本集合是否是s集合的超集，即>=运算
+`intersection(iter)`方法：返回本集合和s集合的交集，即&运算
+`union(iter)`方法：返回本集合和s集合的合集，即|运算
+`difference(iter)`方法：返回本集合和s集合的差集，即-运算
+`symmetric_difference(iter)`方法：返回本集合和s集合的XOR集（元素只属于一个集合），即^运算
+上述运算返回的结果的类型取决于左操作数，即本集合的类型。方法和操作符的区别，在于方法支持传入一个可迭代对象，而运算符只支持集合间的运算
+`copy()`方法：浅拷贝一个自己的副本，比构造函数要快
+
+### 2 其他内建类型
+类型type
+None（等价于 NULL）
+文件file
+函数function/方法instancemethod
+模块
+类classobj
+
+object()
+classmethod()
+staticmethod()
+super()
+property()
+
+### 3 内部类型
+#### 代码
+代码对象是编译过的Python源代码片段，是可执行对象。通过调用内建函数compile()可以得到代码对象。代码对象可被exec命令或eval()内建函数执行。对象本身不含任何执行环境信息，在被执行时动态获得上下文。事实上，代码对象是函数的一个属性（函数还有其他属性，如函数名、文档字符串等）
+
+#### 帧（frame）
+帧对象表示Python的执行栈帧。包含了所有Python解释器所需的执行环境信息。每次函数调用就会产生一个新的帧。
+
+#### 跟踪记录（traceback）
+当异常发生时，一个含有该异常的堆栈跟踪信息的跟踪记录对象被创建。如果一个异常有其处理程序，处理程序就可以访问这个对象。
+
+#### 切片（slice）
+当使用切片语法时，将创建切片对象。切片语法包括：步进切片，多维切片，省略切片。
+步进切片的语法见上
+多维切片的语法是：seq[start1:end1, start2:end2]
+省略切片的语法是seq[..., start1:end1]
+切片也可以使用内建函数slice()生成。
+
+#### 省略（ellipsis）
+省略对象用于省略切片中，作为一个记号。类似None，它也只有一个名字Ellipsis，布尔值恒为True。
+
+#### XRange
+当调用内建函数xrange()时，将生成一个XRange对象，该函数用于需要节省内存时或range()函数无法完成的超大数据集的场合，它只被用在for循环中，性能远高于range()。
+
+## 第四章. 运算符、表达式、语句
+### 1 运算符
+#### 1.1 赋值与销毁
+Python的变量都是引用，因此，对于一个频繁使用的其他模块、类变量，可以用一个本地的局部变量去接收该引用，既能简化写法，又能提高访问效率。
+在赋值时，不管这个对象是新创建的，还是一个已经存在的，都是将该对象的引用（并不是值）赋值给变量。并且Python 的赋值语句不会返回值，这是因为Python支持链式赋值，例如
+```
+y = x = x+1
+```
+表示创建一个对象保存x+1的结果，并将这个对象的引用分别赋给x和y。
+
+销毁对象的引用：del x, y, ...
+
+##### 增量赋值
+支持增量赋值（例如`*=`），但不支持自增自减（连用的+/-表示两个单目的+/-），它和一般格式的赋值不同的是，对于可变对象，这种赋值是直接修改对象，而不是运算后重新申请一个对象，再赋引用给这个变量
+
+##### 多元赋值
+使用基于元组的多元赋值：
+```
+(go_surf, get_a_tan_while, boat_size, toll_money) = (1,'windsurfing', 40.0, -2.00)
+```
+左右的括号都可以省略
+并且，右侧的值是在全部都计算完毕之后，才赋给左边的；由于是基于元祖的多元赋值，因此，必须保证左右两边的个数相同。
+
+#### 1.2 算术运算符
+`+`
+`-`
+`*`
+`/`（类型相关的除法，整数执行地板除，浮点数执行真除法）
+`//`（地板除，⌊x/y⌋）
+`%`（取余，计算公式：x%y=x-⌊x/y⌋×y）
+`**`（幂，乘方，另有内置函数pow(x, y)）
+
+从上可以发现：`a == (a//b)*b + a%b`
+这个等式无论正数还是负数，或是浮点数、复数都是成立的（注：复数的地板除，是对实部下取整，虚部为0）
+
+##### 幂运算与单目运算符
+幂运算比其左侧的单目运算符优先级高，比其右侧的单目运算符优先级低，单目运算符又高于其他双目运算符。
+即`-10**-2` 表示的是`-(10**(-2))`
+
+##### 内置的算术函数
+abs(x)，取绝对值或复数的模
+divmod(x, y)，取得由`x//y`和`x%y`组成的二元组
+pow(x, y[, z])，两个参数同`x**y`，三个参数同`x**y % z`，但效率更高，用于密码计算
+round(num, ndigit=0)：对num四舍五入到小数点后ndigit位（可以为负数），返回之（float类型）（对于负数，先对正数四舍五入，再取负）。（注意：虽然名义上是四舍五入，但由于float的精度问题，当舍入位为5且后无尾数时，并不能保证一定就进位，比如round(0.15,1)得到0.1，而round(0.05+0.1,1)得到0.2。
+int(x)，截断x的小数部分（正数下取整，负数上取整）
+
+##### math 模块
+math.pi
+math.inf，float('inf')
+math.nan，float('nan')
+math.e，自然指数
+math.floor(x)，将x下取整
+math.ceil(x)，将x上取整
+math.factorial(x)，x!
+
+#### 1.3 比较运算符（返回True或False的布尔值）
+<       <=      >       >=      ==      !=      <>（同前者，不推荐）
+特别的，像`3 < 4 < 5`这种语句也是合法的（连用比较运算符相当于隐式使用and运算）
+
+##### 对象比较的逻辑
+1. 同类型比较
+    + 数字类型的比较，自动进行转换而后比较（注：complex无法参与任何比较）
+    + 字符串比较，逐字符按字典序比较，若不同则直接返回结果，否则继续，若一个先比较完所有字符，则其较小。
+    + 列表和元组的比较，逐元素进行比较，若不同则直接返回结果，否则继续，若一个先比较完所有元素，则其较小。
+    + 字典的比较，首先比较len，长者较大；相同长度，则按keys()顺序比较各个键，若不同则返回结果；否则再比较各个键对应的值，若不同则返回结果，否则则相同。
+    + Instance，classobj之间比较？？？（实例和类型均按名的字符串比较）

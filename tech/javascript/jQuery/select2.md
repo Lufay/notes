@@ -41,3 +41,4 @@ $('select').select2();
 多种数据源
 可自定义搜索匹配
 不依赖bootstrap
+可以使用Yii2-widget引入
