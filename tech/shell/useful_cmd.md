@@ -94,6 +94,7 @@ lsb_release -a
 ### 网络上的主机名
 ```
 hostname
+$HOSTNAME
 ```
 ```
 uname -n
@@ -112,6 +113,35 @@ ifup eth0
 启动网卡
 
 #### netstat
+该命令的输出分为两部分：Active Internet connections 和 Active UNIX domain sockets
+前者包括如下内容：
+Proto：连接使用的协议
+Recv-Q：接收队列（一般是0）
+Send-Q：发送队列（一般是0）
+Local Address
+Foreign Address
+State
+后者本机通信的套接字，性能更高，包括如下内容：
+Proto：连接使用的协议
+RefCnt
+Flags
+Type：套接字的类型
+State：套接字的当前状态
+I-Node Path：连接到套接字的其它进程使用的路径名
+
+#### 选项
+-a (all)显示所有选项，默认不显示LISTEN相关
+-l 仅列出在 Listen (监听) 状态的连接
+-t (tcp)仅显示tcp相关选项
+-u (udp)仅显示udp相关选项
+-x 仅显示UNIX 套接字
+-n 拒绝显示别名，能显示数字的全部转化成数字。
+-p 显示建立相关链接的程序PID和程序名（并不是所有都能显示，使用root权限可以查看所有）
+-r 显示路由信息，路由表
+-i 显示网络接口列表
+-e 显示扩展信息，例如uid等
+-s 按各个协议进行统计
+-c 每隔1s执行该netstat命令
 ```
 netstat -lntp # 查看所有监听端口
 netstat -antp # 查看所有已经建立的连接
@@ -169,4 +199,9 @@ cut -d: -f1 /etc/passwd # 查看系统所有用户
 cut -d: -f1 /etc/group # 查看系统所有组
 ```
 
+### 系统限制
+查看所有：ulimit -a
+可以看到每一项的具体选项，例如 ulimit -n 可以看到最大打开的文件句柄数（包括socket），也可以后面跟一个数字直接修改（当前shell有效，并且对于非root用户只能改小，不能改大），另外还可以加上`-H`, `-S` 选项表示硬限制和软限制
+如果想要修改永久有效，可以修改 /etc/security/limits.conf 文件
+soft 和 hard 表示硬限制和软限制
 

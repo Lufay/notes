@@ -1,5 +1,5 @@
 # 智能指针
-[文档](http://www.boost.org/doc/libs/1_60_0/libs/smart_ptr/smart_ptr.htm)
+[文档](http://www.boost.org/doc/libs/1_61_0/libs/smart_ptr/smart_ptr.htm)
 
 ## `scoped_ptr`
 `boost::scoped_ptr`和`std::auto_ptr`非常类似，是一个简单的智能指针，它能够保证在离开作用域后对象被自动释放。

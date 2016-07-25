@@ -6,7 +6,9 @@
 
 ## nl
 
-# pg
+## pg
+
+## cut
 
 ## tail
 格式：`tail [OPTION] [FILE]`
@@ -28,3 +30,7 @@ OPTION：
 ## less
 
 ## od
+
+## uniq
+
+## sort

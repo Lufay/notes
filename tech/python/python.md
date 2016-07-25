@@ -586,17 +586,38 @@ addFilter(filt)：增加Filter
 removeFilter(filt)：删除Filter
 
 可用的Handler：
-+ logging.StreamHandler          可以向类似与sys.stdout或者sys.stderr的任何文件对象(file object)输出信息
-+ logging.FileHandler                用于向一个文件输出日志信息
-+ logging.handlers.RotatingFileHandler        类似于上面的FileHandler，但是它可以管理文件大小。当文件达到一定大小之后，它会自动将当前日志文件改名，然后创建一个新的同名日志文件继续输出
-+ logging.handlers.TimedRotatingFileHandler 和RotatingFileHandler类似，不过，它没有通过判断文件大小来决定何时重新创建日志文件，而是间隔一定时间就自动创建新的日志文件
-+ logging.handlers.SocketHandler                  使用TCP协议，将日志信息发送到网络。
-+ logging.handlers.DatagramHandler             使用UDP协议，将日志信息发送到网络。
-+ logging.handlers.SysLogHandler                 日志输出到syslog
-+ logging.handlers.NTEventLogHandler         远程输出日志到Windows NT/2000/XP的事件日志 
-+ logging.handlers.SMTPHandler                   远程输出日志到邮件地址
-+ logging.handlers.MemoryHandler                日志输出到内存中的指定buffer
-+ logging.handlers.HTTPHandler                    通过"GET"或"POST"远程输出到HTTP服务器
++ logging.StreamHandler(strm=sys.stderr)
+    可以向类似与sys.stdout或者sys.stderr的任何文件对象(file object)输出信息
++ logging.FileHandler(filename, mode='a', encoding=None, delay=True)
+    用于向一个文件输出日志信息, 如果存在延时(delay=True)，那么，文件打开推迟到第一次调用
++ logging.handlers.RotatingFileHandler(filename[, mode[, maxBytes[, backupCount]]])
+    类似于上面的FileHandler，但是它可以管理文件大小。当文件达到一定大小之后，它会自动将当前日志文件改名，然后创建一个新的同名日志文件继续输出。
+    maxBytes用于指定日志文件的最大文件大小，如果为0，意味着日志文件可以无限大;
+    backupCount用于指定保留的备份文件的个数。比如，如果指定为2，当上面描述的重命名过程发生时，原有的chat.log.2并不会被更名，而是被删除。
++ logging.handlers.TimedRotatingFileHandler(filename[, when[, interval[, backupCount]]])
+    和RotatingFileHandler类似，不过，它不是通过判断文件大小来决定何时重新创建日志文件，而是间隔一定时间就自动创建新的日志文件。
+    interval是时间间隔；
+    when参数是一个字符串。表示时间间隔的单位，不区分大小写，可取值为
+    - S 秒
+    - M 分
+    - H 小时
+    - D 天
+    - W 每星期（interval==0时代表星期一）
+    - midnight 每天凌晨
++ logging.handlers.SocketHandler(host, port)
+    使用TCP协议，将日志信息发送到网络。
++ logging.handlers.DatagramHandler(host, port)
+    使用UDP协议，将日志信息发送到网络。
++ logging.handlers.SysLogHandler
+    日志输出到syslog
++ logging.handlers.NTEventLogHandler
+    远程输出日志到Windows NT/2000/XP的事件日志
++ logging.handlers.SMTPHandler
+    远程输出日志到邮件地址
++ logging.handlers.MemoryHandler
+    日志输出到内存中的指定buffer
++ logging.handlers.HTTPHandler
+    通过"GET"或"POST"远程输出到HTTP服务器
 
 各个Handler的具体用法可查看参考书册：
 <https://docs.python.org/2/library/logging.handlers.html#module-logging.handlers>
@@ -641,6 +662,10 @@ datefmt=
 ```
 #logger.conf
 ###############################################
+# [logger_xxxx] logger_模块名称
+# qualname  logger名称，应用程序通过 logging.getLogger获取。对于不能获取的名称，则记录到root模块。
+# propagate 是否继承父类的log信息，0:否 1:是
+###############################################
 [loggers]
 keys=root,example01,example02
 [logger_root]
@@ -655,6 +680,9 @@ handlers=hand01,hand03
 qualname=example02
 propagate=0
 ###############################################
+# [handler_xxxx]
+# args handler初始化函数参数
+##############################################
 [handlers]
 keys=hand01,hand02,hand03
 [handler_hand01]
