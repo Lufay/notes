@@ -61,7 +61,7 @@ $('table').DataTable();
             name: '',       //给列一个别名，方便使用API时进行定位
             className: '',  //给列的每一项<td>添加一个css class
             orderable: false,   //是否允许该列进行排序（默认true）
-            orderSequence: [ 'asc', 'desc' ],   //排序序列
+            orderSequence: [ 'asc', 'desc' ],   //排序序列，点击排序后按该序列进行切换
             defaultContent: '', //当没有数据时的静态内容
             render: mix     //复杂的渲染需求
         },
@@ -79,6 +79,9 @@ $('table').DataTable();
         [10, 25, 50, "All"]
     ],
     stateSave: true,        //保存表格状态信息
+    stateDuration: 60 * 60 * 24,    // -1表示使用sessionStorage（HTML5）存储状态，>=0表示使用localStorage（HTML5）存储状态（0表示永不失效，其他具体的数值表示保存状态有效的秒数），默认7200
+    stateSaveCallback: function (settings, data) {},    //自定义状态存储，可以不使用localStorage，而使用cookie或server-side数据库
+    stateLoadCallback: function(settings) {},           //自定义状态取回
     pagingType: "full_numbers",     //翻页样式，另一种是two_button
     processing: true,       //处理中的提示
     serverSide: false,  //使用服务端处理
@@ -126,8 +129,8 @@ table(selector)
 tables(selector)
 
 #### 行
-row(selector, modifier)
-selector 可以是整数（行索引）、字符串（jQuery的selector）、DOM元素变量（tr/td）、jQuery对象、function、以及他们组成的数组
+row( rowSelector [, modifier ] )
+rowSelector 可以是整数（行索引）、字符串（jQuery的selector）、DOM元素变量（tr/td）、jQuery对象、function、以及他们组成的数组
 其中function(index, data, node)，index是行索引，data是行数据（原始数据），node是结点元素，返回true/false
 
 子行：附加在一行数据之后的一个独立的行，只有一个单元格（使用colspan），默认不显示
@@ -139,6 +142,14 @@ row().child.hide()
 row().child.remove()
 
 #### 列
+column( columnSelector [, modifier ] )
+columnSelector 可以是整数（列索引）、整数:visible（可见列的索引）、字符串:name（其中字符串为columns.name）、字符串（jQuery的selector）、DOM元素变量（tr/td）、jQuery对象、function、以及他们组成的数组
+其中function(index, data, node)，index是列索引，data是列数据（选定列每个单元格数据的数组），node是列头的DOM元素，返回true/false
+
+column().visible( [isShow, redrawCalculations=true] )
+如果isShow缺省，则返回当前是否可见的状态true/false
+否则，则为set指定列是否可见，返回column实例
+redrawCalculations，是是否立即重绘，当需要调用该接口修改多列的可见性时，可以设为false以提高性能。
 
 #### 单元格
 

@@ -97,7 +97,7 @@ arr instanceof Array
 ```
 
 ##### 布尔测试
-数值 0，空串，null进行布尔判断时都是false
+数值 0，空串，undefined，null进行布尔判断时都是false
 
 ### 数组
 ```
@@ -117,6 +117,15 @@ arr["a"] = "aaa";
 Array也是对象，这里是给这个对象添加了一个属性
 不推荐，推荐使用对象
 
+#### 方法
+join(separator=',')：将数组每个成员（转换为字符串）通过separator连接起来，返回连接的字符串。
+some()
+every()
+filter()
+map()
+<http://www.w3school.com.cn/jsref/jsref_obj_array.asp>
+<http://www.runoob.com/jsref/jsref-obj-array.html>
+
 ### 对象
 ```
 var obj = Object();
@@ -135,7 +144,10 @@ property和变量的命名规则相同，value可以是任何类型
 + 逻辑：支持&&、||、!
 + 三目：?:
 
-注意：不要在条件判断中使用赋值的 `=`, 只要赋值成功就是true
+注意：
+1. 不要在条件判断中使用赋值的 `=`, 只要赋值成功就是true
+1. || 运算当左操作数的布尔判断为true，就返回左操作数；否则返回右操作数
+    && 运算当左操作数的布尔判断为false，就返回左操作数；否则返回右操作数
 
 ### 控制语句
 同C
@@ -149,6 +161,9 @@ function func_name(args) {
 }
 ```
 多个参数使用逗号分隔，在调用时不必给出全部参数，没有给出的参数将是undefined
+
+#### 单入口单出口原则
+单出口就是要确保函数只有一个return语句（当然除非这些return语句是为了避免陷入过深的逻辑嵌套）
 
 ### 面向对象
 创建实例使用 new 运算符，访问成员使用`.`运算符
@@ -174,37 +189,63 @@ DOM不专属于 js，可以通用于支持DOM的程序语言，它的作用也�
 DOM是树形对象，每个节点也都是一个对象，拥有属性和方法
 而结点的类型有元素、文本、属性、注释
 
+针对网页，有特殊的HTML DOM，它比通用DOM用法更简单，但只能处理Web文档，例如
+document.form
+element.src
+element.href
+element.innerHTML
+和各种事件属性
+
 ### 元素对象
 #### 属性
 + childNodes，包含所有类型的子节点的数组
 + firstChild，childNodes[0]
 + lastChild，childNodes[childNodes.length-1]
-+ nextSibling
++ nextSibling，下一个兄弟结点，注意：元素之间的空白文本也构成文本结点，而对于最后一个结点，该属性为null
 + parentNode，父节点
 + attributes，属性节点
 + nodeName，结点标签名/属性名/#text（只读），总是返回大写字符串
 + nodeType，（只读）12种取值，其中1表示元素节点、2表示属性节点、3表示文本节点、8表示注释
 + nodeValue，获取和设置节点的值，元素节点为null/undefined，文本节点为内容，属性为属性值（读写）
++ innerHTML，元素节点的内部HTML文档（读写）
 
 #### 方法
-+ getElementsByTagName("name")，返回对应标签元素的对象数组（有属性length可以获知长度），其中name支持 * 通配符
-+ getElementsByClassName("cname")，返回拥有这些class的对应标签元素的对象数组，其中cname可以指定多个class（且），class之间用空格分隔，顺序不重要
++ getElementsByTagName("name")，返回对应标签元素的对象数组（有属性length可以获知长度），其中name支持 * 通配符，找不到返回空数组
++ getElementsByClassName("cname")，返回拥有这些class的对应标签元素的对象数组，其中cname可以指定多个class（且），class之间用空格分隔，顺序不重要，找不到返回空数组
 不一定完全支持，需用`if (node.getElementsByClassName)`进行测试
 + getAttribute("aname")，该元素节点对象不能是document，如果没有，则返回null
 + setAttribute("aname", "value")，该元素节点对象不能是document，无则添加，有则修改（该改动不会影响浏览器查看源码的显示）
++ appendChild(node)，追加子节点
++ insertBefore(node, child)，在指定子节点child前插入新节点
 
 #### 事件
 ##### 在HTML中注册事件（不推荐）
 ```
-<tag event="js codes">
+<tag onevent="js codes">
 ```
+其中 js codes 中可以使用 event 这个事件对象，和 this表示当前的元素对象node
 
 ##### 通过js代码绑定事件
 ```
-node.event = function() { js codes }
+node.onevent = function(evt) { js codes }
 ```
+事件回调函数的第一个参数就是事件对象
+（在兼容IE8-的浏览器中，js codes中也可以使用 window.event 这个事件对象）
+该函数被认为是node的方法，可以使用函数中可以使用this引用node
+可以通过重新赋值改变绑定事件，或赋值为null删除事件
 
-其中[event](http://www.w3school.com.cn/jsref/dom_obj_event.asp)常用的包括：
+##### DOM方法
+```
+node.addEventListener(event, listener, useCapture=false)
+```
+event是事件名字符串（不带on）
+listener是回调函数（接收第一个参数是event对象），同样被视为node的方法，可以使用函数中可以使用this引用node
+useCapture，默认false表示在冒泡阶段触发，true表示在捕获阶段触发
+此外，还可以给一个事件添加多个listener，他们按照添加的顺序触发。（如果三个参数都相同就只保留一个，匿名函数不行）
+移除listener使用node.removeEventListener方法，参数和添加时相同（意味着使用匿名函数添加的listener将无法删除）
+*注：IE8-不支持该方法*
+
+其中[onevent](http://www.w3school.com.cn/jsref/dom_obj_event.asp)常用的包括：
 + onclick：该事件不仅仅对鼠标点击会响应，对于回车键打开链接也会响应
 + ondblclick：双击
 + onmousedown和onmouseup：鼠标按下和松开（而后触发onclick事件）
@@ -221,14 +262,43 @@ node.event = function() { js codes }
 + onload：页面或图片加载完成后
 + onunload：用户退出页面时
 
-在 js codes 中，可以使用this表示当前的元素对象node
-在最后，如果`return true`（默认），则继续触发该tag标签的默认事件（比如a 标签的跳转），如果`return false`，则不会触发后续动作（从而实现对事件的拦截）
+
+##### DOM事件流
+在DOM Level 2 Events中，事件流包括三阶段：捕获阶段，目标阶段、冒泡阶段
+捕获阶段是从document结点到目标元素，触发各个元素绑定在捕获阶段的listener；
+冒泡阶段是从目标元素到document，触发各个元素绑定在冒泡阶段的listener；
+*注：IE8-不支持捕获阶段*
+
+##### 事件属性
+全是只读
+type：返回事件名称（字符串）
+target：返回事件触发的目标元素
+currentTarget：返回事件流过程中的当前处理事件结点
+eventPhase：返回事件流中的当前阶段（`Event.CAPTURING_PHASE` 1，`Event.AT_TARGET` 2，`Event.BUBBLING_PHASE` 3）
+timeStamp：事件发生的事件戳（从 epoch 开始的毫秒数，也可能从客户机启动的时间开始）（不保证可用）
+cancelable：指示preventDefault方法是否可用
+relatedTarget：与事件目标节点相关的节点（例如鼠标离开事件的鼠标进入节点，focus事件的失去焦点节点等），如果没有则为null或undefined
+
+###### 键鼠事件对象属性
+key：键盘按键的字符串
+which / keyCode：键盘按键的Unicode值
+altKey
+ctrlKey
+metaKey
+shiftKey：当事件触发时，对应的键是否按下
+button：当事件触发时，那个鼠标按键被点击
+clientX
+clientY：当事件触发时，鼠标指针相对于浏览器页面当前窗口的坐标
+screenX
+screenY：当事件触发时，鼠标指针相对于屏幕的坐标
+
+##### 事件方法
+preventDefault()：不执行与事件关联的默认动作（在兼容IE的浏览器中，事件绑定的 js codes 最后如果`return false`，有同样效果）
+stopPropagation()：终止事件在传播过程的捕获、目标处理或起泡阶段进一步传播。调用该方法后，该节点上处理该事件的处理程序将被调用，事件不再被分派到其他节点。
+stopImmediatePropagation()：阻止剩余的事件处理函数的执行（但依然会执行事件关联的默认动作），并防止当前事件在DOM树上冒泡。
 
 > 平稳退化
 如果拦截了标签的默认事件，比如a 标签，此时href 属性就没什么用处了，当然可以指定为"#"（内部空链接），不过基于平稳退化的考虑，还是将其指定为一个有效的URL，来确保即使 js 代码无效时也可以响应用户。
-
-
-
 
 
 ### window
@@ -242,7 +312,10 @@ node.event = function() { js codes }
 ### window.document
 网页内容（只有当window加载完成后，该对象才是有效的）
 #### 方法
-+ getElementById("id")，返回对应元素的对象
++ getElementById("id")，返回对应元素的对象，找不到返回null
++ createElement("name")，创建一个元素结点
++ createTextNode("text")，创建一个文本结点
++ `write("<h1>This is a heading</h1>");`，在页面加载过程中调用，可以插入内容，如果在页面加载完成后调用会覆盖整个文档。
 
 ### window.location
 #### 属性

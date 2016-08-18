@@ -36,13 +36,55 @@ jQuery这样做的好处是，使用jQuery方法后返回的仍然是jQuery对�
 <http://www.w3school.com.cn/jquery/jquery_ref_events.asp>
 `bind(events, [data,] function)`：适用于所有版本，1.7推荐用on代替，只能对已存在的元素绑定（对应unbind()）
 `delegate(childselector, events, [data,] function)`：1.42以上版本，为通过委托指定子元素添加事件（适用于大量子元素需要绑定到统一事件）元素可以是以后加入的（对应undelegate()）
-`on(events, [childselector,] [data,] function)`：1.7版本以后的推荐方式，兼容以上用法。（对应的解绑定：off()）
-其中，events是可以是一个用空格分隔事件名的字符串；
-另外，还可以将{event1:func1, event2:func2, ...}作为参数，一次绑定多个方法到多个事件上
-而且，很多事件已经有对应的jQuery方法，比如：
+`on(events[, childselector][, data], function)`：1.7版本以后的推荐方式，兼容以上用法。（对应的解绑定：off()）
+`on({event1:func1, event2:func2, ...}[, childselector][, data])`：一次绑定多个方法到多个事件上
+如需添加只运行一次的事件然后移除，请使用 one() 方法。
+其中，
+events是可以是一个用空格分隔事件名的字符串，其中事件名支持namespace限定（点分的各个namespace是并列关系，是不同的namespace而不是层次关系），可以在触发事件、移除事件时限定范围；
+childselector是选择器，指定触发事件的后代元素（此时function中的this是触发事件的后代元素，如果该参数为null或未指定，则this指当前元素）；
+data是传给function的额外数据，可以通过传给回调函数事件对象的data属性获取；
+function, func1, func2, ... 是事件的回调函数，其第一个参数是jQuery事件对象。
+*注：使用childselector进行委托绑定并不是直接绑定到后代元素之上，而是委托给当前元素，当事件冒泡抵达该元素后判断触发源是否是指定的后代元素，如果是的话就执行对应的回调函数，这对于需要绑定大量元素事件的情形非常有效*
+
+#### 快捷的事件绑定方法
+很多事件已经有对应的jQuery方法，比如：
 `$(selector).bind("click", function() {});`
 可以直接写作：
 `$(selector).click(function() {});`
+不带function参数则相当于trigger('click');
+
+#### 手动触发方法
+trigger(event, [param1, param2, ...])
+triggerHandler 同上
+其中
+event指定触发的事件字符串（可以是标准事件，也可以是自定义事件，还支持namespace限定——没有namespace限定就把该事件所有namespace绑定的回调函数都触发）
+例如：
+trigger('click')触发`click.*`所有
+trigger('click.aaa')触发click.xxx.aaa和click.aaa.xxx
+trigger('click.aaa.bbb')触发`click.aaa.bbb.*`等组合
+`[param1, param2, ...]` 是传递给事件回调函数的额外参数（从第二次参数开始）
+区别：
+1. triggerHandler 不会执行浏览器的默认动作，也不产生事件冒泡
+1. trigger() 会操作 jQuery 对象匹配的所有元素，而 triggerHandler() 只影响第一个匹配元素
+1. triggerHandler 返回的是事件处理函数的返回值，而不是具有可链性的 jQuery 对象。此外，如果没有处理程序被触发，则这个方法返回 undefined。
+
+#### jQuery事件对象
+##### 属性
+完全兼容js事件对象属性
+此外还有：
+data：事件绑定时指定的额外数据
+delegateTarget：返回被委托的结点，即事件被绑定的结点；如果没有委托，则其值同currentTarget（注：currentTarget是委托结点，即childselector指定的子结点）
+namespace：返回触发事件时指定的namespace字符串，如果没有则为空串，多个则用点分
+result：如果事件绑定多个回调函数，该属性返回上一个回调函数的返回值，如果没有上一个回调为undefined
+
+##### 方法
+完全兼容js事件对象方法
+stopPropagation、stopImmediatePropagation这两个函数由于委托事件的存在，只能阻止被委托的祖辈元素之后的事件处理函数执行，而在目标元素和被委托元素之间的元素则无法阻止。
+对应js的三个方法，也有三个判断方法：
+isDefaultPrevented()：是否调用preventDefault()
+isPropagationStopped()
+isImmediatePropagationStopped()
+
 
 ### 特效：
 hide/show/toggle，显隐

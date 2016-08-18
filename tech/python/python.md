@@ -284,9 +284,9 @@ ArgumentParser的方法：
 完成之后就可以给该脚本以执行权限执行了
 
 #### 2.2 注释
-#### 行注释
+##### 行注释
 `#`
-#### 文档注释
+##### 文档注释
 在模块、类或者函数的起始添加一个字符串（位于def后的第一行）
 这种注释可在运行时访问（通过访问对象（模块、类、对象、函数的名字）的`__doc__`属性，动态获得）
 也可以用来自动生成文档（help查看）
@@ -518,6 +518,12 @@ stream：     用指定的stream创建StreamHandler。可以指定输出到sys.s
 CRITICAL > ERROR > WARNING（默认） > INFO > DEBUG > NOTSET
 除此之外，还可以自定义日志级别
 
+CRITICAL：致命，程序无法继续运行
+ERROR：错误，程序一些功能失败
+WARNING：警告，程序可以按预期执行，但一些意想不到的事发生了，可能存在一些错误
+INFO：通知信息
+DEBUG：调试信息
+
 ##### format中的格式化串：
 %(name)s             Logger的名字
 %(levelno)s          数字形式的日志级别
@@ -533,6 +539,7 @@ CRITICAL > ERROR > WARNING（默认） > INFO > DEBUG > NOTSET
 %(thread)d                 线程ID。可能没有
 %(threadName)s        线程名。可能没有
 %(process)d              进程ID。可能没有
+%(processName)d              进程名。可能没有
 %(message)s            用户输出的消息
 
 ##### 每个级别对应一个打印函数
@@ -542,12 +549,13 @@ logging.warning('warning message')
 logging.error('error message')
 logging.critical('critical message')
 实际上，调用这些打印函数，是通过一个Logger对象完成的
+函数的原型是`(msg, *args, **kwargs)`，支持`msg % args`
 
 ##### 四个概念
 + Logger：负责接收用户message，完成打印；可以添加多个Handler和Filter
 + Handler：负责管理一个日志target；可以设置一个Formatter和添加多个Filter
 + Formatter：负责日志的格式
-+ Filter：负责日志过滤
++ Filter：负责日志过滤（基于logger的name）
 
 ###### Logger
 获得一个Logger
@@ -581,9 +589,11 @@ RotatingFileHandler('myapp.log', maxBytes=10*1024*1024,backupCount=5)
 
 方法：
 setLevel(lel)：设置打印最低日志级别
-setFormatter()：  给这个handler选择一个Formatter
+setFormatter(formatter)：  给这个handler选择一个Formatter
 addFilter(filt)：增加Filter
 removeFilter(filt)：删除Filter
+flush()：确保所有日志都被刷出
+close()：从handler的map中清除该handler
 
 可用的Handler：
 + logging.StreamHandler(strm=sys.stderr)
@@ -591,7 +601,7 @@ removeFilter(filt)：删除Filter
 + logging.FileHandler(filename, mode='a', encoding=None, delay=True)
     用于向一个文件输出日志信息, 如果存在延时(delay=True)，那么，文件打开推迟到第一次调用
 + logging.handlers.RotatingFileHandler(filename[, mode[, maxBytes[, backupCount]]])
-    类似于上面的FileHandler，但是它可以管理文件大小。当文件达到一定大小之后，它会自动将当前日志文件改名，然后创建一个新的同名日志文件继续输出。
+    类似于上面的FileHandler，但是它可以管理文件大小。当文件达到一定大小之后，它会自动将当前日志文件改名（加上.n后缀），然后创建一个新的同名日志文件继续输出。
     maxBytes用于指定日志文件的最大文件大小，如果为0，意味着日志文件可以无限大;
     backupCount用于指定保留的备份文件的个数。比如，如果指定为2，当上面描述的重命名过程发生时，原有的chat.log.2并不会被更名，而是被删除。
 + logging.handlers.TimedRotatingFileHandler(filename[, when[, interval[, backupCount]]])
@@ -602,7 +612,7 @@ removeFilter(filt)：删除Filter
     - M 分
     - H 小时
     - D 天
-    - W 每星期（interval==0时代表星期一）
+    - W 每星期（interval==0时, 代表星期一）
     - midnight 每天凌晨
 + logging.handlers.SocketHandler(host, port)
     使用TCP协议，将日志信息发送到网络。
@@ -662,7 +672,7 @@ datefmt=
 ```
 #logger.conf
 ###############################################
-# [logger_xxxx] logger_模块名称
+# [logger_xxxx] xxxx是loggers中的key，也是getLogger使用的key
 # qualname  logger名称，应用程序通过 logging.getLogger获取。对于不能获取的名称，则记录到root模块。
 # propagate 是否继承父类的log信息，0:否 1:是
 ###############################################
@@ -709,6 +719,13 @@ datefmt=%a, %d %b %Y %H:%M:%S
 [formatter_form02]
 format=%(name)-12s: %(levelname)-8s %(message)s
 datefmt=
+```
+```
+import logging
+import logging.config
+
+logging.config.fileConfig("logger.conf")
+logger = logging.getLogger("example01")
 ```
 
 #### 4.4 Profilers（性能测试器）
@@ -764,6 +781,7 @@ bool()          False
 
 构造函数：
 float()         0.0
+支持字符串转换为一个浮点数，但字符串中不能含有非法字符，否则会抛异常
 
 占8个字节，遵守IEEE754规范（52M底/11E指/1S符）
 然而实际精度依赖于机器架构和编译Python解释器的编译器
@@ -1056,7 +1074,7 @@ alist[1:3] = []：切片更新操作（等号右侧必须是一个可迭代对�
 
 ###### 生成器表达式
 由于列表解析意味着必须生成整个列表，也就意味着可能需要占用大量的内存，而实际使用的可能仅仅是遍历其元素，而不是真的需要整个列表。于是就有了更节省内存的生成器表达式，即为列表解析中去掉 [] ，只不过为避免语法错误，通常在外面加上一个括号 ()。
-生成器表达式每次仅仅产生（yield）一个元素，非常适合于迭代。只不过，生成器表达式返回的是一个生成器（generator），也是一种可迭代对象。
+生成器表达式每次仅仅产生（yield）一个元素，非常适合于迭代。只不过，生成器表达式返回的是一个生成器（generator），也是一种迭代器。
 
 ###### array 模块
 一种受限的可变序列类型array，要求所有元素都必须是同一类型，它需要在构造时，指定它受限的类型：
@@ -1206,7 +1224,7 @@ property()
 当调用内建函数xrange()时，将生成一个XRange对象，该函数用于需要节省内存时或range()函数无法完成的超大数据集的场合，它只被用在for循环中，性能远高于range()。
 
 ## 第四章. 运算符、表达式、语句
-### 1 运算符
+### 1 运算符和表达式
 #### 1.1 赋值与销毁
 Python的变量都是引用，因此，对于一个频繁使用的其他模块、类变量，可以用一个本地的局部变量去接收该引用，既能简化写法，又能提高访问效率。
 在赋值时，不管这个对象是新创建的，还是一个已经存在的，都是将该对象的引用（并不是值）赋值给变量。并且Python 的赋值语句不会返回值，这是因为Python支持链式赋值，例如
@@ -1271,3 +1289,742 @@ math.factorial(x)，x!
     + 列表和元组的比较，逐元素进行比较，若不同则直接返回结果，否则继续，若一个先比较完所有元素，则其较小。
     + 字典的比较，首先比较len，长者较大；相同长度，则按keys()顺序比较各个键，若不同则返回结果；否则再比较各个键对应的值，若不同则返回结果，否则则相同。
     + Instance，classobj之间比较？？？（实例和类型均按名的字符串比较）
+1. 混合类型比较
+instance  <  数字型  <  classobj  <  dict  <  function  <  list  <  str  <  tuple
+
+##### 内置的比较函数
+cmp(obj1, obj2)
+    If obj1 < obj2: return 负整数
+    If obj1 > obj2: return 正整数
+    If obj1 == obj2: return 0
+如果比较用户自定义对象，则会调用类的`__cmp__()`方法
+
+#### 1.4 is (not) （返回True或False的布尔值）
+用is或is not判断两个变量是否指向同一对象，相当于id(a) == id(b)或id(a) != id(b)
+
+#### 1.5 逻辑运算符与条件表达式
+and     or      not
+优先级低于比较运算符
+
+支持短路计算：
+x and y：判断x为False，则返回x；x为True，则返回y
+x or y：判断x为True，则返回x；x为False，则返回y
+于是，可以从此模拟出三目表达式：(cond and [x] or [y])[0]，这里之所以使用列表，是为了保证x恒为True值；
+但事实上，正规的写法应该是x if cond else y
+
+#### 1.6 位运算（仅用于整数）
+~    &    |    ^    <<    >>
+其中 << 左移运算，对int左移溢出后，会自动转变为long，而不会变为异号或为0
+
+设value为一个值，bit为指定位为1的值：
+打开位：value |= bit
+关闭位：value &= bit
+切换位：value ^= bit
+测试位：if value & bit:
+
+### 2 语句
+#### 2.1 条件语句
+```
+if expression1:
+    代码块1
+elif expression2:       # 可选任意多个：当expression1为False时进行测试
+    代码块2
+else:                   # 可选：当expression? 均为False时执行
+    代码块3
+```
+如果expression的值非0或为True，则执行对应的代码块。
+
+#### 2.2 循环语句
+```
+while expression:
+    代码块
+else:                # 可选：当expression为False时执行，当break跳出则不执行
+    代码块
+```
+
+```
+for 迭代元 in 可迭代对象:
+    代码块
+else:             # 可选：迭代结束后执行，当break跳出则不执行
+    代码块
+```
+可迭代对象包括：字符串（字符），列表和元组（元素），字典（key），文件对象（行）等
+
++ 为了产生计数循环，可以使用range函数或xrange函数作为序列发生器。
++ 对于一个字符串或序列，如果想要同时迭代它的位序和值，可以使用enumerate函数生成一个新的迭代器（详见下）：`for i, ch in enumerate(foo):`
+
+##### for 实现机制 与 迭代器
+for循环的机制：
+1. 调用可迭代对象的`__iter__()`方法获得迭代器（通过iter()这个内建方法）
+1. 每次循环迭代调用迭代器的next()方法获得遍历的下一个数据
+1. 捕获到StopIteration异常，循环结束（当全部数据取完后会抛出一个StopIteration异常，以告知迭代完成）
+
++ 可迭代对象是一个有`__iter__()`方法的对象，该方法返回这个可迭代对象的迭代器。
++ 迭代器是一个有next()方法的对象（当然，通常迭代器本身也是可迭代对象，所以可以在`__iter__()`方法中返回自身）。
+
+*注：迭代器只能单向遍历（不能回溯），而且不能复制，只能重新创建。*
+
+序列、字典、集合、文件对象都是可迭代对象
+只不过序列和集合迭代的是成员；字典迭代的是key，因为可以通过key找到value；文件对象迭代的是行。
+
+> iter函数
+iter(obj)，obj是可迭代对象，返回该可迭代对象的迭代器
+iter(func, sentinel)，返回一个迭代器不断调用这个函数，直到它返回sentinel就抛出StopIteration异常
+
+> next函数
+next(iterator[, default])
+调用iterator的next()方法返回下一个元素，如果给定default 参数，则不抛StopIteration异常，改为返回default。
+
+##### 与迭代有关的函数
++ reversed(seq)：返回该序列seq的逆序迭代器
++ sorted(iter, cmp=None, key=None, reverse=False)：返回一个有序的列表，其他的可选参数同列表的sort方法
++ enumerate(iterable[, start])：iterable为一个可迭代对象，start设置迭代的起始位置，返回一个可迭代对象，该对象每次next会生成一个由(位序, 值)构成的二元组。
++ filter类
+    - filter(func, iter)：func是一个判断函数对象，返回func判断为True的元素的列表，即每次从iter中取出一个元素，作为func的参数进行判断，若为True则加入结果中，返回的具体类型和iter的类型一致。如果func为None，则func相当于bool()，即判断元素本身的布尔值。
++ map类
+    - zip(iter1, iter2, …)：返回一个元组的列表，其中第一个元组由这些序列的第一个元素依次组成，第二个元组由这些序列的第二个元素依次组成，直到其中一个序列取完为止。即返回的列表长度和这些序列中最短的一个相同。
+    - map(func, iter1[, iter2, …])：func是一个函数对象，返回func结果的列表，即每次从各个序列中取出一个元素作为func的参数（具体是先组成一个元组，再使用`*tuple`传参），返回结果依次作为结果列表的一个元素，如果某些序列提前耗尽，则后续均为None。如果func指定为None，则func的行为就是直接返回组成的这个元组（行为类似zip，但zip返回的列表长度取决于序列中最短的一个，而map返回的序列长度则取决于序列中最长的一个）
++ reduce类
+    - any(iter)：如果可迭代对象iter至少存在一个bool(x)为True的元素x，则返回True，否则返回False
+    - all(iter)：如果可迭代对象iter为空，或所有元素x的bool(x)都为True，则返回True，否则返回False
+    - sum(iter, init=0)：返回数值序列和init的总和（效果同reduce(operator.add, seq, init)）
+    - max(iter, key=None)，min(iter, key=None)：key是一个用于比较的函数，按该比较函数返回迭代对象中的最大和最小值。（此外，这两个函数还有一个可变参数版本：max(arg1, arg2, …, key=None)，min(arg1, arg2, …, key=None)
+    - reduce(func, iter[, init])：func是一个需要两个参数的函数对象，每次从iter中取出一个元素和上次func的结果作为本次func的参数，如果提供了init参数，则初始init作为上次func的结果，如果未提供init参数，则首次取iter的两个元素作为func的参数。这里func不能是None。
+
+##### 相关模块
+itertools
+1. 无限迭代器
+1. 排列组合
+1. 终止于最短的输入序列的迭代器
+支持无限迭代的输入
+<http://www.cnblogs.com/huxi/archive/2011/07/01/2095931.html>
+
+#### 2.3 continue、break、pass
+continue语句：跳过循环中剩下语句，进行下次迭代（进行条件检查或调用next()）
+break语句：跳出循环
+pass语句：空语句的占位符
+
+## 第五章. 函数
+### 1. 函数定义
+```
+def func_name([args]):
+    'optional documention string'
+    函数代码块
+```
+注意：
+不支持函数重载，但可以通过type()确定参数类型来实现
+支持调用在前，定义在后
+函数调用时，小括号不可省略
+关键字参数：通过形参名来指定参数，可以不按顺序
+
+#### 1.1 参数
+参数是引用传递，所以对于可变对象，函数内的改变影响原始对象，而不可变对象则不影响
+##### 1.1.1 默认参数
+参数可以用赋值符给以默认参数，同样必须在所有非默认参数之后
+##### 1.1.2 可变参数
+可变长参数必须在其他参数之后（并且关键字可变参数需在位序可变参数之后），例如：
+```
+func(*tuple_args, **dict_args)
+```
+额外的位序参数将封装为元组`tuple_args`, 额外的关键字参数封装为字典`dict_args`
+说明：`*`运算符可以把序列拆解为多个参数，`**`运算符可以把字典拆解为多个关键字参数
+
+#### 1.2 返回值
+动态返回类型：能返回不同类型
+如果函数无return语句，则将返回None对象
+##### 1.2.1 多值返回
+实际返回的是元组，只不过语法上可以不需要括号（同样，在接受多值返回时，也可以不需要括号）
+
+### 2. 函数对象
+函数定义就声明了一个函数对象，函数名就是这个函数对象的引用，可以赋给其他变量或作为参数传递
+
+支持函数嵌套定义，因为函数是对象，内部定义的函数相当于一个在外部函数的作用域内函数对象实例
+函数嵌套定义的作用是内部函数可以访问外部函数作用域内的变量，从而形成闭包
+
+#### 2.1 属性
+`__doc__`、version
+
+### 3. 装饰器
+也是一种函数，如果装饰器没有参数，那么其参数是被装饰的函数(对象)，返回被装饰后的函数(对象)；如果装饰器有参数，则通过参数调用，返回一个无参数的装饰器
+即：
+@deco1(deco_arg)
+@deco2
+def func():
+    pass
+相当于func = deco1(deco_arg)(deco2(func))
+通过装饰器，可以实现AOP编程
+
+### 4. 匿名函数lambda
+```
+lambda [arg_list]: expression
+```
+`arg_list`可省，可以有默认参数和可变参数
+expression的结果就是返回值
+结果是一个函数对象
+
+### 5. 偏函数
+即其他语言中的参数绑定
+使用functools.partial()方法
+偏函数是默认参数的一种有益补充，因为默认参数是在定义时给定，而且只能逆序指定；而使用偏函数绑定的参数是动态的，而且可以通过关键字绑定到任意的参数上
+例如：
+```python
+from operator import add, sub
+from functools import partial
+
+inc = partial(add, 1)       # 按序绑定到add函数的第一个参数
+dec = partial(lambda a,b:sub(a,b), b=1)     # 关键字绑定到匿名函数的b参数上
+print inc(10)
+print dec(10)
+```
+
+
+## 第六章. 对象和类
+### 1. 类定义
+```
+class ClassName(base_class[es]):
+    "optional documentation string"
+    static_member_declarations
+
+    method_declarations(self)
+```
+`base_class`声明基类，如果没有指定，则使用 object 作为基类（object是最基本的类型）
+每个实例方法第一个参数都是self，它是对象实例的引用，对象的私有成员和类的静态成员都可以使用它引用，例如通过`self.__class__.__name__`可以得到类名（`self.__class__`这个引用实际的类）
+构造器：`__init__(self)`（实际上是对象创建后自动执行的第一个方法，执行初始化工作），如果没有显式定义该方法，则默认提供一个空的构造器。
+foo = ClassName()就创建了一个该类的实例。当一个实例被创建，`__init__()`就会被自动调用。
+
+```
+class A:
+    pass
+
+class B(object):
+    pass
+
+a = A()
+b = B()
+type(A)        # <type ‘classobj’>
+type(a)        # <type ‘instance’>
+type(B)        # <type ‘type’>
+type(b)        # <class ‘__main__.B’>
+```
+
+访问权限、嵌套类?
+
+## 第七章. 模块
+当你创建了一个 Python 源文件，模块的名字就是不带 .py 后缀的文件名
+
+导入模块：`import module_name [as alias_name]`
+访问模块中的：
+```
+module_name.variable
+module_name.function()
+```
+导入模块中的内容：`from module_name import var`
+而后就可以不用`module_name`直接访问var
+不加前缀的`__name__`就表示显示当前模块的名字，一般作为主模块直接执行的`__name__`都是`__main__`，而被import的模块使用`__name__`则显示该模块的模块名。
+
+查找模块的路径？
+
+## 第八章. IO相关
+### 1. 文件对象file
+文件对象不仅可以访问普通的磁盘文件，还可以访问其他抽象的“类文件”。一旦设置了合适的“钩子”，就可以通过文件对象的接口访问其他文件，就好像访问普通文件一样。这是因为，文件就是一种字节流的抽象。
+
+#### 1.1 创建（打开文件）
+##### 1.1.1 open()
+```
+open(file_name, access_mode = 'r', buffering=-1)
+```
+`file_name`是打开文件名的字符串（可使用绝对路径和相对路径）
+`access_mode`是打开模式，'r' 表示读取（默认，文件必须存在），'w' 表示覆写（没有则新建，有则清空原内容重写）， 'a' 表示追加（没有则新建）；可叠加的：'+' 表示读写（r+要求文件必须存在，w+若已存在会清空），’U’通用换行符支持（通常配合r和a，如果使用该选项打开文件，则在文件读入python时，无论原来的EOL是什么，都将替换为\n）， 'b'表示二进制访问（为了兼容非Unix的文本文件）
+buffering：0表示无缓冲，1表示行缓冲，更大的数表示指定的缓冲大小（大约字节数），负值表示使用系统默认缓冲机制（通常是全缓冲）。
+如果 open() 成功，一个文件对象会被返回。
+
+##### 1.1.2 file()
+file(name, mode=’r’, buffering=1)
+和open完全通用，推荐使用open()函数
+
+#### 1.2 属性
++ name：文件名
++ mode：打开模式
++ encoding：文件编码，None使用系统默认编码。当Unicode字符串被写入时，将自动使用该编码转换为字节字符串
++ closed：标记文件是否已经关闭
++ newlines：文件中使用的换行符模式（是一个tuple）
++ softspace：空格是否显示的标识，默认是false（表示输出数据后加上一个空格符，true表示不加）
+
+#### 1.3 方法
+##### 1.3.1 关闭文件对象close()
+尽管python的垃圾收集会在文件对象的引用计数减为0时自动关闭文件对象。但那可能会丢失缓冲区数据。
+
+##### 1.3.2 读文件
++ read([size])：至多读取size个字节，返回字符串。若size缺省，则读到EOF为止。
++ readline([size])：至多读取size个字节，返回字符串。若size缺省，则读取一行（带换行符），若遇到EOF，则返回空串
++ readlines([size])：将文件按行读取，返回字符串列表。如果指定了size，则至多读取大约size个字节的行（这里是大约，因为，实际会读取多于size个字节，因为它会按size指定的大小，凑足内部缓冲的整数倍）
++ next()：为文件对象进行迭代。
+
+##### 1.3.3 写文件
++ write(str)：向文件写入字符串str。由于buffer，需要调用flush或close才能刷新到文件。
++ writelines(str_iter)：将字符串迭代对象逐个写入文件（并不会写入额外的换行符）
+
+##### 1.3.4 文件指针
++ seek(offset, whence=0)：whence是偏移基准，默认是0（文件头），还可以是1（当前位置），2（文件尾）。而offset是偏移量（单位字节），注意：如果是text模式打开文件，则不允许定位于文件尾之后的位置。此外，并不是所有文件对象都可以被seek的（比如以’a’模式打开的文件）。
++ tell()：返回当前读写文件偏移量（字节数）。
+
+##### 1.3.5 杂项
++ truncate([size])：把文件裁成指定的大小（字节数），size默认是tell()的返回值。
++ fileno()：返回一个整型的文件描述符，用于底层的文件接口，如os.read()
++ isatty()：是否关联到一个类tty设备上
++ flush()：刷新内部的文件buffer（立即写到文件中）
+
+#### 1.4 遍历
+文件对象是一个可迭代对象，使用for in 则遍历文件每一行（含行末的换行符。注：这里的文件读写调用C的文件读写函数，因此不必考虑系统行分隔符的差异，因为，即使在Windows下，’\n’也将被转换为’\r\n’）。
+遍历的性能优于使用readlines遍历列表，因为readlines是一次性将文件读入，对于大文件需考虑内存的占用，而使用迭代方式一次仅仅会读取一行。
+
+#### 1.5 标准文件对象
+标准输入sys.stdin（一般是键盘）
+标准输出sys.tdout（到显示器的缓冲输出）
+标准错误sys.tderr（到显示器的非缓冲输出）
+这三个文件对象是预置的，无须打开，只要导入sys模块即可访问这三个对象。
+
+### 2. os模块
+该模块实际上只是真正加载的模块的前端，而真正加载的模块与具体的操作系统有关，比如：posix（适用于Unix）、nt（Win32）、mac（旧版的MacOS）、dos（DOS）、os2（OS/2）等。不需要直接导入这些模块，只需导入os模块，Python会自动选择正确的模块。（根据某个系统支持的特性，可能无法访问到一些在其他系统上可用的属性）
+
+#### 2.1 模块属性
+linesep        系统的行分隔符。（如Windows使用'\r\n'，Linux使用'\n'）
+sep            用来分隔文件路径名的字符串
+pathsep        多个路径之间的分隔符（如Windows使用’;’，Linux使用’:’）
+curdir        返回当前目录（’.’）
+pardir        返回当前目录的父目录（’..’）
+
+#### 2.2 模块方法
+##### 2.2.1 文件与目录
++ getcwd()/getcwdu()         返回当前工作路径的字符串（后者是Unicode字符串版本）
++ chdir(path)                将当前的工作路径变更为指定的位置（即，影响上一个函数的返回值）
++ chmod(path, mode)          改变path的访问属性
++ listdir(path)              返回一个列表，元素相当于ls -A的字符串
++ walk(top, topdown=True, oneerror=None, followlinks=False)
+递归遍历top目录的目录树。
+该函数是一个生成器函数，每次生成一个三元组：(dirpath, dirnames, filenames)，其中dirpath是当前遍历的目录的路径，dirnames是dirpath下的目录名列表，filenames是dirpath下的非目录的文件名列表。
+默认遍历顺序是自上而下，即从top开始，而后依次递归遍历dirnames中的各个目录，如果topdown为False，则将先递归遍历dirnames中的各个目录，而后才到top，但无论topdown的值为何，dirnames总是在确定dirpath生成的，于是如果topdown为True，遍历过程中对dirnames的修改会影响递归中遍历哪些子目录和顺序，而topdown为False，遍历过程中的修改是无效的。
+默认忽略os.listdir()的错误，而oneerror可以指定一个接受一个参数（一个os.error的实例）的函数，它可以被用于报告遍历过程中的出错，或者抛出异常终止遍历。
+默认不跟踪符号连接，followlinks为True后可以改变着一点。
+（注意：在遍历期间不要改变当前的工作目录）
++ mkdir(path, mode=0777)    创建一个mode访问权限的目录（如果中间路径不存在，并不会递归创建中间路径，递归版本是makedirs）
++ rmdir(path)                删除一个目录（也有一个递归版本：removedirs，它会按path由右向左依次删除，直到整个path都被删除或者遇到一个错误，该错误将被忽略，因为它一般是因为已经不满足删除条件，即非空目录）
++ remove(path)                删除一个文件，和unlink(path)相同
++ rename(old, new)            重命名一个文件或目录（也有一个递归版本renames，它会像makedirs一样为new创建中间路径，而后像removedirs一样递归删除old的中间目录。）
++ access(path, mode)            测试path，mode可以是`F_OK`不是是否存在，也可以是`R_OK`、`W_OK`、`X_OK`或其组合，表示是否具有该访问属性。
++ utime(path, (atime, mtime))    设置path的access时间和modified时间，如果第二个参数为None，则置为当前时间
++ stat(path)                    在指定的路径执行stat的系统调用，返回指定路径的相关信息
+
+##### 2.2.2 环境
++ getenv(key, default=None)    返回由字符串key指定的环境变量的值，如果不存在该环境变量则返回default
++ putenv(key, value)            设置或变更一个环境变量
++ umask(new)                设置新的umask，并返回之前的mask
+
+##### 2.2.3 进程
++ getpid()                    返回当前进程号
++ kill(pid, sig)                使用信号sig杀死进程pid
++ waitpid(pid, opt)            返回(pid, status << 8)
++ system(cmd)                在一个子shell中执行字符串cmd的命令，返回命令的退出状态（所有标准输出和标准错误都被直接显示）
++ popen(cmd, mode=’r’[, bufsize])
+执行字符串cmd的命令，返回管道的文件对象
+该对象可以使用read()获得cmd的标准输出；而标准错误则直接显示；命令的退出状态是在管道文件对象close时返回。
+管道的文件对象和普通文件对象的不同就是它只能单向读写，即不能使用seek
+此外，还可以使用commands.getstatusoutput(cmd)，它是对popen的封装，返回一个(status, output)的二元组，分别是命令的退出状态和所有输出。
++ exec系列函数
++ spawn系列函数
++ abort()                    直接退出，用于dumps core或其他错误退出
+
+##### 2.2.4 杂项
+tmpfile()                    返回一个临时文件对象（close文件对象时删除）
+tmpnam()                返回一个唯一的临时文件名
+tempnam([dir,[, prefix]])        返回一个唯一的临时文件名（带前缀和路径的版本）
+urandom(n)                返回一个n字节的随机字符串（用于加密用途）
+mkfifo
+
+#### 2.3 子模块os.path
+##### 2.3.1 模块方法
++ basename(path)            去掉路径，返回文件名
++ dirname(path)                去掉文件名，返回目录（不含最后一个os.sep）
++ split(path)                按当前的os.sep属性将path分割成为一个(basename, dirname)的二元组。分割位置为path中最右的os.sep（若没有os.sep，则二元组第一个元素为空串；如果是以os.sep结束的，则二元组第二个元素为空串）
++ join(path1,path2,…)        将指定的这些路径用os.sep连接起来，如果这些路径的字符串不以os.sep结束，则将自动添加上os.sep（注意，不要以os.sep作为字符串开头，否则将认为从该位置开始作为根，则前面的参数都将被忽略）
++ splitext(path)                将指定的路径分割出扩展名，返回一个二元组，以path中最后一个os.sep之后的最后一个’.’定界，含有’.’的右半部分作为二元组的第二个元素，其余作为第一个元素。若最后一个os.sep后面没有’.’，则第二个元素为空串。
++ exists(path)                判断path指定的路径是否存在
++ isfile(path)                判断path指定的是否是一个普通文件
++ isdir(path)                判断path指定的是否是一个目录
++ islink(path)                判断path指定的是否是一个符号链接（在Windows下总是False）
++ ismount(path)                判断path指定的是否是一个挂载点（定义为驱动器的根）
++ isabs(path)                判断path是否是一个绝对路径
++ getsize(filename)            返回指定文件的大小，该信息来自于os.stat()
++ getctime(filename)            返回文件的最近创建时间，该信息来自于os.stat()
++ getatime(filename)            返回文件的最近访问时间，该信息来自于os.stat()
++ getmtime(filename)        返回文件的最近修改时间，该信息来自于os.stat()
++ abspath(path)                返回指定路径的绝对路径
++ normpath(path)            返回指定路径的规范字符串形式（滤除多余的os.sep）
++ expanduser(path)            将路径中的~或~user转换为对应用户的主目录后的path的绝对路径（如果用户未知或$HOME未定义，则不返回）
+
+### 3. subprocess模块
+用于调用shell（为了代替os.system/`os.popen*`/`os.spawn*`/`popen2.*`/`commands.*`）
+该模块提供了一个类和三个简易函数
+
+#### 3.1 Popen类
+```
+class Popen(
+	args,
+	bufsize=0, executable=None,
+	stdin=None, stdout=None, stderr=None,
+	preexec_fn=None, close_fds=False,
+	shell=False, cwd=None, env=None,
+	universal_newlines=False,
+	startupinfo=None, creationflags=0)
+```
+args是一个字符串或序列，用以描述命令（因为它包含了args[0]即执行的命令）
+bufsize同open的buffering参数
+executable可以指定执行程序，比如可以指定某个具体的shell（若未指定，则由args[0]决定）
+stdin、stdout、stderr可以指定程序的输入输出，可以使用常量PIPE（将创建于子进程的管道，可以进行输入和获得输出），文件对象，文件描述符（一个整数）或None（从父进程继承）。（其中stderr也可以指定为常量STDOUT，则等价于2>&1）
+`preexec_fn`是一个可执行对象，它将在子进程启动时执行
+`close_fds`若为True，则在子进程执行前除0/1/2外的所有文件描述符都将被关闭
+shell若为True，则args通过shell执行。默认是通过os.execvp执行，即使args是一个字符串，也被视为只有一个元素的序列。
+cwd可以指定子进程执行的工作目录
+env可以指定子进程的环境变量（默认从父进程继承），可以指定一个str:str的字典
+`universal_newlines`若为True，则stdout、stderr都将被认为”t”打开，并且不再被Popen对象的communicate()方法更新。
+startupinfo、creationflags是Windows接口特定的参数
+
+##### 3.1.1 Popen对象的属性
+stdin、stdout、stderr，仅当设置为PIPE可获得，否则为None
+pid子进程的进程id
+returncode：None表示进程还没结束，负值-N表示子进程已被信号N终止，其他是子进程的正常返回值
+
+##### 3.1.2 Popen对象的方法
++ poll()：返回当前returncode
++ wait()：等待子进程结束，返回returncode
++ kill()：用SIGKILL杀死子进程
++ terminate()：用SIGTERM结束进程
++ send_signal(sig)：给子进程发送一个信号量sig
++ communicate(input=None)：input是一个字符串，可以将其发给子进程作为stdin（需要是PIPE），而后等待子进程结束，返回(stdout, stderr)的二元组（需要是PIPE）。注意：当数据量比较大时，不要用该方法。
+
+#### 3.2 模块函数
+三个简易函数call、`check_call`、`check_output`
+它们的参数和Popen的一致，都等待子进程执行结束
+call直接返回returncode
+`check_call`仅当0才返回，其他都抛出CalledProcessError异常，可以访问该异常对象的returncode属性获取返回值
+`check_output`如果正常返回（0）返回执行命令的输出；如果返回值非0，则抛出CalledProcessError异常，可以访问该异常对象的returncode属性获取返回值，output属性获得标准输出
+
+### 4. tempfile模块
+用于创建临时文件（os.tmpfile使用的是系统调用，而tempfile模块是基于python而且有更多的选项可以控制）
+
+#### 4.1 模块属性
+template：所有临时名的前缀，默认是'tmp'
+tempdir：临时文件的存放目录，可以在使用本模块以下函数前设置，默认是环境变量TMPDIR, TMP, TEMP指定的目录，如果没有定义这些环境变量，则为当前工作目录。
+
+#### 4.2 模块函数
++ NamedTemporaryFile(mode='w+b', bufsize=-1, suffix='', prefix='tmp', dir=None, delete=True)
+mode和bufsize参数同open
+suffix、prefix、dir可以指定临时文件名的后缀、前缀、所在目录
+delete表示是否在文件对象关闭是删除文件
+返回的临时文件对象。
++ TemporaryFile(mode='w+b', bufsize=-1, suffix='', prefix='tmp', dir=None)
+参数同上，只不过返回的临时文件对象没有名字。创建的临时文件其他程序是无法看到的，因为它没有引用文件系统表，临时文件会在关闭后自动删除。
++ mkstemp(suffix='', prefix='tmp', dir=None, text=False)
+参数同上，如果text为True，则使用文本，而非二进制模式打开，创建一个临时文件（权限600）。返回是一个二元组(fd, name)，其中fd是打开临时文件的文件描述符，name是临时文件的全文件名。该临时文件需要自己去删除。
++ mkdtemp(suffix='', prefix='tmp', dir=None)
+参数同上，创建一个临时目录（权限700）。返回该临时目录的路径，该临时目录需要自己去删除
++ gettempdir()
+可以访问tempfile.tempdir属性
++ gettempprefix()
+可以访问tempdir.template属性
+
+### 5. 数据持久化
+#### 5.1 序列化
+pickle 和 marshal 模块
+
+##### 5.1.1 共性
+都可以将很多种Python数据类型序列化为字节流以及反序列化。
+
+序列化格式是Python特定的，与机器架构无关的。优点是没有外部标准的限制，可以跨平台使用，缺点是序列化结果无法用于非Python程序反序列化。
+pickle有三种序列化格式协议：
+0：ASCII表示，可读性好，但空间和时间性能都不好。（默认）
+1：旧式的二进制格式，兼容旧版本的Python。
+2：Python 2.3引入的新的二进制格式，序列化新式的class更有效。
+如果给的协议号为负或`pickle.HIGHEST_PROTOCOL`都表示使用最大的协议号。
+
+这两个模块只负责序列化，并不保证对数据源序列化时的安全性，并不处理持久化对象及其并发访问的问题。但也因此可以灵活的将其用于持久化文件、数据库、网络传输。
+
+##### 5.1.2 对比
+marshal是更原始的序列化模块，其存在的目的主要是为了支持Python的.pyc文件。
+
+pickle比起优越在，pickle会跟踪已序列化的对象，因此可以处理循环引用和对象共享；pickle可以序列化自定义对象，而想要反序列化必须使用相同的类定义；pickle的序列化格式针对Python版本向后兼容，而marshal为了支持Python的.pyc文件并不保证向后兼容。
+cPickle是pickle的C实现版，比其快1000倍。它们有着相同接口，除了Pickler()和Unpickler()这两个类都作为函数来实现，因此，就不能通过继承该类实现自定义的反序列化。而且，它们序列化成的字节流也是可以互通的。
+
+##### 5.1.3 pickle
+通常，要序列化就要创建Pickler对象并调用其dump()方法，要反序列化就要创建Unpickler对象并调用其load()方法。但pickle模块提供了更简易的函数：
++ dump(obj, file[, protocol])
+序列化，等价于Pickler(file, protocol).dump(obj)，obj是待序列化对象，file是一个带有write(str)方法的类文件对象，protocol就是上面提到的序列化格式协议。
++ load(file)
+反序列化，等价于Unpickler(file).load()，file是一个必须有read(size)和readline()方法的类文件对象，该函数能自动识别序列化协议格式。
+此外，还有
++ dumps(obj[, protocol])
++ loads(string)
+两个函数，用于直接序列化为字符串和从字符串中反序列化。
+
+pickle可以序列化的类型参考：<https://docs.python.org/2/library/pickle.html#what-can-be-pickled-and-unpickled>
+如果不能序列化，将抛出一个PicklingError异常。（但可能已经有数据写入file中了）
+如果序列化对象递归深度超过最大递归深度，将抛出RuntimeError异常，可以通过sys.setrecursionlimit()调整。
+
+如果使用Pickler对象和Unpickler对象进行序列化和反序列化，那么还可以在字节流上附加一个用于识别的标记，称为persistent id。
+Pickler对象有一个名为persistent_id的属性，可以赋值一个自定义的persistent_id(obj)函数，该函数或者返回一个作为persistent id的ASCII字符串，或者返回一个None。如果返回一个None，则与默认无标记一样，如果返回字符串，则序列化的字节流就会带上该标记用以Unpickler对象识别。例如：
+```
+def persistent_id(obj):
+    if hasattr(obj, 'x'):
+        return 'the value %d' % obj.x
+    else:
+        return None
+```
+Unpickler对象对应有一个persistent_load属性，该属性可以赋值为一个自定义的persistent_load(persid)函数，其中persid就是字节流中的标记字符串，返回一个反序列化对象。例如：
+```
+def persistent_load(persid):
+    if persid.startswith('the value '):
+        value = int(persid.split()[2])
+        return FancyInteger(value)
+    else:
+        raise pickle.UnpicklingError, 'Invalid persistent id'
+```
+这样，在调用Unpickler对象对象的load()函数就会自动检测标识进行反序列化。
+注：在cPickle模块里persistent_load属性可以被赋值为一个列表，那么Unpickler对象每发现一个persistent id就将其追加到列表中。
+
+#### 5.2 dbm
+##### 5.2.1 anydbm
+anydbm是多种不同dbm实现的统一接口，比如dbhash（需要bsddb），gdbm，dbm，dumbdbm。它能够通过whichdb模块选择系统已安装的“最好”的模块，只有当都没有安装时，才使用dumbdbm模块，它是一个简单的dbm的实现。
+
+open(filename, flag=’r’ [, mode])
+打开一个dbm文件，名为filename，如果文件已存在，就使用whichdb模块来确定其类型，并使用相应的模块。如果文件不存在，就按上面列出的顺序选择一个导入。
+flag表示文件的打开方式：’r’表示只读（已存在的文件），’w’表示读写（已存在的文件），’c’表示读写，如果文件不存在则创建，’n’表示总是创建一个空文件。
+mode表示创建dbm文件的访问权限，默认是0666（可能被umask修改）
+函数返回一个类字典对象，只不过键值都必须是字符串。（另外，不能print、不支持values()和items()方法）
+使用完毕后用其close()方法关闭。
+
+##### 5.2.2 whichdb
+whichdb模块只有一个函数：
+whichdb(filename)：如果指定文件名的文件不存在，返回None；如果无法确定返回空串；否则返回确定具体dbm模块名的字符串，如下：
+dbhash（需要bsddb）：BSD的dbm接口，dbhash是统一的接口，bsddb则是Berkeley DB库的接口（2.6后已废弃）
+gdbm：GNU的dbm接口，基于ndbm接口，但文件格式和dbm并不兼容。
+dbm：标准的Unix的ndbm接口（library属性，可以查看使用的库名），自动加.db扩展名
+dumbdbm：dbm接口的可移植实现（完全python实现，不需要外部库），自动加.dat或.dir扩展名
+
+##### 5.2.3 gdbm
+gdbm模块还有三个附加flag（并非所有版本都支持，可以通过查看模块的open_flags属性查看支持的flag），可以附加在上面四种flag之后：
+‘f’快速写模式（不同步文件），’s’同步模式（每次写都同步文件），’u’不对文件加锁。
+它返回的对象还支持以下方法：
+firstkey()和nextkey(key)用于遍历key，顺序是按内部的哈希值进行排序。
+reorganize()，压缩文件大小（因为默认的删除操作并不减小文件大小，而留作后续添加用）
+sync()，用于’f’模式打开的文件，进行手动同步。
+
+##### 5.2.4 dbhash/bsddb
+dbhash模块还有一个附加flag，可以附加在上面四种flag之后：
+‘l’加锁模式。
+它返回的对象还支持以下方法：
+first()、last()和next(key)、previous()用于遍历kv对，顺序是按内部的哈希值进行排序。
+sync()，进行强制同步。
+bsddb模块可以创建hash、btree和基于记录的文件。
+
+##### 5.2.5 dumbdbm
+dumbdbm.open的flag是被忽略的，总是以不存在则创建，存在则更新的模式打开。
+它返回的对象还支持以下方法：
+sync()，进行强制同步。
+
+#### 5.3 shelve
+shelf是一个字典式的持久化对象。和dbm不同于，字典的值可以是任意的可以用pickle处理的对象（字典的键认为普通的字符串）。实际上，它使用cPickle进行序列化，而后再用anydbm进行持久化。
+因为它使用pickle，所以同样不保证对数据源序列化时的安全性，也不支持对shelf对象的并发读写。
+
+open(filename, flag='c', protocol=None, writeback=False)
+创建一个shelf对象。filename是持久化的文件名（后面会自动添加扩展名，而且可以会创建多于1个的文件）。
+flag参数和anydbm模块一致，protocol参数和pickle模块一致
+writeback=False，表示模块自身负责同步文件的工作，但弊端是，对于shelf对象成员的修改，不能直接进行，而必须取出，修改，而后回赋才能完成（因为已经序列化为不可变的字符串）。如果设置为True，则表示用户自己负责shelf对象的同步文件的工作，而shelf对象的成员全部缓冲在内存，直到手动调用sync()或close()才同步到文件，这时可以直接对shelf对象成员进行修改，但缺点是需要消耗大量内存并且在close()时更慢（需要同步全部成员）。
+
+shelf对象处理支持字典的所有操作外，还支持以下方法：
+sync()，手动同步文件（清空cache）
+close()，同步并关闭shelf对象。
+
+此外，还可以从类字典对象来构造shelf对象：
+Shelf(dict, protocol=None, writeback=False)
+BsdDbShelf(dict, protocol=None, writeback=False)
+后者需要一个支持first(), next(), previous(), last() 和 set_location()这些操作的类字典（通常使用bsddb模块的函数创建）
+
+#### 5.4 数据库
+简单的可以使用DB-API 2.0 interface
+需要ORM可以使用SQLObject，SQLAlchemy，Django自带的ORM
+[参考](http://smartzxy.iteye.com/blog/680740)
+
+##### 5.4.1 MySQLdb
+[下载](https://pypi.python.org/pypi/MySQL-python/) [文档](http://mysql-python.sourceforge.net/MySQLdb.html)
+
+模块函数：
++ connect(host, user, passwd[, db, port, charset])
+连接数据库，返回一个连接对象，其中，数据库名db可以省略，可以使用连接对象的select_db方法，或使用sql命令use来指定；port是MySQL使用的TCP端口，默认是’3306’，charset是数据库编码。
++ escape_string(str)：
+
+连接对象的方法：
++ select_db(db)
++ cursor()：获得了操纵游标对象
++ query(sql)：不用游标对象，直接执行sql语句
++ commit()：对于支持事务的数据库引擎（如InnoDB引擎，而mysiam引擎则不是），执行对数据库的改动（增删改，不过，不包括truncate table），如果在数据库连接关闭前没有执行该方法提交，则这些改动不会生效。
++ rollback()：如果sql执行失败（会有异常抛出），需要回滚以确保数据库一致性。
++ close()：断开数据库连接
+
+游标对象的方法：
++ execute(query, args)：执行sql语句query（其中可以包含字符串格式化的占位符），args就是填充占位符的序列，返回受影响的行数。（之所以这样使用，而不是直接使用字符串格式化，是因为那样并不安全，容易受到SQL注入攻击）
++ executemany(query, args)：query同上，args是一个填充占位符的序列的序列，每一个内部序列都可以填充占位符成为一个完成的sql语句，该方法就对这个外部序列重复执行多次sql，返回受影响的行数。
++ nextset()：移动到下一个结果集，返回True，如果没有下一个则返回None。
++ callproc(procname, args)：执行一个存储过程，args为存储过程的参数列表，返回受影响的行数。
++ fetchall()：获取执行sql语句返回的结果集（若前面已经获取，则获取余下的），如果有结果，则返回一个元组的序列（每个元组表示一行）。
++ fetchmany([size])：返回指定行数的结果集，若未指定或指定的行数大于实际的行数，则返回cursor.arraysize（默认是1）行数据
++ fetchone()：返回结果集中的下一行。
++ scroll(value, mode=’relative’)：移动游标value行，’relative’表示相对当前行，’absolute’表示相对第一行。
++ close()：
+此外，还有一个只读属性：rowcount，表示执行execute后受影响的行数。
+
+##### 5.4.2 sqlite3
+[文档](https://docs.python.org/2/library/sqlite3.html)
+<http://www.cnblogs.com/hongten/p/hongten_python_sqlite3.html>
+
+模块函数：
++ connect(database[, timeout, detect_types, isolation_level, check_same_thread, factory, cached_statements])
+获得一个连接对象。database是一个数据库文件名，或者用":memory:"表示使用RAM而不是磁盘文件作为数据库。当多个连接访问一个数据库时，如果其中一个进行写操作就会对数据库加锁直到事务提交，timeout就是等锁的时间，如果超时就抛出异常，默认是5.0秒。本地SQLite值支持TEXT, INTEGER, REAL, BLOB 和 NULL 这些类型，如果还需其他，则需要你自己去支持，detect_types默认是0，你可以设置为sqlite3.PARSE_DECLTYPES、sqlite3.PARSE_COLNAMES的组合
+
+连接对象的方法：
++ cursor()：获得了操纵游标对象
++ commit()：保存更改
++ close()
+
+游标对象的方法：
++ execute(query, args)：执行一个非标准的SQL语言的变种。query可以使用“?”作为占位符，args就是填充占位符的序列，返回一个迭代器，每次迭代结果集中的一行。
++ executemany(query, args)：执行多条非标准SQL。args就是填充占位符序列的序列
++ fetchone()：返回结果集中的下一行。
+
+#### 5.5 其他
++ ZODB：一个健壮的、多用户和面向对象的数据库系统，它能够存储和管理任意复杂的python对象，并提供事务操作和并发控制支持；
++ Durus：Quixote团队的作品，可以看作是轻量级版本的ZODB实现，纯开源的Python实现，并提供一个可选的C语言插件类；
++ Missile BD：是一种Python的、简洁高效的DBMS，适用于Stackless Python环境。同时需要说明的是它是并发性能极高的Eurasia3项目的一个子项目；
++ ODB（spugdb）:一个轻量级的纯Python实现的Python对象数据库系统，支持嵌套事务、对象模型、游标和一个简单的类似X-Path的查询语言，它的前身只是围绕Berkeley DB做的Python包装，现在已逐步淘汰对Berkeley DB的支持；
++ PyPerSyst：它是由用java实现的Provayler到Python的移植实现，PyPerSyst将整个对象系统保存在内存中，通过将系统快照pickle到磁盘以及维护一个命令日志（通过日志可以重新应用最新的快照）来提供灾难恢复。因此PyPerSyst应用程序会受到可用内存的限制，但好处是本机对象系统可以完全装入到内存中，因而速度极快；
++ PyDbLite：Python实现的快速的、无类型的内存数据库引擎，使用Python语法代替SQL语法，支持Python2.3以及以上版本，同时提供对SQLite和MySQL支持；
++ buzhug：Python实现的快速的数据库引擎，使用Python程序员觉得直观的语法，数据存储在磁盘上；
++ Gadfly：它是一个简单的关系数据库系统，使用Python基于SQL结构化查询语言实现。
+
+### 6. 相关模块
+tarfile        访问tar归档文件，支持压缩
+zipfile        访问zip归档文件的工具
+gzip/zlib        访问GNU zip（gzip）文件（压缩需要zlib模块）
+bz2            访问bz2格式的压缩文件
+shutil        高级文件访问功能（比如复制文件、复制文件权限、目录树递归复制）
+csv            访问csv文件（逗号分隔文件）
+filecmp        比较目录和文件
+fileinput        多个文本文件的行迭代器
+glob/fnmatch    Unix样式的通配符（`*`和?）匹配功能（但并不支持~）
+socket        网络文件访问
+urllib        通过URL建立到指定web服务器的网络连接
+
+## 第九章. 异常
+面对错误，应用程序应该成功的捕获并处置，而不至于灾难性的影响其执行环境。
+
+### 1. 异常结构
+try-except-else-finally
+```
+try:
+    代码块
+except (ValueError, TypeError)[, e]:        # 处理多个异常
+    代码块
+except IOError[, e]:                    # 带错误原因e
+    print 'file open error', e
+    代码块
+except:                            # 捕获所有异常，但无法获得错误原因（除非通过sys.exc_info()获得），因此推荐捕获Exception异常，从而获得异常原因
+    代码块
+else:                       # 可选的，当try块中没有发生任何异常时执行
+    代码块
+finally:                    #  可选的，无论是否有异常总会执行
+    代码块
+```
+其中，
+except可以通过使用 raise 语句重新引发一个异常；
+except可以0个或多个，分别表示捕获不同异常的处理，每个可以处理任意多个异常（放在一个元组中）；
+e 是一个捕获异常类的一个实例，使用str(e) 总能得到一个良好可读的错误原因；该实例是一个可遍历对象，可以通过遍历获取到构造该异常使用的元组；
+except和finally至少有一个，在较老版本中两者无法兼容；
+如果try中有return，那么只要程序运行正常，也会先执行finally，再return
+
+#### 1.1 异常处理
+##### 1.1.1 无异常
+正常执行 try 块所有代码；如果有 else，执行对应代码块；最后，执行finally
+##### 1.1.2 有异常
+忽略 try 块中触发点之后的剩余代码；
+寻找第一个匹配的处理器except（当前域没有匹配的except，会退栈跳到调用者寻找，如果在顶层仍为找到，这个未处理的异常会导致程序退出，Python解释器会打印traceback信息，然后退出），执行代码块;
+最后，执行finally
+
+#### 1.2 特殊结构
+```
+try:
+    try:
+        ...
+    finally:
+        ...
+except ...:
+    ...
+```
+这个结构，优点是可以捕获finally中引发的异常，但问题是如果在finally中引发异常，如果未保存原有异常的上下文信息，将会丢失。另外，就是在异常处理之前，就已经将资源释放。并且，如果finally中引发了另一个异常，或由于return，break，continue语句而终止，原来的异常将会丢失而无法重新引发。
+
+#### 1.3 sys.exc_info()
+返回最近一次被捕获的异常信息
+该异常信息是一个三元组：(异常类，异常实例，traceback对象)
+其中traceback对象提供发生异常的上下文，如代码的执行frame和发生异常的行号等
+
+### 2. 抛异常
+raise SomeException, args, traceback
+三个参数都是逆序可选的
+如果有SomeException参数，则它必须是一个字符串、类或实例
+如有args，可以是一个对象（通常是一个字符串指示错误的原因），也可以是一个元组（一个错误编号，一个错误字符串，一个错误的地址，等）
+如果有traceback，是一个用于exception-normally的traceback对象，当你想重新引发一次是，第三个参数很有用（区分当前和先前的位置）
+
+**注**：
+如果SomeException是一个实例，那么就不能用其他的参数
+如果SomeException是一个字符串（不建议），那么就触发一个字符串异常
+如果这个args是一个异常类的实例，则不能有更多参数。如果其不是SomeException类或其子类的实例时,那么解释器就使用该实例的异常参数创建一个SomeException类的新实例
+如果args不是一个异常类的实例，那么它将作为SomeException类的实例化参数列表
+如果三个参数都没有，则引发当前代码块最近触发的一个异常，如果之前没有异常触发，会因为没有可以重新触发的异常而生成一个TypeError异常。
+
+### 3. 内置异常
+SystemExit 表示程序退出
+KeyoboardInterupt 表示Ctrl+C，用户中断
+
+BaseException 是所有异常的基类，Exception 是除 SystemExit 和 KeyoboardInterupt 之外所有异常的基类，StandardError是所有内建标准异常的基类，EnvironmentError是操作系统环境异常的基类
+
+创建一个新的异常仅需要从一个异常类中派生一个子类
+
+### 4. 断言
+断言是一句必须布尔判断为真的判断，否则就触发AssertionError
+assert expression[, arg]
+expression是这个判断的表达式，arg提供给AssertionError作为参数，进行异常构建
+
+### 5. 资源自动释放
+```
+with context_expr [as var]:
+    code_suite
+```
+例如：
+```
+with open(name, ‘rb’) as input:
+    data = input.read()
+```
+context_expr返回一个上下文管理对象赋值到var，仅能工作于志成上下文管理协议的对象，比如：
+file
+decimal.Context
+thread.LockType
+threading.Lock
+threading.RLock
+threading.Condition
+threading.Semaphore
+threading.BoundedSemaphore
+
+上下文对象是通过`__context__()`获得的
+而上下文对象本身就是上下文管理器，因此该对象就有上面的方法
+一旦获得了上下文对象，就会调用其`__enter__()`方法，完成with语句块执行前的准备工作，如果提供了as，就用该方法的返回值来赋值；而后执行with语句块，执行结束后都会调用上下文对象的`__exit__()`方法，该方法有三个参数：异常类，异常实例，traceback对象，如果没有异常发生，三个参数都是None；否则就被赋以异常的上下文环境，从而在`__exit__()`里处理异常，如果该函数返回一个布尔测试为False的值，则异常将抛给用户进行处理，如果想屏蔽这个异常，则返回一个布尔测试为True的值（如果没有异常返回的也是True）
+上下文管理器主要作用于共享资源，`__enter__()`和`__exit__()`方法基本和资源的分配和释放有关（如数据库连接、锁、信号量、状态管理、文件）。
+为了帮助你编写对象的上下文管理器，有一个contextlib模块，包含了实用的functions/decorators，这样即可以不用关心上面这些下划线方法的实现。
+
