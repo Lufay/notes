@@ -1,5 +1,19 @@
 # 常用功能命令
 
+### 实用配置
+```
+alias la='ls -A'
+alias ftplink='echo -n ftp://$HOSTNAME;readlink -f $1'
+export LANG=zh_CN.UTF8
+export LANGUAGE=zh_CN.GB18030:zh_CN.GB2312
+export TERM=xterm-color
+export PATH=.:$PATH
+export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
+export PYTHONPATH=.:$PYTHONPATH
+export JAVA_HOME=
+export CLASSPATH=.:$CLASSPATH
+```
+
 ### 查看当前目录下各个文件和目录的大小
 ```
 find -maxdepth 1  -name '*' -exec du -sh {} \;

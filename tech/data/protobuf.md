@@ -31,10 +31,10 @@ make install
 1. 定义IDL（编写.proto文件）
 2. 编译IDL为目标语言
 ```
-protoc -I=$SRC_DIR --cpp_out=$DST_DIR $SRC_DIR/addressbook.proto
+protoc -I=$SRC_DIR --cpp_out=$DST_DIR $SRC_DIR/$protofile.proto
 ```
 对于cpp而言，会编译出.h 文件和.cc 文件，其中实现了自己定义的数据结构各个字段的set/get以及序列化接口。
-
+对于python 使用，使用`--python_out=`替代`--cpp_out`，将生成一个`${protofile}_pb2.py`的文件
 
 ### 编写.proto文件
 #### 注释
@@ -221,5 +221,42 @@ importer对象有2个构造参数，一个是 source Tree 对象，该对象指�
 
 类 FileDescriptor 表示一个编译后的 .proto 文件；类 Descriptor 对应该文件中的一个 Message；类 FieldDescriptor 描述一个 Message 中的一个具体 Field。
 通过 Descriptor，FieldDescriptor 的各种方法和属性，应用程序可以获得各种关于 Message 定义的信息。比如通过 `field->name()` 得到 field 的名字。这样，您就可以使用一个动态定义的消息了。
+
+### python调用
+生成的py文件就是一个python 的模块
+
+#### message
+message成为一个python 的class（不可被继承），其中域就成为一个实例的public数据成员
+FromString(s)：静态方法，从一个二进制字符串反序列化一个实例
+
+##### 方法
+`HasField('field_name')`：检查指定域是否被赋值
+`ClearField('field_name')`：清除指定域被赋的值
+`__str__()`
+IsInitialized()：检查是否所有的required 域都被赋值
+`CopyFrom(other_msg)`：拷贝message
+`MergeFrom(other_msg)`：融合message
+Clear()：清空message
+SerializeToString()：序列化为字符串（二进制字符串）
+ParseFromString(data)：从一个给定的二进制字符串反序列化
+
+#### 标量域
+对于普通类型可以直接赋值，也可以直接读默认值
+对于message嵌套类型，可以直接读写嵌套类型内的普通类型成员——未赋值嵌套成员之前，嵌套message的HasField为false，赋值（仅限写，读无效果）后为true
+
+#### repeated 域
+对于普通类型可以直接使用list的接口
+对于message嵌套类型
+可以调用该数据成员的add()方法获取一个新增成员的实例，也可以使用`add(**kwargs)`直接实例化并添加
+支持extend方法，它能从list中的实例拷贝到message中
+
+#### map 域
+类似dict用法
+引用一个未赋值的key，将得到zero/false/empty 值
+
+#### enum 域
+成为python 中的拥有整数值的符号常量（在对应message的名字空间内，如果没有，就是模块级常量），整数的值就是proto文件中指定的值。
+枚举的名字空间下有一个静态方法Name(val)，可以根据值获取到枚举的名字
+
 
 

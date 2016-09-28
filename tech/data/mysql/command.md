@@ -1,7 +1,7 @@
 # MySQL 命令
 
 ### 数据库
-创建：`create database 'DBname' [if not exists 'DBname'] [DEFAULT CHARSET utf8 COLLATE utf8_general_ci];`
+创建：`CREATE DATABASE [IF NOT EXISTS] db_name [DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci];`
 删除：`drop database  'DBname' [if exists 'DBname'];`（加上条件，则如果数据库不存在，仅仅是警告，而不是错误）
 显示：`show databases;`
 声明默认数据库：`use 'DBname'`

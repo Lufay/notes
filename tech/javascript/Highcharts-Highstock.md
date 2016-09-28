@@ -84,6 +84,7 @@ $("#container").highcharts("StockChart", {
         floating: false         //浮动后不占位置
     },
     exporting: {                //导出按钮
+        enabled: false
     },
     plotOptions: {
         line: {

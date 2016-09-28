@@ -1186,7 +1186,7 @@ fromkeys(iterkey, value=None)方法：返回一个字典，字典的值来自于
 上述运算返回的结果的类型取决于左操作数，即本集合的类型。方法和操作符的区别，在于方法支持传入一个可迭代对象，而运算符只支持集合间的运算
 `copy()`方法：浅拷贝一个自己的副本，比构造函数要快
 
-### 2 其他内建类型
+### 2. 其他内建类型
 类型type
 None（等价于 NULL）
 文件file
@@ -1200,7 +1200,7 @@ staticmethod()
 super()
 property()
 
-### 3 内部类型
+### 3. 内部类型
 #### 代码
 代码对象是编译过的Python源代码片段，是可执行对象。通过调用内建函数compile()可以得到代码对象。代码对象可被exec命令或eval()内建函数执行。对象本身不含任何执行环境信息，在被执行时动态获得上下文。事实上，代码对象是函数的一个属性（函数还有其他属性，如函数名、文档字符串等）
 
@@ -1421,6 +1421,27 @@ def func_name([args]):
 参数是引用传递，所以对于可变对象，函数内的改变影响原始对象，而不可变对象则不影响
 ##### 1.1.1 默认参数
 参数可以用赋值符给以默认参数，同样必须在所有非默认参数之后
+**注意：函数的默认值是在函数定义时确认，并将该值存储起来，当默认值启用时，就使用该存储起来的值，类似于类的静态变量；有个问题就是如果该默认值是一个可变对象，那么如果函数中对这个使用默认值的参数进行的修改就会影响到这个存储起来的值，从而对下次使用默认值的函数调用造成影响**
+例如：
+```
+def foo(a=[]):
+    a.append('aa')
+    return a
+
+print foo() # 多次调用的结果不同
+```
+虽然和直觉相违，但也可以利用该特性做一些事情，比如记录一个函数距上次调用经过的时间：
+```
+import time
+def dur( op=None, clock=[time.time()] ):
+    if op != None:
+        duration = time.time() - clock[0]
+        print '%s finished. Duration %.6f seconds.' % (op, duration)
+    clock[0] = time.time()
+```
+即利用列表默认值，实现了函数静态变量的特性
+
+
 ##### 1.1.2 可变参数
 可变长参数必须在其他参数之后（并且关键字可变参数需在位序可变参数之后），例如：
 ```
@@ -1439,10 +1460,12 @@ func(*tuple_args, **dict_args)
 函数定义就声明了一个函数对象，函数名就是这个函数对象的引用，可以赋给其他变量或作为参数传递
 
 支持函数嵌套定义，因为函数是对象，内部定义的函数相当于一个在外部函数的作用域内函数对象实例
-函数嵌套定义的作用是内部函数可以访问外部函数作用域内的变量，从而形成闭包
+函数嵌套定义的作用是内部函数可以访问外部函数作用域内的变量，从而形成闭包（这些被引用的外部变量被称为自由变量）
 
 #### 2.1 属性
-`__doc__`、version
+`__doc__`
+version
+`func_closure`
 
 ### 3. 装饰器
 也是一种函数，如果装饰器没有参数，那么其参数是被装饰的函数(对象)，返回被装饰后的函数(对象)；如果装饰器有参数，则通过参数调用，返回一个无参数的装饰器
@@ -1523,6 +1546,167 @@ module_name.function()
 不加前缀的`__name__`就表示显示当前模块的名字，一般作为主模块直接执行的`__name__`都是`__main__`，而被import的模块使用`__name__`则显示该模块的模块名。
 
 查找模块的路径？
+
+### 1. 作用域
+在函数中定义的变量拥有函数级作用域（局部作用域），在函数外定义的变量拥有模块级作用域（全局域）
+当搜索一个标识符的时候,python 先从局部作用域开始搜索。如果在局部作用域内没有找到那个名字，那么就一定会在全局域找到这个变量否则就会被抛出 NameError 异常。
+
+#### 1.1 函数作用域
+如果函数没有对全局变量进行赋值，则可以直接读取全局变量的值；
+如果函数内对全局变量赋值，则视为定义了一个局部变量隐藏了同名的全局变量，而如果在赋值前读取该变量的值将抛出 UnboundLocalError 异常；
+想要真正对全局变量赋值，需使用`global var[, var, ...]`声明（位于对全局变量的读写操作之前，否则会有警告）
+
+### 2. 常用模块
+#### time
+有两种时间表示方式：时间戳表示，元组表示
+1. 时间戳表示：从Epoch 而来的秒数（整数或浮点）
+1. 元组表示：9个整数分别表示年月日，时分秒，星期，一年中的第几天，DST
+在python中，有个`struct_time`就是这个9元组的一个表示
+
+##### 方法
+sleep(seconds)：休眠，seconds是一个浮点数
+time()：返回当前时间的浮点时间戳
+
+1. 时间戳 => 9元组格式
+gmtime([seconds])：不提供时间戳，则使用当前时间；使用UTC时间，亦即GMT
+localtime([seconds])：不提供时间戳，则使用当前时间；使用本地时间
+1. 时间戳 => 字符串
+ctime([seconds])：转换为形如'Sat Jun 06 16:26:11 1998'的字符串；无参使用localtime()的返回值
+1. 9元组格式=> 时间戳 
+mktime(tuple)：转换为浮点时间戳
+1. 9元组格式 => 字符串
+asctime([tuple])：转换为形如'Sat Jun 06 16:26:11 1998'的字符串；无参使用localtime()的返回值
+strftime(format[, tuple])：format, 不提供元组使用localtime()的返回值
+1. 字符串 => 9元组格式
+strptime(string, format)：parse
+其中format的格式化符号有：
+  %y 两位数的年份表示（00-99）
+  %Y 四位数的年份表示（000-9999）
+  %m 月份（01-12）
+  %d 月内中的一天（0-31）
+  %H 24小时制小时数（0-23）
+  %I 12小时制小时数（01-12）
+  %M 分钟数（00=59）
+  %S 秒（00-59）
+
+  %a 本地简化星期名称
+  %A 本地完整星期名称
+  %b 本地简化的月份名称
+  %B 本地完整的月份名称
+  %c 本地相应的日期表示和时间表示
+  %j 年内的一天（001-366）
+  %p 本地A.M.或P.M.的等价符
+  %U 一年中的星期数（00-53）星期天为星期的开始
+  %w 星期（0-6），星期天为星期的开始
+  %W 一年中的星期数（00-53）星期一为星期的开始
+  %x 本地相应的日期表示
+  %X 本地相应的时间表示
+  %Z 当前时区的名称
+  %% %号本身
+
+#### datetime
+实现了日期和时间的类型，用于算术运算
+类date、time、datetime（继承date）、timedelta
+
+##### date
+date(year, month, day)
+参数必须在取值范围内（year 必须在[datetime.MINYEAR, datetime.MAXYEAR]区间中）
+hashable（可用于字典key）
+
+支持比较
+
+###### 类属性
+min/max
+reresolution：最小日期差（timedelta(days=1)）
+###### 实例属性（只读）
+year、month、day
+###### 类方法
+today()：返回本地的当天日期对象
+fromtimestamp(timestamp)：将一个时间戳转换为日期对象
+fromordinal(ordinal)：将一个日期序数转换为日期对象，以date(1, 1, 1)为1，date(1, 1, 2)为2，以此类推
+###### 实例方法
+replace(year=None, month=None, day=None)：修改日期中某部分的值
+timetuple()：返回`time.struct_time`类型的9元组
+toordinal()：返回日期序数
+weekday()：返回星期（0是周一，6是周末）
+weekday()：返回星期（1是周一，7是周末）
+isoformat()：返回形如'2002-12-04'的字符串，也就是str()函数的返回结果
+ctime()：返回ctime格式字符串
+strftime(format)：返回指定格式的字符串
+`__format__(format)`：支持str对象的format 方法
+
+##### time
+time([hour[, minute[, second[, microsecond[, tzinfo]]]]])
+和date类构造方法一样，构造参数必须在指定区间之内
+hashable（可用于字典key）
+
+支持比较
+注意：不支持算术运算
+
+###### 类属性
+min/max
+reresolution：最小时间差（timedelta(microseconds=1)）
+###### 实例属性（只读）
+hour、minute、second、microsecond、tzinfo
+###### 实例方法
+replace(hour=None, minute=None, second=None, microsecond=None, tzinfo=None)：修改time 中某部分的值
+isoformat()：返回形如'00:00:00.000000'的字符串，也就是str()函数的返回结果
+strftime(format)：返回指定格式的字符串
+`__format__(format)`：支持str对象的format 方法
+
+##### datetime
+datetime(year, month, day[, hour[, minute[, second[, microsecond[,tzinfo]]]]])
+和date类构造方法一样，构造参数必须在指定区间之内
+hashable（可用于字典key）
+
+支持比较
+
+###### 类属性
+min/max
+reresolution：最小时间差（timedelta(microseconds=1)）
+###### 实例属性（只读）
+year、month、day、hour、minute、second、microsecond、tzinfo
+###### 类方法
+today()：返回本地的当前的datetime对象
+fromtimestamp(timestamp[, tz])：将一个时间戳转换为本地的datetime 对象
+fromordinal(ordinal)：将一个日期序数转换为datetime 对象（时分秒均为0，tz为None），以date(1, 1, 1)为1，date(1, 1, 2)为2，以此类推
+now([tz])：如果不带tz参数，相当于today()方法，如果带tz参数，则其为tzinfo的一个子类实例，这样当前时间将被转化为指定的time zone。
+utcnow()：返回当前的UTC datetime 对象
+utcfromtimestamp(timestamp)：UTC 版本的fromtimestamp
+combine(date, time)：组合date 对象和time 对象（包括其tz信息）为一个datetime 对象
+strptime(dateString, format)：将一个字符串按指定格式转化为一个datetime 对象
+###### 实例方法
+replace(year=None, month=None, day=None, hour=None, minute=None, second=None, microsecond=None, tzinfo=None)：修改datetime 中某部分的值
+timetuple()：返回`time.struct_time`类型的9元组
+toordinal()：返回日期序数
+weekday()：返回星期（0是周一，6是周末）
+weekday()：返回星期（1是周一，7是周末）
+isoformat(sep='T')：返回形如'2002-12-04T00:00:00.000000'的字符串，sep必须是单字符用于分隔时间和日期，如果sep=' '也就是str()函数的返回结果
+ctime()：返回ctime格式字符串
+strftime(format)：返回指定格式的字符串
+`__format__(format)`：支持str对象的format 方法
+date()：返回一个date 对象
+time()：返回一个time 对象（tz为None）
+timetz()：返回一个带tz 的time 对象
+astimezone(tz)：将时间转换到指定的tz 上
+utctimetuple()：UTC 版本的timetuple
+
+##### timedelta
+timedelta(days=0, seconds=0, microseconds=0, milliseconds=0, minutes=0, hours=0, weeks=0)
+日期差值类型
+实例化参数支持整数、浮点数、正数负数
+由于内部只保存days、seconds、microseconds这三个属性，其他的参数将被转换到这三个属性上（浮点数可能会导致微秒级的精度丢失），并正规化到合理的区间（正规化的顺序是从microseconds 到 days）
+hashable（可用于字典key）
+
+该对象支持+-运算，支持对乘整数和整除整数，支持取反，abs，比较
+还可以对date/datetime对象进行加减运算
+
+`total_seconds()`返回时间区间的秒数（浮点）
+
+
+#### calendar
+isleap(year)：是否是闰年
+
 
 ## 第八章. IO相关
 ### 1. 文件对象file
