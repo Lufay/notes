@@ -106,12 +106,15 @@ nohup ./bin/mysqld_safe --defaults-file= $INSTALL_DIR/etc/my.cnf &
 ```
 mysqladmin -u root password 'new-password'
 ```
+
 ### 登录MySQL客户端
 ```
 ./bin/mysql -u user -p[passwd] -h IP -P port -S ./tmp/mysql.sock
 ```
 passwd省略则使用交互式输入密码，但-p不可省略（注意：-p和passwd之间不要有空格 ）
 可以直接使用标准输入导入SQL脚本
+**注：如果不加IP，也就是使用localhost登录，则不是通过网络IP:port进行登录，而是通过本地socket进行登录**
+
 ### 关停MySQL
 ```
 ./bin/mysqladmin -u  user -p  [passwd] -h IP -P port shutdown

@@ -8,7 +8,7 @@
 + 远程仓库（remote repository）
 
 这几个概念的关系：
-![](./1.pgn)
+![](./1.png)
 ![](http://www.zhanglian2010.cn/wp-content/uploads/2014/07/XwVzT.png)
 
 ### 比较
@@ -78,7 +78,7 @@ HEAD表示当前版本，也就是最近一次提交的那个版本（可以将H
 <rev>~3表示HEAD^^^
 对于merge结点，可能有多个父节点则用<rev>^<n>表示第n 个父节点，特别的，n=0时表示<rev>本身。
 
-表示版本集合：
+版本集合
 <rev>，表示包括<rev>及其祖先节点
 ^<rev>，表示从集合中剔除<rev>及其祖先节点
 <rev1>..<rev2>，表示从^<rev1> <rev2>，即从<rev2>及其祖先节点的集合中剔除<rev1>及其祖先节点（如果rev1或rev2缺省，则表示HEAD）
@@ -124,9 +124,10 @@ git log
 由近及远给出提交日志，其中一长串十六进制字符串是commit id（使用SHA1计算）
 使用-N 参数只显示最近N 次提交记录；
 使用--author 仅显示指定作者相关的提交；--committer 仅显示指定提交者相关的提交
-使用--pretty=oneline参数，将一次提交都显示在一行；
 使用--graph选项看到分支合并图；
-使用--abbrev-comit 仅显示 SHA-1 的前几个字符，而非所有的 40 个字符
+适用--oneline 等价于--pretty=oneline --abbrev-commit；
+使用--pretty=oneline参数，将一次提交都显示在一行；
+使用--abbrev-commit 仅显示 SHA-1 的前几个字符，而非所有的 40 个字符；
 
 ```
 git reflog
@@ -173,7 +174,26 @@ git checkout $b_name
 git merge $b_name
 ```
 合并分支`$b_name` 到当前分支（如有冲突，需先解决冲突，再提交，合并完成）
-通常合并使用Fast forward模式，但删除分支后会丢掉分支信息，可以使用--no-ff选项禁用Fast forward模式，由于禁用后，合并就要创建一个新的commit，所有需要加上-m "xxx"选项
+通常合并使用Fast forward模式（如果没有合并冲突，就直接移动指针，不新建合并提交，看起来就好像没有这次分支合并一样），可以使用--no-ff 选项禁用Fast forward模式，禁用后，合并就要创建一个新的commit，所以需要加上-m "xxx"选项
+Git用`<<<<<<<`，`=======`，`>>>>>>>`标记出不同分支的内容，将冲突合并并去掉该标记后重新提交
+如果不想解决此次merge冲突，退回到merge前状态，使用`git reset --merge`
+
+```
+git rebase [--fork-point <fp>] [--onto <newbase>] [<upstream> [<branch>]]
+```
+如果指定<branch>，将先进行git checkout 切换到该分支；
+如果<upstream>未指定，将使用当前分支配置中的remote 和 merge 项；
+如果指定fork-point，则<fp>..HEAD，否则<upstream>..HEAD 的改动都将被保存起来；
+如果指定onto，当前分支将被reset 到<newbase>，否则reset 到 <upstream>；
+而后将上面保存起来的若干个提交重新应用于当前分支，已经完成相同的文本改动将被跳过；
+如果遇到冲突，该过程将中止，需要手动解决冲突，而后git rebase --continue 继续；或者git rebase --skip 跳过造成冲突的commit；git rebase --abort 将终止rebase，并回到原分支。
+
+```
+git cherry-pick <commit>...
+```
+将若干个提交的变更应用于当前分支
+<commit>... 默认不按commit 提交集合解析，除非明确使用集合运算符
+
 
 ### 恢复、回退（前进）、回滚
 ```
@@ -297,19 +317,22 @@ git push不会推送标签(tag)，除非使用--tags选项
 --recurse-submodules=check|on-demand
 
 #### 拉取远程库
-如果远程版本已更新，push失败，就要先拉取远程库并试图合并：
+如果远程版本已更新，push失败，就要先拉取远程库并试图合并（默认的行为是fetch+merge，如果使用-r/--rebase 选项，则使用fetch+rebase 命令）
 ```
-git pull
+git pull [$remote_repo [+][$remote_b_name[:$local_b_name]]]
 ```
+如果因为自动合并失败导致pull失败，则需要先解决冲突，再提交，再push
+`$remote_repo` 和 `$remote_b_name` 缺省的默认值是当前分支配置中的remote 和 merge 项
+
 只拉取不合并
 ```
-git fetch $remote_repo [$remote_b_name[:$local_b_name]]
+git fetch [$remote_repo [+][$remote_b_name[:$local_b_name]]]
 ```
+
 如果提示没有tracking信息导致拉取失败，可以使用下面的命令建立：
 ```
 git branch --set-upstream $b_name origin/$b_name
 ```
-如果因为自动合并失败导致pull失败，则需要  先解决冲突，再提交，再push
 
 
 ### tag管理

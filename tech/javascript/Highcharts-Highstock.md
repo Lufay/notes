@@ -61,7 +61,7 @@ $("#container").highcharts("StockChart", {
     yAxis: {},                  //y轴配置同x轴
     series: [{                  //数据，支持有多条数据，故配置为数组
         name: '',
-        data: []                //每个元素表示一个点（可以是[x,y]，也可以是一个obj）
+        data: []                //每个元素表示一个点（可以是[x,y]，也可以是一个obj，其中y 可以是null，表示数据断点）
     }],
     tooltip: {                  //坐标点的提示框
         formatter: function() {},

@@ -42,23 +42,25 @@ db.createCollection("mycoll", {capped:true, size:100000})
 
 
 ## 数据类型
-|数据类型    描述
-|---|---|
-|Null | 用于创建空值。 |
-|String | 字符串。存储数据常用的数据类型。在 MongoDB 中，UTF-8 编码的字符串才是合法的。 |
-|Integer | 整型数值。用于存储数值。根据你所采用的服务器，可分为 32 位或 64 位。 |
-|Double | 双精度浮点值。用于存储浮点值。 |
-|Boolean | 布尔值。用于存储布尔值（真/假）。 |
-|Min/Max keys | 将一个值与 BSON（二进制的 JSON）元素的最低值和最高值相对比。 |
-|Arrays | 用于将数组或列表或多个值存储为一个键。 |
-|Object | 用于内嵌文档。 |
-|Symbol | 符号。该数据类型基本上等同于字符串类型，但不同的是，它一般用于采用特殊符号类型的语言。 |
-|Timestamp | 时间戳。记录文档修改或添加的具体时间。 |
-|Date | 日期时间。用 UNIX 时间格式来存储当前日期或时间。你可以指定自己的日期时间：创建 Date 对象，传入年月日信息。 |
-|Object ID | 对象 ID。用于创建文档的 ID。 |
-|Binary Data | 二进制数据。用于存储二进制数据。 |
-|Code | 代码类型。用于在文档中存储 JavaScript 代码。 |
-|Regular expression | 正则表达式类型。用于存储正则表达式。 |
+|数据类型 | 描述 | 类型值 |
+|---|---|---|
+|Double | 双精度浮点值。用于存储浮点值。 | 1 |
+|String | 字符串。存储数据常用的数据类型。在 MongoDB 中，UTF-8 编码的字符串才是合法的。 | 2 |
+|Object | 用于内嵌文档。 | 3 |
+|Array | 用于将数组或列表或多个值存储为一个键。 | 4 |
+|Binary Data | 二进制数据。用于存储二进制数据。 | 5 |
+|Object ID | 对象 ID。用于创建文档的 ID。 | 7 |
+|Boolean | 布尔值。用于存储布尔值（真/假）。 | 8 |
+|Date | 日期时间。用 UNIX 时间格式来存储当前日期或时间。你可以指定自己的日期时间：创建 Date 对象，传入年月日信息。 | 9 |
+|Null | 用于创建空值。 | 10 |
+|Regular expression | 正则表达式类型。用于存储正则表达式。 | 11 |
+|JavaScript | 代码类型。用于在文档中存储 JavaScript 代码。 | 13 |
+|Symbol | 符号。该数据类型基本上等同于字符串类型，但不同的是，它一般用于采用特殊符号类型的语言。 | 14 |
+|JavaScript(with scope) | | 15 |
+|Integer(32bit) | 整型数值。 | 16 |
+|Timestamp | 时间戳。记录文档修改或添加的具体时间。 | 17 |
+|Integer(64bit) | 整型数值。 | 18 |
+|Min/Max keys | 将一个值与 BSON（二进制的 JSON）元素的最低值和最高值相对比。 | 255/127 |
 
 
 ## 操作
@@ -113,11 +115,75 @@ var = (<document>);
 
 ###### 查询
 ```
-db.<collection_name>.find(<query>)
+db.<collection_name>.find(<query>[, <project>])
+db.<collection_name>.findOne(<query>[, <project>])
 ```
-查询文档
-可以对结果再调用pretty()方法得到一个格式化的输出
-该方法返回所有文档，可以用findOne方法返回一个文档
+查询文档（前缀返回所有匹配文档，后者返回一个文档）
+query：筛选条件（见下）
+project：字段投影（相当于SQL的select 字段，例如`{"title":1,_id:0,ok:"$field"}`表示每个document 只返回title字段，不需要`_id`字段，该字段默认总是返回，另外，field字段改名为ok）
+
+1. 比较
+| 比较运算 | Mongo query格式 |
+|:--------:|:---------------:|
+| `==`  | `{<key>:{$eq:<value>}}` 或 `{<key>:<value>}` |
+| `!=`  | `{<key>:{$ne:<value>}}` |
+| `< `  | `{<key>:{$lt:<value>}}` |
+| `<=`  | `{<key>:{$lte:<value>}}` |
+| `> `  | `{<key>:{$gt:<value>}}` |
+| `>=`  | `{<key>:{$gte:<value>}}` |
+2. 集合
+`{ field: { $in: [<value1>, <value2>, ... <valueN> ] } }`
+注：field可以是数组字段，则数组字段至少有一个成员命中集合就可以
+valueX也可以是/pattern/的正则表达式
+`{ field: { $nin: [ <value1>, <value2> ... <valueN> ]} }`
+注：field可以是数组字段，则数组字段不存在一个成员可以命中集合
+如果field字段不存在也会命中
+2. 检查是否含有指定字段（含有字段包括字段值为null）
+`{ field: { $exists: <boolean> } }`
+2. 逻辑
+AND：`{key1:value1, key2:value2}`
+OR：`{$or: [{key1: value1}, {key2:value2}] }`
+NOT：`{ field: { $not: { $gt: 1.99 } } }`
+注：也命中不存在field字段
+$gt 不能换成$regex，但可以使用{$not: /pattern/}，在其他语言中可以用对应的正则对象，例如python中的Pattern对象，即re.compile()的返回
+NOR：`{$nor: [{key1: value1}, {key2:value2}] }`
+注：命中每个条件均不成立或keyX不存在
+3. 算术
+$add, $subtract, $multiply, $divide, $mod
+4. 字符串
+$toLower, $toUpper, $concat, $substr, $strcasecmp
+5. 日期
+$dayOfYear  Converts a date to a number between 1 and 366.
+$dayOfMonth Converts a date to a number between 1 and 31.
+$dayOfWeek  Converts a date to a number between 1 and 7.
+$year       Converts a date to the full year.
+$month      Converts a date into a number between 1 and 12.
+$week       Converts a date into a number between 0 and 53
+$hour       Converts a date into a number between 0 and 23.
+$minute     Converts a date into a number between 0 and 59.
+$second     Converts a date into a number between 0 and 59. May be 60 to account for leap seconds.
+$millisecond    Returns the millisecond portion of a date as an integer between 0 and 999.
+6. 正则
+`{<key>: /regular-expression/ }`
+或
+`{<key>: {$regex: "regular-expression", $options: "$i"}}`
+这里使用
+$i 的option表示不区分大小写
+m 多行查找
+x 空白字符除了被转义的或在字符类中的以外完全被忽略
+s 圆点元字符（.）匹配所有的字符，包括换行符
+支持在字符串数组字段直接使用
+7. 检查类型码
+`{"title" : {$type : 2}}`
+
+
+可以对结果再调用：
+pretty()：得到一个格式化的输出
+count()：获得返回的文档数
+limit(NUMBER)：返回指定个数的文档数
+skip(NUMBER)：跳过指定个数的文档
+sort({<KEY>: 1})：排序，val的1表示升序，-1表示降序
+forEach(function(u) {})
 
 ###### 增删改
 ```
@@ -164,7 +230,7 @@ multi：可选，是否更新全部匹配记录（默认false，只更新匹配�
 writeConcern：可选，抛出异常的级别
 注：后三项可以直接作为位序参数传入，例如：
 ```
-db.col.update( { "count" : { $gt : 15 } } , { $inc : { "count" : 1} },false,true );
+db.col.update({"count": {$gt: 15 } } , {$inc: {"count": 1} }, false, true);
 ```
 
 ```
@@ -179,4 +245,201 @@ db.<collection_name>.save(
 document：一个json格式的对象，如果带有`"_id"`字段，则表示update操作，否则表示insert操作
 writeConcern：可选，抛出异常的级别
 
+###### 聚合
+```
+db.<collection_name>.aggregate(AGGREGATE_OPERATION)
+```
+其中`AGGREGATE_OPERATION`可以是一个操作，也可以是多个操作组成的pipeline
 
++ 单一操作
+例如：`{$group: {_id: "$by_user", num_tutorial: {$sum: 1} } }`
++ pipeline
+```
+[
+    { $match: { score : { $gt : 70, $lte : 90 } } },
+    { $group: { _id: null, count: { $sum: 1 } } }
+]
+```
+
+支持的操作：
++ $project：字段投影（相当于SQL的select 操作）。可以用来重命名、增加或删除域，也可以用于创建计算结果以及嵌套文档。
++ $match：过滤数据（相当于SQL的where 操作），只输出符合条件的文档。$match使用MongoDB的标准查询操作。
++ $geoNear：输出接近某一地理位置的有序文档。
++ $limit：用来限制MongoDB聚合管道返回的文档数。
++ $skip：在聚合管道中跳过指定数量的文档，并返回余下的文档。
++ $sort：将输入文档排序后输出。
++ $unwind：将文档中的某一个数组类型字段拆分成多条记录，每条包含数组中的一个值（{ "result" : [{...}, {...}, ... ], "ok" : 1 }）。
++ $group：将集合中的文档分组，可用于统计结果。
+格式：`{$group : {_id : "$field", num_tutorial : {$sum : "$st_field"}}}`
+其中，`_id`指定聚合的键，即SQL中的group by，可以是多个字段组成的一个对象；`st_field`是聚合字段
+
+
+聚合运算：
+$sum    计算总和
+$avg    计算平均值
+$min    获取集合中所有文档对应值得最小值
+$max    获取集合中所有文档对应值得最大值
+$push    在结果文档中插入值到一个数组中
+$addToSet    在结果文档中插入值到一个数组中，但不创建副本
+$first    根据资源文档的排序获取第一个文档数据
+$last    根据资源文档的排序获取最后一个文档数据
+
+```
+db.<collection_name>.mapReduce(
+    function() {emit(key,value);},  //map 函数
+    function(key,values) {return reduceFunction},   //reduce 函数
+    {
+        out: collection,
+        query: document,
+        sort: document,
+        limit: number
+    }
+)
+```
+其中，
+在map 函数中，this指当前的文档对象，最后通过emit 函数传给reduce 函数作为kv参数
+reduce 函数，参数values 是一个数组
+out：统计结果存放集合 (不指定则使用临时集合,在客户端断开后自动删除)
+query：一个筛选条件，只有满足条件的文档才会调用map函数
+sort：在发往map函数前给文档排序，可以优化分组机制
+limit：发往map函数的文档数量的上限（要是没有limit，单独使用sort的用处不大）
+输出如下：
+```
+{
+	"result" : "out_collection",
+	"timeMillis" : 23,
+	"counts" : {
+		"input" : 5,
+		"emit" : 5,
+		"reduce" : 1,
+		"output" : 2
+	},
+	"ok" : 1
+}
+```
+result是上面指定的out collection
+timeMillis：执行花费的时间，单位毫秒为
+counts.input：满足条件发送到map函数的文档数
+counts.emit：在map函数中emit被调用的次数，也就是所有集合中的数据总量
+counts.ouput：结果集合中的文档个数
+ok：是否成功，成功为1
+err：如果失败，这里可以有失败原因，不过从经验上来看，原因比较模糊，作用不大
+
+#### Python pymongo
+```
+from pymongo import MongoClient
+client = MongoClient('mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]')
+client.close()
+```
+
+##### 数据库
+```
+client.database_names()
+```
+所有数据库列表
+
+```
+db = client.<db_name>
+db = client.get_database(name, codec_options=None, read_preference=None, write_concern=None, read_concern=None)
+```
+获得指定数据库实例，后者当需要设置option时使用
+
+```
+client.drop_database(name_or_database)
+```
+参数可以是字符串（`db_name`）也可以是一个db实例
+
+##### collection
+```
+db.collection_names(include_system_collections=True)
+```
+所有collection 的列表，默认包含system collection
+
+```
+collection = db.<collection_name>
+collection = db.get_collection(name, codec_options=None, read_preference=None, write_concern=None, read_concern=None)
+```
+获得指定的collection 实例，后者当需要设置option时使用
+
+```
+collection.rename(new_name, **kwargs)
+```
+collection改名
+
+```
+db.drop_collection(name_or_collection)
+collection.drop()
+```
+参数可以是字符串（`collection_name`）也可以是一个collection实例
+
+```
+db.create_collection(name, codec_options=None, read_preference=None, write_concern=None, read_concern=None, **kwargs)
+```
+通常collection会自动创建，该方法用于在需要指定特殊配置的collection
+特殊的配置通过关键字参数进行指定，这些关键字包括size（初始化大小bytes，对于capped collections，该大小是collection的最大size）capped（是否是capped collections）max（如果是capped的话，指定其对象个数的上限）
+
+##### 文档
+```
+collection.find(*args, **kwargs)
+collection.find_one(filter=None, *args, **kwargs)
+collection.find_one_and_delete(filter, projection=None, sort=None, **kwargs)
+collection.find_one_and_replace(filter, replacement, projection=None, sort=None, upsert=False, return_document=False, **kwargs)
+collection.find_one_and_update(filter, update, projection=None, sort=None, upsert=False, return_document=False, **kwargs)
+```
+查询文档
+可选的参数包括：
+`filter`可以是一个python 字典，筛选必须在结果集中满足的条件
+`projection`投影，可以是字段名列表，或一个字典（key是字段名，val是可以进行布尔求值的对象，True表示投影到结果集中，False表示不投影）
+skip 和 limit 可以分段返回
+sort 可以是(key, direction)二元组列表（其中direction可以是pymongo.DESCENDING）
+find返回一个类似字典列表的对象cursor.Cursor
+`find_one` 和`find_one_and_delete`返回单个文档（无匹配则返回None）
+`find_one_and_replace`的replacement是替换的文档对象；如果upsert为True，则无论是否找到一个对象，都会插入replacement；`return_document`的默认值是ReturnDocument.BEFORE，表示和`find_one`的返回相同，如果是ReturnDocument.AFTER，则返回的是replacement对象
+`find_one_and_update`的update是修改操作，例如`{'$inc': {'count': 1}, '$set': {'done': True}}`
+
+该对象还可以调用
+copy()：返回一个拷贝的实例
+count()：获得返回的文档数
+sort("field", pymongo.ASCENDING)：升序排列，降序使用pymongo.DESCENDING
+
+```
+collection.distinct(key, filter=None, **kwargs)
+```
+返回指定的文档字段不重复的值列表
+
+
+```
+collection.insert_one(document, bypass_document_validation=False)
+collection.insert_many(documents, ordered=True, bypass_document_validation=False)
+```
+`doc_dict`是一个python 字典
+
+```
+collection.replace_one(filter, replacement, upsert=False, bypass_document_validation=False, collation=None)
+collection.update_one(filter, update, upsert=False, bypass_document_validation=False, collation=None)
+collection.update_many(filter, update, upsert=False, bypass_document_validation=False, collation=None)
+```
+
+```
+collection.delete_one(filter, collation=None)
+collection.delete_many(filter, collation=None)
+```
+删除文档
+返回对象result，`result.deleted_count`可以查看删除文档个数
+
+```
+collection.count(filter=None, **kwargs)
+```
+collection中的文档数
+可以使用limit 和skip 的关键字参数进行分段
+
+```
+collection.group(key, condition, initial, reduce, finalize=None, **kwargs)
+collection.aggregate(pipeline, **kwargs)
+collection.map_reduce(map, reduce, out, full_response=False, **kwargs)
+inline_map_reduce(map, reduce, full_response=False, **kwargs)
+```
+
+
+注：文档对象如果想要使用json.dumps() 函数进行序列化，必须`del doc['_id']`，因为ObjectId类型无法序列化
+不过可以使用`bson.json_util.dumps()`进行序列化（对应的反序列化方法是`bson.json_util.loads()`）

@@ -14,6 +14,16 @@ export JAVA_HOME=
 export CLASSPATH=.:$CLASSPATH
 ```
 
+### 查看二进制文件依赖的动态链接库
+```
+ldd [-d|-r] bin
+```
+-d --data-relocs　　执行符号重部署，并报告缺少的目标对象（只对ELF格式适用）
+-r --function-relocs　　对目标对象和函数执行重新部署，并报告缺少的目标对象和函数（只对ELF格式适用）
+注：
+ldd本身不是一个程序，而仅是一个shell脚本，其依靠设置一些环境变量而实现的，比如`LD_TRACE_LOADED_OBJECTS(必要) LD_WARN LD_BIND_NOW LD_LIBRARY_VERSION LD_DEBUG`
+其实质是通过ld-linux.so（elf动态库的装载器）来实现的。
+
 ### 查看当前目录下各个文件和目录的大小
 ```
 find -maxdepth 1  -name '*' -exec du -sh {} \;

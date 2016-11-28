@@ -728,7 +728,51 @@ logging.config.fileConfig("logger.conf")
 logger = logging.getLogger("example01")
 ```
 
-#### 4.4 Profilers（性能测试器）
+#### 4.4 配置文件
+Python 支持对ini 格式的配置文件进行读取
+
+##### ini配置文件格式
++ 所有配置用[section]进行划分
++ 每个配置是"key : val"或"key = val"格式
+其中
+key不能以空白符开头，结尾的空白符会被滤掉；
+val可以分多行写，但从第二行需以空白符开头，开头和结尾的空白符都会被滤掉；
+val还可以%(key)s 引用本section 和DEFAULT section（全局的section）的指定key 的对应 val。
++ 以‘#’或';'开头的行是注释（不过#只能在行首才是有效，;可以跟在一行之后，但需要空白符分隔）。
+
+section名区分大小写，option名会统一将大写改为小写，因此不区分
+如果section重名会合并，如果option重名会覆盖（本section会覆盖default section的同名值）
+
+*注：并不支持option数组格式*
+
+##### ConfigParser 模块
+该模块主要有三个类：
+RawConfigParser、ConfigParser、SafeConfigParser，前者是后者的父类，RawConfigParser 不支持%(key)s 引用，SafeConfigParser 会比ConfigParser 有更多的合法性检查。
+
+以ConfigParser 为例：
+`ConfigParser([defaults[, dict_type[, allow_no_value]]])`：defaults是一个dict，key/val都必须是字符串，作为DEFAULT section；`dict_type`用于指定内置的字典类型，`allow_no_value`表示是否接受选项没有值，默认是False。
+
+`read(conf_file)`：读取ini配置文件，`conf_file`可以是文件名的字符串或列表，返回一个成功打开了的文件名的字符串列表
+readfp(file)：通过一个可读的文件对象读取配置
+
+write(file)：通过一个可写的文件对象进行写回
+
+sections()：获取ini文件中的section名列表
+options('section')：获取一个section中的key名列表（融合default section的）
+items('section', raw=Flase, vars=None)：获取一个section中的kv二元组列表，如果raw为True的话，就不再解释%(key) （融合default section的）
+get('section', 'key', raw=Flase, vars=None)：获取一个section中key对应的value值（str类型），如果提供vars参数，需要是一个字典对象，查找顺序为`vars->section->defaults`
+getint、getboolean、getfloat：同上，返回类型不同
+
+`has_section('section')`：指定的section是否存在
+`has_option('section', 'option')`：指定的section下的option是否存在
+
+`add_section('section')`：动态添加一个section
+`remove_section('section')`：动态删除一个section
+set('section', 'key', 'value')：动态设置
+`remove_option('section', 'key')`：动态删除一条配置
+
+
+#### 4.5 Profilers（性能测试器）
 Profile：老，Python实现，最慢
 hotshot：较新，C实现，生成结果时间长
 cProfile：新，C实现，分析时间长
@@ -853,7 +897,7 @@ step缺省或为None时默认为1；
 
 相关模块
 copy        提供浅拷贝copy(obj)和深拷贝deepcopy(obj)的能力（为了优化深拷贝的性能，对于包含的完全是不可变类型的对象，即使使用深拷贝，执行的也是浅拷贝）
-collections 高性能容器数据类型
+collections 高性能容器数据类型（例如，判断是否是可迭代对象：isinstance(obj, collections.Iterable)）
 
 ##### 1.2.1 字符串
 引号之间的字符集合（单引号和双引号均可）。
@@ -963,13 +1007,15 @@ UTF-16是定长的16位编码（易于读写）（这里的定长是针对基本
 1. 不要将Unicode字符串传给非Unicode兼容的函数（比如string模块，pickle模块。前者已经有Unicode版本，而后者可以不使用文本格式，而使用二进制格式）
 2. 在Web应用中，数据库这边只需确保每张表都用UTF-8编码即可。数据库适配器（如MySQLdb）需要考察其是否支持Unicode，以及需要哪些设置来配置为Unicode字符串。Web开发框架方面（如Django、`mod_python`、cgi、Zope、Plane）同样需要考察哪些配置来支持Unicode。
 
-注意：python代码中的字符串字面值是以文件本身的编码进行保存的，为了让python解析器识别其编码，需要在源码文件中的第一行或第二行指定（以cp936为例）：
+注意：python代码中的字符串字面值是以文件本身的编码进行保存的，为了让python解析器识别其编码，需要在源码文件中的第一行或第二行进行编码说明（以cp936为例）：
 ```
 # coding=cp936
 # -*- coding: cp936 -*-
 # vim: set fileencoding=cp936 :
 ```
 以上三种格式选一即可
+那么，当python解析器读入代码文件时，如果是Unicode字符串，就会先将文件中的字节串按指定的编码说明进行decode（如果文件本身编码和声明编码不兼容就可能报错）；如果是字节串，则会直接原样读取，但在和Unicode字符串进行连接操作进行decode 的时候，就会按文件中指定的编码说明进行decode（此时不兼容会报错）。
+因此，在python 代码中写中文，尽量使用Unicode字符串（因为能和大多数软件兼容）
 如果在命令行直接使用python，则需要考虑命令行的编码（Windows下为gbk，也即cp936）
 ******
 此外，python，还有一些非字符的编码集(non-character-encoding-codecs)：
@@ -1145,7 +1191,7 @@ pop(key[, default])方法：如果key存在，将key对应的键值对从字典�
 popitem()方法：按print序删除并返回一个元素（作为二元组形式），若字典为空，则抛出KeyError异常
 clear()方法：清空字典
 copy()方法：返回一个和自己一样的字典（浅拷贝）
-fromkeys(iterkey, value=None)方法：返回一个字典，字典的值来自于iterkey（可迭代对象），值都是value
+fromkeys(iterkey, value=None)方法：返回一个字典，字典的键来自于iterkey（可迭代对象），值都是value
 
 注意：
 + 不支持连接`+`和重复`*`操作
@@ -1415,6 +1461,7 @@ def func_name([args]):
 不支持函数重载，但可以通过type()确定参数类型来实现
 支持调用在前，定义在后
 函数调用时，小括号不可省略
+支持递归
 关键字参数：通过形参名来指定参数，可以不按顺序
 
 #### 1.1 参数
@@ -1460,12 +1507,19 @@ func(*tuple_args, **dict_args)
 函数定义就声明了一个函数对象，函数名就是这个函数对象的引用，可以赋给其他变量或作为参数传递
 
 支持函数嵌套定义，因为函数是对象，内部定义的函数相当于一个在外部函数的作用域内函数对象实例
-函数嵌套定义的作用是内部函数可以访问外部函数作用域内的变量，从而形成闭包（这些被引用的外部变量被称为自由变量）
+函数嵌套定义的作用是内部函数可以访问外部函数作用域内的变量，从而形成闭包
 
 #### 2.1 属性
-`__doc__`
-version
-`func_closure`
+`func_name`：和`__name__`一样，函数名
+`func_doc`：和`__doc__`一样，函数的文档注释
+`func_closure`：用于存储每个自由变量。如果没有自由变量，则为None；否则其值是一个元组，元组的每个元素是cell类型，存储一个自由变量
+`func_defaults`：函数的默认值元组
+`func_code`：code 对象
+
+#### 2.2 闭包
+闭包是一个定义于函数内部的函数，且其引用了外部函数的局部变量（这些被引用的外层局部变量被称为自由变量）
+注意1：如果内部函数定义了外部函数同名的局部变量，则同样会覆盖自由变量的引用
+注意2：不光内部函数本身引用，该内部函数的内部函数的引用，也算该层的一个自由变量
 
 ### 3. 装饰器
 也是一种函数，如果装饰器没有参数，那么其参数是被装饰的函数(对象)，返回被装饰后的函数(对象)；如果装饰器有参数，则通过参数调用，返回一个无参数的装饰器
@@ -1499,6 +1553,19 @@ dec = partial(lambda a,b:sub(a,b), b=1)     # 关键字绑定到匿名函数的b
 print inc(10)
 print dec(10)
 ```
+
+### 6. 生成器
+从句法上，生成器函数是一个带yield 语句的函数，该函数返回一个生成器。
+生成器可以看做迭代器的一个简易的实现（使用的是函数，而不是类），但更重要的是生成器可以实现协程。
+
+#### 6.1 生成器的执行
+从生成器函数调用者角度，调用生成器函数可以获得一个生成器（不会执行生成器函数的代码），生成器也是一个可迭代对象，可以调用生成器的next() 函数，以获得生成器函数下一次通过yield 返回的值，如果没有yield 语句或者遇到return 的话就抛出StopIteration 异常。
+从生成器角度，从第一次调用next() 函数，开始执行生成器函数代码，直到遇到yield 语句，该语句会挂起生成器的执行，保存函数状态，直到调用者再次调用next() 或send() 重新激活生成器，才恢复执行。
+
+#### 6.2 和生成器进行交互
+生成器的调用者可以通过send() 函数给生成器进行传值，可以通过close() 函数要求生成器退出（退出后再调用生成器的next() 方法将抛出StopIteration 异常）。
+生成器可以抛出异常
+为了使生成器获得调用者给其的传值，yield 语句会返回一个值，该值就是调用者传入的值（如果调用者使用的是next() 未传值，则该返回值为None）。
 
 
 ## 第六章. 对象和类
@@ -1557,14 +1624,21 @@ module_name.function()
 想要真正对全局变量赋值，需使用`global var[, var, ...]`声明（位于对全局变量的读写操作之前，否则会有警告）
 
 ### 2. 常用模块
-#### time
+#### time 模块
 有两种时间表示方式：时间戳表示，元组表示
-1. 时间戳表示：从Epoch 而来的秒数（整数或浮点）
-1. 元组表示：9个整数分别表示年月日，时分秒，星期，一年中的第几天，DST
+1. 时间戳表示：从Epoch 而来的秒数（整数或浮点，范围在1970 – 2038 之间）
+1. 元组表示：9个整数分别表示年月日，时分秒，星期（周一是0），一年中的第几天，DST
 在python中，有个`struct_time`就是这个9元组的一个表示
 
-##### 方法
-sleep(seconds)：休眠，seconds是一个浮点数
+> **GMT 格林威治标准时间（Greenwich Mean Time）**，是指位于伦敦郊区的皇家格林威治天文台的标准时间，因为本初子午线（Prime meridian）被定义为通过那里的经线。GMT也叫世界时UT。
+> **UTC 协调世界时间（Coordinated Universal Time）**, 又称世界标准时间，基于国际原子钟，误差为每日数纳秒。协调世界时的秒长与原子时的秒长一致，在时刻上则要求尽量与世界时接近（规定二者的差值保持在 0.9秒以内）。
+> **时区** 是地球上的区域使用同一个时间定义。有关国际会议决定将地球表面按经线从南到北，划分成24个时区，并且规定相邻区域的时间相差1小时。当人们跨过一个区域，就将自己的时钟校正1小时（向西减1小时，向东加1小时），跨过几个区域就加或减几小时。比如我大中国处于东八区，表示为GMT+8。
+> **夏令时 （Daylight Saving Time：DST）**，又称日光节约时制、日光节约时间或夏令时间。这是一种为节约能源而人为规定地方时间的制度，在夏天的时候，白天的时间会比较长，所以为了节约用电，因此在夏天的时候某些地区会将他们的时间定早一小时，也就是说，原本时区是8点好了，但是因为夏天太阳比较早出现，因此把时间向前挪，在原本8点的时候，订定为该天的9点(时间提早一小时)～如此一来，我们就可以利用阳光照明，省去了花费电力的时间，因此才会称之为夏季节约时间！
+> **闰秒** 是的，不只有闰年，还有闰秒。闰秒是指为保持协调世界时接近于世界时时刻，由国际计量局统一规定在年底或年中（也可能在季末）对协调世界时增加或减少1秒的调整。由于地球自转的不均匀性和长期变慢性（主要由潮汐摩擦引起的），会使世界时（民用时）和原子时之间相差超过到±0.9秒时，就把世界时向前拨1秒（负闰秒，最后一分钟为59秒）或向后拨1秒（正闰秒，最后一分钟为61秒）； 闰秒一般加在公历年末或公历六月末。
+> **Unix时间戳** 指的是从协调世界时（UTC）1970年1月1日0时0分0秒开始到现在的总秒数，不考虑闰秒。
+
+##### 函数
+sleep(seconds)：线程休眠，seconds是一个浮点数
 time()：返回当前时间的浮点时间戳
 
 1. 时间戳 => 9元组格式
@@ -1572,7 +1646,7 @@ gmtime([seconds])：不提供时间戳，则使用当前时间；使用UTC时间
 localtime([seconds])：不提供时间戳，则使用当前时间；使用本地时间
 1. 时间戳 => 字符串
 ctime([seconds])：转换为形如'Sat Jun 06 16:26:11 1998'的字符串；无参使用localtime()的返回值
-1. 9元组格式=> 时间戳 
+1. 9元组格式=> 时间戳
 mktime(tuple)：转换为浮点时间戳
 1. 9元组格式 => 字符串
 asctime([tuple])：转换为形如'Sat Jun 06 16:26:11 1998'的字符串；无参使用localtime()的返回值
@@ -1586,8 +1660,8 @@ strptime(string, format)：parse
   %d 月内中的一天（0-31）
   %H 24小时制小时数（0-23）
   %I 12小时制小时数（01-12）
-  %M 分钟数（00=59）
-  %S 秒（00-59）
+  %M 分钟数（00-59）
+  %S 秒（00-61）
 
   %a 本地简化星期名称
   %A 本地完整星期名称
@@ -1595,20 +1669,20 @@ strptime(string, format)：parse
   %B 本地完整的月份名称
   %c 本地相应的日期表示和时间表示
   %j 年内的一天（001-366）
-  %p 本地A.M.或P.M.的等价符
-  %U 一年中的星期数（00-53）星期天为星期的开始
-  %w 星期（0-6），星期天为星期的开始
+  %p 本地A.M.或P.M.的等价符，“%p”只有与“%I”配合使用才有效果
+  %U 一年中的星期数（00-53）星期天为星期的开始（第一个星期天之前的所有天数都放在第0周）
+  %w 星期（0-6），星期天（0）为星期的开始
   %W 一年中的星期数（00-53）星期一为星期的开始
   %x 本地相应的日期表示
   %X 本地相应的时间表示
   %Z 当前时区的名称
   %% %号本身
 
-#### datetime
+#### datetime 模块
 实现了日期和时间的类型，用于算术运算
 类date、time、datetime（继承date）、timedelta
 
-##### date
+##### date 类
 date(year, month, day)
 参数必须在取值范围内（year 必须在[datetime.MINYEAR, datetime.MAXYEAR]区间中）
 hashable（可用于字典key）
@@ -1617,7 +1691,7 @@ hashable（可用于字典key）
 
 ###### 类属性
 min/max
-reresolution：最小日期差（timedelta(days=1)）
+resolution：最小日期差（timedelta(days=1)）
 ###### 实例属性（只读）
 year、month、day
 ###### 类方法
@@ -1625,17 +1699,17 @@ today()：返回本地的当天日期对象
 fromtimestamp(timestamp)：将一个时间戳转换为日期对象
 fromordinal(ordinal)：将一个日期序数转换为日期对象，以date(1, 1, 1)为1，date(1, 1, 2)为2，以此类推
 ###### 实例方法
-replace(year=None, month=None, day=None)：修改日期中某部分的值
+replace(year=None, month=None, day=None)：修改日期中某部分的值，生成一个新的日期对象
 timetuple()：返回`time.struct_time`类型的9元组
 toordinal()：返回日期序数
 weekday()：返回星期（0是周一，6是周末）
-weekday()：返回星期（1是周一，7是周末）
+isoweekday()：返回星期（1是周一，7是周末）
 isoformat()：返回形如'2002-12-04'的字符串，也就是str()函数的返回结果
 ctime()：返回ctime格式字符串
 strftime(format)：返回指定格式的字符串
 `__format__(format)`：支持str对象的format 方法
 
-##### time
+##### time 类
 time([hour[, minute[, second[, microsecond[, tzinfo]]]]])
 和date类构造方法一样，构造参数必须在指定区间之内
 hashable（可用于字典key）
@@ -1645,7 +1719,7 @@ hashable（可用于字典key）
 
 ###### 类属性
 min/max
-reresolution：最小时间差（timedelta(microseconds=1)）
+resolution：最小时间差（timedelta(microseconds=1)）
 ###### 实例属性（只读）
 hour、minute、second、microsecond、tzinfo
 ###### 实例方法
@@ -1654,7 +1728,7 @@ isoformat()：返回形如'00:00:00.000000'的字符串，也就是str()函数�
 strftime(format)：返回指定格式的字符串
 `__format__(format)`：支持str对象的format 方法
 
-##### datetime
+##### datetime 类
 datetime(year, month, day[, hour[, minute[, second[, microsecond[,tzinfo]]]]])
 和date类构造方法一样，构造参数必须在指定区间之内
 hashable（可用于字典key）
@@ -1663,7 +1737,7 @@ hashable（可用于字典key）
 
 ###### 类属性
 min/max
-reresolution：最小时间差（timedelta(microseconds=1)）
+resolution：最小时间差（timedelta(microseconds=1)）
 ###### 实例属性（只读）
 year、month、day、hour、minute、second、microsecond、tzinfo
 ###### 类方法
@@ -1680,7 +1754,7 @@ replace(year=None, month=None, day=None, hour=None, minute=None, second=None, mi
 timetuple()：返回`time.struct_time`类型的9元组
 toordinal()：返回日期序数
 weekday()：返回星期（0是周一，6是周末）
-weekday()：返回星期（1是周一，7是周末）
+isoweekday()：返回星期（1是周一，7是周末）
 isoformat(sep='T')：返回形如'2002-12-04T00:00:00.000000'的字符串，sep必须是单字符用于分隔时间和日期，如果sep=' '也就是str()函数的返回结果
 ctime()：返回ctime格式字符串
 strftime(format)：返回指定格式的字符串
@@ -1691,7 +1765,7 @@ timetz()：返回一个带tz 的time 对象
 astimezone(tz)：将时间转换到指定的tz 上
 utctimetuple()：UTC 版本的timetuple
 
-##### timedelta
+##### timedelta 类
 timedelta(days=0, seconds=0, microseconds=0, milliseconds=0, minutes=0, hours=0, weeks=0)
 日期差值类型
 实例化参数支持整数、浮点数、正数负数
@@ -1703,9 +1777,59 @@ hashable（可用于字典key）
 
 `total_seconds()`返回时间区间的秒数（浮点）
 
-
-#### calendar
+#### calendar 模块
 isleap(year)：是否是闰年
+
+
+#### smtplib 模块
+smtplib 模块主要通过SMTP类和其子类`SMTP_SSL`定义一个SMTP 客户端会话对象来完成邮件发送
+
+`SMTP([host[, port[, local_hostname[, timeout]]]])`
+如果提供了host 参数，将自动调用connect() 方法，连接指定的SMTP 服务器
+port 是SMTP 服务的端口，默认是25
+
+`SMTP_SSL([host[, port[, local_hostname[, keyfile[, certfile[, timeout]]]]]])`
+其实例的行为和SMTP 的实例行为一致，仅当连接时必须使用SSL 时使用。
+如果host未指定，则使用localhost；如果port忽略，则使用默认的SSL端口465；
+
+##### 方法
+1. `set_debuglevel(level=False)`：默认非调试模式，不会输出调试信息。
+1. connect([host[, port]])：默认连接localhost 和默认的SMTP端口25。如果host以":number"结尾，则host将截去这部分，并解析为port。返回一个二元组(状态码，连接信息)
+1. login(user, password)：当需要身份验证时调用之。
+1. `sendmail(from_addr, to_addrs, msg[, mail_options, rcpt_options])`：发送邮件，只要有一个接收者正常接收，该函数就正常返回，否则将抛出异常。
+`from_addr` 参数的格式必须是 RFC 822 的地址字符串；`to_addrs` 参数是该格式的字符串列表（如果只有一个的话，也可以是一个字符串）。msg是一个字符串，必须按照指定的格式指定发件人、收件人、标题、内容、附件等信息，通常使用email模块的类进行构造。
+该函数返回一个字典，key是没有发送成功的`to_addr`，val是一个二元组`(SMTP_error_code, 错误信息)`
+1. quit()：结束SMTP 会话并关闭连接
+
+#### email 模块
+<https://docs.python.org/2/library/email.html>
+
+#### types 模块
+标准解释器的类型名
+
+##### 模块常量
+IntType
+FloatType
+StringType
+ListType
+TupleType
+DictType
+GeneratorType
+
+#### inspect 模块
+反射信息
+
+##### 函数
+ismodule()
+isclass()
+ismethod()
+isfunction()
+isgeneratorfunction()：判断是否是生成器函数
+isgenerator()：判断是否是一个生成器
+istraceback()
+isframe()
+iscode()
+isbuiltin()
 
 
 ## 第八章. IO相关
@@ -1798,6 +1922,15 @@ pardir        返回当前目录的父目录（’..’）
 + access(path, mode)            测试path，mode可以是`F_OK`不是是否存在，也可以是`R_OK`、`W_OK`、`X_OK`或其组合，表示是否具有该访问属性。
 + utime(path, (atime, mtime))    设置path的access时间和modified时间，如果第二个参数为None，则置为当前时间
 + stat(path)                    在指定的路径执行stat的系统调用，返回指定路径的相关信息
++ open(file, flags, mode=0777)  调用系统底层的文件打开调用，返回文件描述符（整数），flags包括（以下为Unix和Windows共有的）：
+`os.O_RDONLY`：只读
+`os.O_WRONLY`：只写
+`os.O_RDWR`：读写
+`os.O_APPEND`：追加
+`os.O_CREAT`：文件不存在则创建
+`os.O_EXCL`：文件已存在则打开失败
+`os.O_TRUNC`：如果可写，则打开后截断为0
++ fdopen(fd[, mode[, bufsize]])：将一个文件描述符封装为文件对象，mode和bufsize默认和文件描述符文件打开方式相同
 
 ##### 2.2.2 环境
 + getenv(key, default=None)    返回由字符串key指定的环境变量的值，如果不存在该环境变量则返回default
@@ -1917,11 +2050,15 @@ delete表示是否在文件对象关闭是删除文件
 + gettempprefix()
 可以访问tempdir.template属性
 
-### 5. 数据持久化
-#### 5.1 序列化
+### 5. fcntl
+#### 5.1 模块函数
+flock(fd, op)：fd可以是文件描述符，也可以是带有fileno()方法的文件对象；op可以是LOCK_SH（共享锁）、LOCK_EX（互斥锁）、LOCK_UN（移除该进程持有的锁），以上的锁可以和LOCK_NB联用，表示非阻塞请求。申请不到锁会阻塞当前进程。注：文件的 close() 操作会使文件锁失效；同理，进程结束后文件锁失效
+
+### 6. 数据持久化
+#### 6.1 序列化
 pickle 和 marshal 模块
 
-##### 5.1.1 共性
+##### 6.1.1 共性
 都可以将很多种Python数据类型序列化为字节流以及反序列化。
 
 序列化格式是Python特定的，与机器架构无关的。优点是没有外部标准的限制，可以跨平台使用，缺点是序列化结果无法用于非Python程序反序列化。
@@ -1933,13 +2070,13 @@ pickle有三种序列化格式协议：
 
 这两个模块只负责序列化，并不保证对数据源序列化时的安全性，并不处理持久化对象及其并发访问的问题。但也因此可以灵活的将其用于持久化文件、数据库、网络传输。
 
-##### 5.1.2 对比
+##### 6.1.2 对比
 marshal是更原始的序列化模块，其存在的目的主要是为了支持Python的.pyc文件。
 
 pickle比起优越在，pickle会跟踪已序列化的对象，因此可以处理循环引用和对象共享；pickle可以序列化自定义对象，而想要反序列化必须使用相同的类定义；pickle的序列化格式针对Python版本向后兼容，而marshal为了支持Python的.pyc文件并不保证向后兼容。
 cPickle是pickle的C实现版，比其快1000倍。它们有着相同接口，除了Pickler()和Unpickler()这两个类都作为函数来实现，因此，就不能通过继承该类实现自定义的反序列化。而且，它们序列化成的字节流也是可以互通的。
 
-##### 5.1.3 pickle
+##### 6.1.3 pickle
 通常，要序列化就要创建Pickler对象并调用其dump()方法，要反序列化就要创建Unpickler对象并调用其load()方法。但pickle模块提供了更简易的函数：
 + dump(obj, file[, protocol])
 序列化，等价于Pickler(file, protocol).dump(obj)，obj是待序列化对象，file是一个带有write(str)方法的类文件对象，protocol就是上面提到的序列化格式协议。
@@ -1975,8 +2112,8 @@ def persistent_load(persid):
 这样，在调用Unpickler对象对象的load()函数就会自动检测标识进行反序列化。
 注：在cPickle模块里persistent_load属性可以被赋值为一个列表，那么Unpickler对象每发现一个persistent id就将其追加到列表中。
 
-#### 5.2 dbm
-##### 5.2.1 anydbm
+#### 6.2 dbm
+##### 6.2.1 anydbm
 anydbm是多种不同dbm实现的统一接口，比如dbhash（需要bsddb），gdbm，dbm，dumbdbm。它能够通过whichdb模块选择系统已安装的“最好”的模块，只有当都没有安装时，才使用dumbdbm模块，它是一个简单的dbm的实现。
 
 open(filename, flag=’r’ [, mode])
@@ -1986,7 +2123,7 @@ mode表示创建dbm文件的访问权限，默认是0666（可能被umask修改�
 函数返回一个类字典对象，只不过键值都必须是字符串。（另外，不能print、不支持values()和items()方法）
 使用完毕后用其close()方法关闭。
 
-##### 5.2.2 whichdb
+##### 6.2.2 whichdb
 whichdb模块只有一个函数：
 whichdb(filename)：如果指定文件名的文件不存在，返回None；如果无法确定返回空串；否则返回确定具体dbm模块名的字符串，如下：
 dbhash（需要bsddb）：BSD的dbm接口，dbhash是统一的接口，bsddb则是Berkeley DB库的接口（2.6后已废弃）
@@ -1994,7 +2131,7 @@ gdbm：GNU的dbm接口，基于ndbm接口，但文件格式和dbm并不兼容。
 dbm：标准的Unix的ndbm接口（library属性，可以查看使用的库名），自动加.db扩展名
 dumbdbm：dbm接口的可移植实现（完全python实现，不需要外部库），自动加.dat或.dir扩展名
 
-##### 5.2.3 gdbm
+##### 6.2.3 gdbm
 gdbm模块还有三个附加flag（并非所有版本都支持，可以通过查看模块的open_flags属性查看支持的flag），可以附加在上面四种flag之后：
 ‘f’快速写模式（不同步文件），’s’同步模式（每次写都同步文件），’u’不对文件加锁。
 它返回的对象还支持以下方法：
@@ -2002,7 +2139,7 @@ firstkey()和nextkey(key)用于遍历key，顺序是按内部的哈希值进行�
 reorganize()，压缩文件大小（因为默认的删除操作并不减小文件大小，而留作后续添加用）
 sync()，用于’f’模式打开的文件，进行手动同步。
 
-##### 5.2.4 dbhash/bsddb
+##### 6.2.4 dbhash/bsddb
 dbhash模块还有一个附加flag，可以附加在上面四种flag之后：
 ‘l’加锁模式。
 它返回的对象还支持以下方法：
@@ -2010,12 +2147,12 @@ first()、last()和next(key)、previous()用于遍历kv对，顺序是按内部�
 sync()，进行强制同步。
 bsddb模块可以创建hash、btree和基于记录的文件。
 
-##### 5.2.5 dumbdbm
+##### 6.2.5 dumbdbm
 dumbdbm.open的flag是被忽略的，总是以不存在则创建，存在则更新的模式打开。
 它返回的对象还支持以下方法：
 sync()，进行强制同步。
 
-#### 5.3 shelve
+#### 6.3 shelve
 shelf是一个字典式的持久化对象。和dbm不同于，字典的值可以是任意的可以用pickle处理的对象（字典的键认为普通的字符串）。实际上，它使用cPickle进行序列化，而后再用anydbm进行持久化。
 因为它使用pickle，所以同样不保证对数据源序列化时的安全性，也不支持对shelf对象的并发读写。
 
@@ -2033,12 +2170,12 @@ Shelf(dict, protocol=None, writeback=False)
 BsdDbShelf(dict, protocol=None, writeback=False)
 后者需要一个支持first(), next(), previous(), last() 和 set_location()这些操作的类字典（通常使用bsddb模块的函数创建）
 
-#### 5.4 数据库
+#### 6.4 数据库
 简单的可以使用DB-API 2.0 interface
 需要ORM可以使用SQLObject，SQLAlchemy，Django自带的ORM
 [参考](http://smartzxy.iteye.com/blog/680740)
 
-##### 5.4.1 MySQLdb
+##### 6.4.1 MySQLdb
 [下载](https://pypi.python.org/pypi/MySQL-python/) [文档](http://mysql-python.sourceforge.net/MySQLdb.html)
 
 模块函数：
@@ -2048,9 +2185,10 @@ BsdDbShelf(dict, protocol=None, writeback=False)
 
 连接对象的方法：
 + select_db(db)
-+ cursor()：获得了操纵游标对象
++ cursor(cursorclass=None)：获得了操纵游标对象（默认的游标对象SQL查询返回的结果是tuple of tuple，如果设置为MySQLdb.cursors.DictCursor，则SQL查询返回的结果是tuple of dict）
 + query(sql)：不用游标对象，直接执行sql语句
 + commit()：对于支持事务的数据库引擎（如InnoDB引擎，而mysiam引擎则不是），执行对数据库的改动（增删改，不过，不包括truncate table），如果在数据库连接关闭前没有执行该方法提交，则这些改动不会生效。
++ ping()：检查连接是否关闭，如果关闭将自动重连
 + rollback()：如果sql执行失败（会有异常抛出），需要回滚以确保数据库一致性。
 + close()：断开数据库连接
 
@@ -2066,7 +2204,7 @@ BsdDbShelf(dict, protocol=None, writeback=False)
 + close()：
 此外，还有一个只读属性：rowcount，表示执行execute后受影响的行数。
 
-##### 5.4.2 sqlite3
+##### 6.4.2 sqlite3
 [文档](https://docs.python.org/2/library/sqlite3.html)
 <http://www.cnblogs.com/hongten/p/hongten_python_sqlite3.html>
 
@@ -2084,7 +2222,7 @@ BsdDbShelf(dict, protocol=None, writeback=False)
 + executemany(query, args)：执行多条非标准SQL。args就是填充占位符序列的序列
 + fetchone()：返回结果集中的下一行。
 
-#### 5.5 其他
+#### 6.5 其他
 + ZODB：一个健壮的、多用户和面向对象的数据库系统，它能够存储和管理任意复杂的python对象，并提供事务操作和并发控制支持；
 + Durus：Quixote团队的作品，可以看作是轻量级版本的ZODB实现，纯开源的Python实现，并提供一个可选的C语言插件类；
 + Missile BD：是一种Python的、简洁高效的DBMS，适用于Stackless Python环境。同时需要说明的是它是并发性能极高的Eurasia3项目的一个子项目；
@@ -2094,7 +2232,7 @@ BsdDbShelf(dict, protocol=None, writeback=False)
 + buzhug：Python实现的快速的数据库引擎，使用Python程序员觉得直观的语法，数据存储在磁盘上；
 + Gadfly：它是一个简单的关系数据库系统，使用Python基于SQL结构化查询语言实现。
 
-### 6. 相关模块
+### 7. 相关模块
 tarfile        访问tar归档文件，支持压缩
 zipfile        访问zip归档文件的工具
 gzip/zlib        访问GNU zip（gzip）文件（压缩需要zlib模块）

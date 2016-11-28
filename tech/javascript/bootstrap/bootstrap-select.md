@@ -41,3 +41,7 @@ $('.selectpicker').selectpicker({
 optgroup级别显示最大选择数
 全选和全不选按钮
 分割线和header
+
+问题：
+1. select title 变化如何更新
+由于bootstrap-select 会把`<select>`元素转换为一个button+dropdownMenu的div，而此时在调整select 元素的title 属性也无法改变button 中显示的内容（即使调用render 或refresh 接口也不行），除非先用destroy 接口清除该转化（注意：如果当前有title属性，清除后会留下一个title的option，需要自己手动清除）而后再调用selectpicker() 进行重建。

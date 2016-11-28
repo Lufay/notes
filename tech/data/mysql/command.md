@@ -1,9 +1,12 @@
 # MySQL 命令
 
+status
+
 ### 数据库
 创建：`CREATE DATABASE [IF NOT EXISTS] db_name [DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci];`
 删除：`drop database  'DBname' [if exists 'DBname'];`（加上条件，则如果数据库不存在，仅仅是警告，而不是错误）
 显示：`show databases;`
+当前数据库：`select database();`
 声明默认数据库：`use 'DBname'`
 显示当前数据库中的所有表：`show tables;`
 
@@ -75,3 +78,22 @@ delimiiter ;
 删除表后，则表上的触发器都会被级联删除
 
 <http://www.cnblogs.com/lyhabc/p/3822267.html>
+
+
+## mysqldump 导出
+注意：导出时，最好一个表一个表的导出，因为会有空间限制。
+```
+mysqldump -u <user_name> -p[password] -h host <db_name> [<tb_name>] -w "where_condition"
+```
+该工具会将数据库（表）导出为SQL语句到标准输出
+其他选项：
+-d, --no-data：只需要结构而不需要数据
+-n, --no-create-db：只需要数据而不需要建库
+-t, --no-create-info：只需要数据而不需要建表
+-R, --routines：导出存储过程和函数
+--triggers：导出触发器
+--add-drop-database，--add-drop-table：在每个create语句前加上一个drop
+-x, --lock-all-tables：导出过程中锁住所有数据库的所有表（全局读锁），对于MyISAM 表，可以只锁住当前表，-l, --lock-tables（默认启动）
+如果数据表不是采用默认的 latin1 字符集的话，那么导出时必须指定该选项，指定导出数据的字符集，--default-character-set
+默认开启-K, --disable-keys，在insert语句的开头和结尾加上`/*!40000 ALTER TABLE tb_name DISABLE KEYS */; `和`'/*!40000 ALTER TABLE tb_name ENABLE KEYS */;` 在插入完成后才重建索引，提高插入效率
+默认开启--opt，快速导出选项集合
