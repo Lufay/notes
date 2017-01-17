@@ -62,6 +62,8 @@ db.createCollection("mycoll", {capped:true, size:100000})
 |Integer(64bit) | 整型数值。 | 18 |
 |Min/Max keys | 将一个值与 BSON（二进制的 JSON）元素的最低值和最高值相对比。 | 255/127 |
 
+**注意：**
+由于使用shell client 时是基于json 的，而json 只有number类型，而不区分具体的细类（BSON 会区分），所以，如果仅仅写一个数字的话，为了保证兼容性，都会当做Double 进行保存，如果确实想要存储为int32或int64，可以使用NumberInt() 或NumberLong() 对数字进行显示转换。
 
 ## 操作
 ### 安装
@@ -119,7 +121,7 @@ db.<collection_name>.find(<query>[, <project>])
 db.<collection_name>.findOne(<query>[, <project>])
 ```
 查询文档（前缀返回所有匹配文档，后者返回一个文档）
-query：筛选条件（见下）
+query：筛选条件（见下），默认为{}，表示选出全部文档。
 project：字段投影（相当于SQL的select 字段，例如`{"title":1,_id:0,ok:"$field"}`表示每个document 只返回title字段，不需要`_id`字段，该字段默认总是返回，另外，field字段改名为ok）
 
 1. 比较
@@ -140,6 +142,8 @@ valueX也可以是/pattern/的正则表达式
 如果field字段不存在也会命中
 2. 检查是否含有指定字段（含有字段包括字段值为null）
 `{ field: { $exists: <boolean> } }`
+7. 检查类型码
+`{"title": {"$type": 2}}`
 2. 逻辑
 AND：`{key1:value1, key2:value2}`
 OR：`{$or: [{key1: value1}, {key2:value2}] }`
@@ -173,8 +177,29 @@ m 多行查找
 x 空白字符除了被转义的或在字符类中的以外完全被忽略
 s 圆点元字符（.）匹配所有的字符，包括换行符
 支持在字符串数组字段直接使用
-7. 检查类型码
-`{"title" : {$type : 2}}`
+8. 查询嵌套文档
+对于嵌套文档，使用`==`比较运算，如果value 是一个文档，则进行精确匹配，包括各个field 的顺序
+也可以使用`outerField.innerField`作为key 筛选单个field
+9. 查询数组字段
+数组字段可以这样理解，数组的每一个值都是一个有效value
+因此对于数组字段，使用`==`比较运算，如果value是一个单值，则数组中含有value 就会被选中；如果value 是一个数组，则进行精确匹配，即数组完全相同才会被选中；
+也可以使用
+`{"key": {"$all": [val1, val2, ...]}}`
+表示至少含有数组中的所有value 就好被选中（不要求顺序）
+即`$all`表示*且*的关系，如果想要*或*的关系，可以使用`$in`
++ 使用索引
+`{"key.index": value}`，index是从0 开始的整数，表示数组的index索引位置的值是value
++ 根据数组长度
+`{"key": {"$size": n}}`，数组长度为n
+注：`$size`不接受范围值，也就是说只能使用精确值，为了能够进行范围查找，可以在文档中设置一个计数字段，需要自己来维护该字段，但`$addToSet`没法配合使用，因为你无法判断这个元素是否添加到了数组中
++ 某个元素的条件
+`{"key": {"$elemMatch": {query1, query2, ...}}}`
+如果query 只有一个，则无需elemMatch；如果query 是多个的话，而没有使用elemMatch，则不是对数组元素进行筛选，而是对整个数组字段进行筛选，例如`{"finished": { $gt: 15, $lt: 20 } }`，表示finished 的这个数组字段中某个元素大于15 且又有某个元素（可能是同一个元素也可能不同）小于20
++ 提取数组子序列
+project 使用`{"key":{"$slice": n}}`，其中n 可以是正数（表示前n 项），负数（表示后n 项），[m, n]（表示从第m 个元素开始的n 个元素）
+10. 内嵌query 逻辑
+`{"$where": query}`，其中query 可以一个js 表达式，或一个js 匿名函数，返回布尔值。
+在函数中可以使用this 应用当前被筛选的文档
 
 
 可以对结果再调用：
@@ -382,9 +407,9 @@ db.create_collection(name, codec_options=None, read_preference=None, write_conce
 ```
 collection.find(*args, **kwargs)
 collection.find_one(filter=None, *args, **kwargs)
-collection.find_one_and_delete(filter, projection=None, sort=None, **kwargs)
-collection.find_one_and_replace(filter, replacement, projection=None, sort=None, upsert=False, return_document=False, **kwargs)
 collection.find_one_and_update(filter, update, projection=None, sort=None, upsert=False, return_document=False, **kwargs)
+collection.find_one_and_replace(filter, replacement, projection=None, sort=None, upsert=False, return_document=False, **kwargs)
+collection.find_one_and_delete(filter, projection=None, sort=None, **kwargs)
 ```
 查询文档
 可选的参数包括：
@@ -394,8 +419,8 @@ skip 和 limit 可以分段返回
 sort 可以是(key, direction)二元组列表（其中direction可以是pymongo.DESCENDING）
 find返回一个类似字典列表的对象cursor.Cursor
 `find_one` 和`find_one_and_delete`返回单个文档（无匹配则返回None）
-`find_one_and_replace`的replacement是替换的文档对象；如果upsert为True，则无论是否找到一个对象，都会插入replacement；`return_document`的默认值是ReturnDocument.BEFORE，表示和`find_one`的返回相同，如果是ReturnDocument.AFTER，则返回的是replacement对象
-`find_one_and_update`的update是修改操作，例如`{'$inc': {'count': 1}, '$set': {'done': True}}`
+`find_one_and_update`和`find_one_and_replace`的upsert参数如果为True，则无论是否找到一个对象，都会插入replacement；`return_document`的默认值是ReturnDocument.BEFORE，表示和`find_one`的返回相同（查询到的原文档），如果是ReturnDocument.AFTER，则返回的是更新后的新文档
+
 
 该对象还可以调用
 copy()：返回一个拷贝的实例
@@ -412,20 +437,51 @@ collection.distinct(key, filter=None, **kwargs)
 collection.insert_one(document, bypass_document_validation=False)
 collection.insert_many(documents, ordered=True, bypass_document_validation=False)
 ```
-`doc_dict`是一个python 字典
+document 是一个python 字典，documents 是python 字典的列表
+ordered 表示是否按照documents 所列的操作顺序进行，如果True，则操作顺序执行，如果遇到错误，则剩下的都不会执行；如果False，则操作将随机进行（可能并行），那么所有操作都将尝试完成
+返回一个pymongo.results.InsertOneResult 对象，其中有个属性`inserted_id` 是被插入元素的`_id`
+返回一个pymongo.results.InsertManyResult 对象，其中有个属性`inserted_ids` 是被插入元素的`_id` 的列表（按照documents 列表的顺序）
 
 ```
 collection.replace_one(filter, replacement, upsert=False, bypass_document_validation=False, collation=None)
 collection.update_one(filter, update, upsert=False, bypass_document_validation=False, collation=None)
 collection.update_many(filter, update, upsert=False, bypass_document_validation=False, collation=None)
 ```
+replacement 是用来替换的文档
+update 是一个修改操作（python 字典，例如`{'$inc': {'count': 1}, '$set': {'done': True}}`）
+返回pymongo.results.UpdateResult，其属性
+matched_count：一个update 匹配的文档条数
+modified_count：修改的文档条数
+upserted_id：如果upsert 发送时，是被插入元素的`_id`，否则是None
 
 ```
 collection.delete_one(filter, collation=None)
 collection.delete_many(filter, collation=None)
 ```
 删除文档
-返回对象result，`result.deleted_count`可以查看删除文档个数
+返回对象pymongo.results.DeleteResult 对象，其属性
+`deleted_count`：可以查看删除文档个数
+
+```
+bulk_write(requests, ordered=True, bypass_document_validation=False)
+```
+批量写接口
+requests 是一个操作对象列表，操作对象包括：
+pymongo.InsertOne(document)
+pymongo.UpdateOne(filter, update, upsert=False)
+pymongo.UpdateMany(filter, update, upsert=False)
+pymongo.ReplaceOne(filter, replacement, upsert=False)
+pymongo.DeleteOne(filter)
+pymongo.DeleteMany(filter)
+ordered 表示是否按照requests 所列的操作顺序进行，如果True，则操作顺序执行，如果遇到错误，则剩下的都不会执行；如果False，则操作将随机进行（可能并行），那么所有操作都将尝试完成
+返回pymongo.results.BulkWriteResult 对象，其属性
+inserted_count：插入的文档条数
+deleted_count：删除的文档条数
+matched_count：一个update 匹配的文档条数
+modified_count：修改的文档条数
+upserted_count：upsert 的文档条数
+upserted_ids
+
 
 ```
 collection.count(filter=None, **kwargs)

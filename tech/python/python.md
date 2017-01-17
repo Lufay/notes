@@ -1,4 +1,6 @@
 # Python
+[Python 2](https://docs.python.org/2/)
+[Python 3](https://docs.python.org/3/)
 [TOC]
 
 ## 第一章. Python特性
@@ -366,6 +368,7 @@ if __name__ == "__main__":
 对于那些不直接执行的库模块，可以让其直接执行去完成一些测试任务，即在`__main__`中直接写简单的测试代码，因为该部分在import时是不执行的
 
 ##### unittest
+[参考](https://docs.python.org/2/library/unittest.html)
 Python标准库中还提供了unittest模块，有时也被称为PyUnit，是Python的单元测试框架
 软件测试中最基本的组成单元是测试用例（test case），PyUnit使用TestCase类来表示测试用例，并要求所有用于执行测试的类都必须从该类继承。TestCase子类实现的测试代码应该是自包含（self contained）的，也就是说测试用例既可以单独运行，也可以和其它测试用例构成集合共同运行。利用Command和Composite设计模式，多个TestCase还可以组合成测试用例集合。
 
@@ -380,8 +383,8 @@ Python标准库中还提供了unittest模块，有时也被称为PyUnit，是Pyt
 ```
 def suite():
 	suite = unittest.TestSuite()
-	suite = addTest(ATestCase("testSize"))
-	suite = addTest(ATestCase("testResize"))
+	suite.addTest(ATestCase("testSize"))
+	suite.addTest(ATestCase("testResize"))
 	return suite
 ```
 方式2：
@@ -472,7 +475,7 @@ E表示程序自身异常
 
 #### 4.2 调试器
 pdb，支持（条件）断点，逐行执行，检查堆栈。还支持事后调试。
-可以在执行Python时加上-m pdb选项，进行调试，断点是在程序执行的第一行之前。
+可以在执行Python时加上-m pdb选项（python -m pdb a.py），进行调试，断点是在程序执行的第一行之前。
 当然，也可以在代码中import pdb；而后通过调用`pdb.run('mymodule.test()')`进行调试，或`pdb.set_trace()`设置断点。
 
 ##### 调试命令
@@ -1101,7 +1104,7 @@ pop(i=-1)：删除位置为i的元素并返回之
 remove(x)：删除第一个值为x的元素，不存在则抛异常
 index(x, start=0, stop=len)：在[start:stop]范围内返回第一个值为x的元素的位置，不存在则抛异常
 count(x)：返回,值为x的元素在列表中出现的次数
-sort(cmp=None, key=None, reverse=False)：排序，cmp是一个类似cmp(x,y)的比较函数，reverse为True时，表示反序排序
+sort(cmp=None, key=None, reverse=False)：排序，cmp是一个类似cmp(x,y)的比较函数，key是一个一元函数，传入列表的每个元素，返回用于比较的key，reverse为True时，表示反序排序
 reverse()：反转序列
 del alist：销毁列表
 del alist[i]：删除列表的第i项（还可以删除一个切片）
@@ -1175,8 +1178,8 @@ dict(d)				使用另一个字典构造，比copy方法慢
 
 ###### 方法
 d[key] = value：有则改值，无则添加key:value（注：当aaa[key]不存在且作为右值时，则将抛出KeyError，不会添加）
-setdefault(key, default=None)方法：有则返回对应值，无则将key:default加入字典，返回default
-get(key, default=None)方法：类似[key]，如果存在该key则返回value；如果不存在，get返回default 
+setdefault(key, default=None)方法：有key则返回对应值（并不会修改字典），无key则将key:default加入字典，返回default
+get(key, default=None)方法：类似[key]，如果存在该key则返回value；如果不存在，get返回default
 key in d：判断key是否是字典的一个键
 `has_key(key)`方法：判断字典中是否有这个key（推荐使用in 运算符）
 keys()方法：返回所有key的列表
@@ -1278,6 +1281,8 @@ Python的变量都是引用，因此，对于一个频繁使用的其他模块�
 y = x = x+1
 ```
 表示创建一个对象保存x+1的结果，并将这个对象的引用分别赋给x和y。
+
+因为赋值语句不会返回值，所以不能用在任何需要值的位置，比如if/while 判断，lambda 表达式中。
 
 销毁对象的引用：del x, y, ...
 
@@ -1518,8 +1523,19 @@ func(*tuple_args, **dict_args)
 
 #### 2.2 闭包
 闭包是一个定义于函数内部的函数，且其引用了外部函数的局部变量（这些被引用的外层局部变量被称为自由变量）
-注意1：如果内部函数定义了外部函数同名的局部变量，则同样会覆盖自由变量的引用
-注意2：不光内部函数本身引用，该内部函数的内部函数的引用，也算该层的一个自由变量
++ 注意1：如果内部函数定义了外部函数同名的局部变量，则同样会覆盖自由变量的引用
++ 注意2：不光内部函数本身引用，该内部函数的内部函数的引用，也算该层的一个自由变量
++ 注意3：列表解析不能生成一个函数上下文
+例如：
+```
+fs = [(lambda n: i + n) for i in range(10)]
+```
+由于列表解析不能生成一个函数上下文，所以lambda 表达式中的这个i 并不是绑定到具体的数字，而是绑定到当前上下文的这个i 的变量上，i 这个变量的最终值是9，所以`fs[3](4)`的结果就是13
+要写创建一个真正意思上的闭包：
+```
+fs = map(lambda i: lambda n: i+n, range(10))
+```
+这里，外层的lambda 表达式形成了一个新的函数上下文，内部的lambda 就把它的i 绑定到这个自由变量上，因此，`fs[3](4)`的结果就是期望的7
 
 ### 3. 装饰器
 也是一种函数，如果装饰器没有参数，那么其参数是被装饰的函数(对象)，返回被装饰后的函数(对象)；如果装饰器有参数，则通过参数调用，返回一个无参数的装饰器
@@ -1538,6 +1554,7 @@ lambda [arg_list]: expression
 `arg_list`可省，可以有默认参数和可变参数
 expression的结果就是返回值
 结果是一个函数对象
+**注意：expression 只能是单条表达式语句，而且该语句不能是赋值语句和print 语句，因为它们没有返回值**
 
 ### 5. 偏函数
 即其他语言中的参数绑定
@@ -1616,12 +1633,13 @@ module_name.function()
 
 ### 1. 作用域
 在函数中定义的变量拥有函数级作用域（局部作用域），在函数外定义的变量拥有模块级作用域（全局域）
-当搜索一个标识符的时候,python 先从局部作用域开始搜索。如果在局部作用域内没有找到那个名字，那么就一定会在全局域找到这个变量否则就会被抛出 NameError 异常。
+当搜索一个标识符的时候,python 先从局部作用域开始搜索。如果在局部作用域内没有找到那个名字，就就会逐层向外查找该标识符（自由变量），直到全局域确认这个变量是否存在，最后确认该标识符是否是一个内置标识，如果依然找不到就会被抛出 NameError 异常。
 
 #### 1.1 函数作用域
-如果函数没有对全局变量进行赋值，则可以直接读取全局变量的值；
-如果函数内对全局变量赋值，则视为定义了一个局部变量隐藏了同名的全局变量，而如果在赋值前读取该变量的值将抛出 UnboundLocalError 异常；
+如果函数没有对全局变量（以及外部的自由变量）进行赋值，则可以直接读取该变量的值；
+如果函数内对全局变量（以及外部函数的同名变量）赋值，则视为定义了一个局部变量隐藏了同名的全局变量（或外部变量），而如果在赋值前读取该变量的值将抛出 UnboundLocalError 异常；
 想要真正对全局变量赋值，需使用`global var[, var, ...]`声明（位于对全局变量的读写操作之前，否则会有警告）
+Python 3.x引入了nonlocal 关键字，和global 功能类似，用于声明一个变量是外部（自由）变量，并且在当前作用域中需要修改这个外部变量。
 
 ### 2. 常用模块
 #### time 模块
@@ -1892,8 +1910,8 @@ file(name, mode=’r’, buffering=1)
 标准错误sys.tderr（到显示器的非缓冲输出）
 这三个文件对象是预置的，无须打开，只要导入sys模块即可访问这三个对象。
 
-### 2. os模块
-该模块实际上只是真正加载的模块的前端，而真正加载的模块与具体的操作系统有关，比如：posix（适用于Unix）、nt（Win32）、mac（旧版的MacOS）、dos（DOS）、os2（OS/2）等。不需要直接导入这些模块，只需导入os模块，Python会自动选择正确的模块。（根据某个系统支持的特性，可能无法访问到一些在其他系统上可用的属性）
+### 2. os 模块
+该模块实际上只是真正加载的模块的前端，而真正加载的模块与具体的操作系统有关，比如：posix（适用于Unix）、nt（Win32）、mac（旧版的MacOS）、dos（DOS）、os2（OS/2）等。不需要直接导入这些模块，只需导入os 模块，Python会自动选择正确的模块。（根据某个系统支持的特性，可能无法访问到一些在其他系统上可用的属性）
 
 #### 2.1 模块属性
 linesep        系统的行分隔符。（如Windows使用'\r\n'，Linux使用'\n'）
@@ -1979,7 +1997,7 @@ mkfifo
 + normpath(path)            返回指定路径的规范字符串形式（滤除多余的os.sep）
 + expanduser(path)            将路径中的~或~user转换为对应用户的主目录后的path的绝对路径（如果用户未知或$HOME未定义，则不返回）
 
-### 3. subprocess模块
+### 3. subprocess 模块
 用于调用shell（为了代替os.system/`os.popen*`/`os.spawn*`/`popen2.*`/`commands.*`）
 该模块提供了一个类和三个简易函数
 
@@ -2026,7 +2044,7 @@ call直接返回returncode
 `check_call`仅当0才返回，其他都抛出CalledProcessError异常，可以访问该异常对象的returncode属性获取返回值
 `check_output`如果正常返回（0）返回执行命令的输出；如果返回值非0，则抛出CalledProcessError异常，可以访问该异常对象的returncode属性获取返回值，output属性获得标准输出
 
-### 4. tempfile模块
+### 4. tempfile 模块
 用于创建临时文件（os.tmpfile使用的是系统调用，而tempfile模块是基于python而且有更多的选项可以控制）
 
 #### 4.1 模块属性
@@ -2114,7 +2132,7 @@ def persistent_load(persid):
 
 #### 6.2 dbm
 ##### 6.2.1 anydbm
-anydbm是多种不同dbm实现的统一接口，比如dbhash（需要bsddb），gdbm，dbm，dumbdbm。它能够通过whichdb模块选择系统已安装的“最好”的模块，只有当都没有安装时，才使用dumbdbm模块，它是一个简单的dbm的实现。
+anydbm是多种不同dbm实现的统一接口，比如dbhash（需要bsddb），gdbm，dbm，dumbdbm。它能够通过whichdb模块选择系统已安装的“最好”的模块，只有当都没有安装时，才使用dumbdbm 模块，它是一个简单的dbm的实现。
 
 open(filename, flag=’r’ [, mode])
 打开一个dbm文件，名为filename，如果文件已存在，就使用whichdb模块来确定其类型，并使用相应的模块。如果文件不存在，就按上面列出的顺序选择一个导入。
@@ -2235,7 +2253,7 @@ BsdDbShelf(dict, protocol=None, writeback=False)
 ### 7. 相关模块
 tarfile        访问tar归档文件，支持压缩
 zipfile        访问zip归档文件的工具
-gzip/zlib        访问GNU zip（gzip）文件（压缩需要zlib模块）
+gzip/zlib        访问GNU zip（gzip）文件（压缩需要zlib 模块）
 bz2            访问bz2格式的压缩文件
 shutil        高级文件访问功能（比如复制文件、复制文件权限、目录树递归复制）
 csv            访问csv文件（逗号分隔文件）
@@ -2350,3 +2368,169 @@ threading.BoundedSemaphore
 上下文管理器主要作用于共享资源，`__enter__()`和`__exit__()`方法基本和资源的分配和释放有关（如数据库连接、锁、信号量、状态管理、文件）。
 为了帮助你编写对象的上下文管理器，有一个contextlib模块，包含了实用的functions/decorators，这样即可以不用关心上面这些下划线方法的实现。
 
+
+## 并发编程
+### threading 模块
+### multiprocessing 模块
+
+## 结构化数据处理
+### json
+json 模块
+
+### html
+#### HTMLParser 模块
+##### HTMLParser 类
+一般通过继承该类，实现若干事件处理函数，当处理遇到tag/text/comment等文本时回调对应的handle
+该类无构造参数（并且该类不支持super关键字，因此调用父类的构造函数只能是`HTMLParser.__init__(self)`）
+
+###### handle 方法（需要重写）
++ handle_starttag(tag, attrs)：遇到开始tag 时调用，参数tag 是标签名（已转化为小写）；attrs 是一个(name, value) 二元组的列表，name 是属性名（已转化为小写），value 是属性值（转义字符已替换）
++ handle_endtag(tag)：遇到结束tag 时调用
++ handle_startendtag(tag, attrs)：当遇到空元素时调用，参数意义同handle_starttag，默认行为是依次调动handle_starttag 和handle_endtag
++ handle_data(data)：当遇到内容结点时调用
++ handle_comment(data)：当遇到注释标签时使用，data 是注释的内容，即两个-- 之间的内容
+
+###### 其他方法
++ feed(data)：给解析器提供HTML文本片段，其中完整的元素会被处理，不完整的元素进行缓存，当下次调用补齐，或者调用的close 函数
++ close()：强制终止解析（缓存的内容都作为data 解析），可以重写该函数，增加额外的操作，不过必须要调用基类的close 函数
++ reset()：丢弃未处理的缓存数据
++ getpos()：返回一个(lineno, offset) 的二元组，lineno是当前处理的行号（第一行为1），offset 是列偏移（第一列为0）。在handle 方法中调用，返回在刚刚遇到指定内容的位置。
++ get_starttag_text()：返回最近遇到的一个打开的开始tag
+
+
+### xml
+常见的XML编程接口有DOM 和SAX
+python有三种方法解析：DOM、SAX、ElementTree
++ DOM（Document Object Model）解析为语法树（需要全部载入，慢且占用内存），使用树的操作
++ SAX（Simple API for XML）用事件驱动模型，通过触发回调函数来处理（流式读取，不必全部载入，但API并不友好，需用户实现回调函数Handler）
++ ElementTree，轻量DOM，具有友好的API，速度快，内存占用少
+但他们都不具备抵御实体扩展的能力，有两个defused packages可以，但他们并不能够向后兼容。
+[参考](https://docs.python.org/2/library/markup.html)
+
+#### xml.dom 模块
+##### 概念说明
+###### 基类Node
++ childNodes属性获得子Node列表
++ nodeType属性获得结点类型
++ toxml([encoding])方法返回XML字符串
++ appendChild(newChild)方法给结点追加一个子结点，并返回之。如果newChild已经是文档树中的结点，则首先先删除之。
+
+###### Document
+代表一个完整的XML文档对象
+documentElement 属性获取唯一的一个Element对象
+getElementsByTagName()查找元素，返回一个NodeList对象
+支持`__len__()` 和 `__getitem__()`
+
++ createElement(tagName)创建并返回一个新的Element
++ createTextNode(data)创建并返回一个新的Text
++ createComment(data)创建并返回一个新的Comment
++ createAttribute(name)创建并返回一个新的Attr
+
+###### Element
+代表XML中的一个元素
++ getElementsByTagName()查找元素
++ hasAttribute('')/getAttribute('')/removeAttribute(name) 判断/获取/删除元素属性值
++ setAttribute(name, value) 设置元素属性值
++ setAttributeNode(newAttr) 将一个属性结点添加为当前元素的属性，如果name重复则替换之（返回旧属性结点），如果newAttr已经被使用，则抛出异常
++ removeAttributeNode(oldAttr)
+
+###### Attr
+代表元素的一个属性
+
+###### Comment
+代表注释元素
+data属性访问内容
+
+###### Text
+代表文本元素
+data属性访问内容
+
+##### xml.dom.minidom 模块
+最小的DOM实现，一次性读取整个文档，保存为一个树形结构
+并不扩展外部实体，而直接返回实体字面值
+parse(file)：从文件名或文件对象解析出 Document
+parseString('...')：从字符串解析出Document
+
+##### xml.dom.pulldom 模块
+支持部分DOM树的构建
+
+#### xml.sax 模块
+两部分内容：解析器和事件处理器
+解析器负责读取XML文档，并向事件处理器发送事件；事件处理器处理事件，处理传入的XML数据
+
+##### 模块方法
++ make_parser([parser_list])
+创建并返回一个SAX XMLReader对象，parser_list是一个模块名的字符串列表，这些模块必须有create_parser()函数，该函数将查找列表中第一个可用的。
++ parse(file, handler, [err_handler])
+创建一个SAX解析器并用其解析文档，file可以是文件名或文件对象。handler参数是一个ContentHandler实例，err_handler是一个ErrorHandler实例
++ parseString(string, handler[, error_handler])
+同上，只不过来源于字符串
+
+##### xml.sax.xmlreader 模块
+XMLReader对象可用直接parse(source)，source可以是文件名或url的字符串，也可以是一个文件对象或InputSource对象。通过setContentHandler(handler)设置事件处理器对象。
+
+##### xml.sax.handler 模块
+ContentHandler的一些重要接口：
++ startDocument()：在其他接口之前调用，并只调用一次
++ endDocument()：在其他接口之后调用，并只调用一次
++ startElement(name, attrs)：元素开始时触发，不支持namespace，name是这个元素时的名字，attrs是一个类似字典的对象，可以以属性名为key获取属性值
++ endElement(name)：元素结束时触发，不支持namespace
++ characters(content)：处理内容数据，content就是两个标签之间或与换行之间的内容
+通常，从该类继承并重写相应的事件处理函数，用于处理解析事件。
+
+#### xml.etree.ElementTree 模块
+并不扩展外部实体，而是抛出ParserError异常
+两个类：
+ElementTree——代表整个XML文档
+Element——代表树上的一个节点
+
+```
+import xml.etree.ElementTree as ET
+tree = ET.parse('country_data.xml')           #得到ElementTree
+root = tree.getroot()                         #得到Element
+root = ET.fromstring(country_data_as_string)  #从字符串得到Element
+```
+如果不是良构的XML，parser将抛异常，但异常信息比较模糊，如果想要详细的错误信息，可以使用lxml模块，import lxml.etree as ET（另外，合法验证也需要该模块）
+
+##### Element
+属性：
+tag：str，标签名
+attrb：dict，元素属性
+text：str，文本内容（从开始标签到下一个标签之间的内容，如果没有为None），读写
+tail：str，文本后缀（从结束标签到下一个标签之间的内容，如果没有为None），读写
+可以用序列的方式访问子元素，可以用访问字典的方法访问属性
+
+方法：
+iter('tagname')：递归查找指定标签名的后代元素（迭代器，深度优先）
+iterfind('tagname')：同上，安装文档顺序
+itertext('tagname')：迭代后代元素的text
+findall('tagname')：查找指定标签名的直接子元素，返回Element列表
+find('tagname')：查找指定标签名的首个子元素
+findtext('tagname',default)：查找指定tag的text
+
+词典方法：
+clear()：重置元素（清除所有子元素、属性、文本）
+get('attr_name', default)：获取属性值，未找到返回default
+set('attr_name', 'val')：设置或修改属性值
+items()：返回属性kv二元组序列
+keys()：返回属性名列表
+
+列表方法：
+append(Element)：追加子元素
+extend(Elements)：追加子元素序列
+insert(index, Element)：在指定位置插入元素
+remove(Element)：移除一个子元素
+len
+
+##### ElementTree
+方法：
+同Element，有find, findall, findtext, iter, iterfind，该元素为根
+parse(file, parser=None)
+getroot()
+write(file, ...)：修改XML写回
+
+##### 直接构造XML
+ET.Element('tag_name', {attrib})：创建一个根元素
+ET.SubElement(Element, 'tag_name', {attrib})：创建一个子元素并指定父元素
+ET.dump(Element)：导出字符串
+ET.iselement(Element)：检查是否是Element对象。
