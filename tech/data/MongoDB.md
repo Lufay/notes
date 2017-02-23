@@ -4,7 +4,7 @@
 基于分布式文件存储的开源数据库系统
 
 MongoDB 将数据存储为一个文档，数据结构由键值(`key=>value`)对组成。
-MongoDB 文档类似于 JSON 对象。字段值可以包含其他文档，数组及文档数组。
+MongoDB 文档类似于 JSON 对象（BSON）。字段值可以包含其他文档，数组及文档数组。
 
 ## 概念
 ### 和SQL对比
@@ -365,6 +365,7 @@ client.database_names()
 
 ```
 db = client.<db_name>
+db = client['db_name']
 db = client.get_database(name, codec_options=None, read_preference=None, write_concern=None, read_concern=None)
 ```
 获得指定数据库实例，后者当需要设置option时使用
@@ -382,6 +383,7 @@ db.collection_names(include_system_collections=True)
 
 ```
 collection = db.<collection_name>
+collection = db['collection_name']
 collection = db.get_collection(name, codec_options=None, read_preference=None, write_concern=None, read_concern=None)
 ```
 获得指定的collection 实例，后者当需要设置option时使用

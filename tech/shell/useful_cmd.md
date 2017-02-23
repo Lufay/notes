@@ -115,16 +115,18 @@ head -n1 /etc/issue
 lsb_release -a
 ```
 
-### 网络上的主机名
+### 主机名和IP
 ```
-hostname
+hostname    # 获得本机机器名
 $HOSTNAME
-```
-```
+hostname -i    # 获得本机IP
+
+nslookup $mach_name    # 获得指定机器名的IP
+nslookup $ip   # 根据IP 获取注册的域名
+
 uname -n
 ```
 
-### 获取IP
 ```
 /sbin/ifconfig |awk -F'[ :]+' '/Bcast/{print $4}'
 ```

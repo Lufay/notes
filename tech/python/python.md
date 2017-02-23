@@ -1439,7 +1439,7 @@ next(iterator[, default])
     - any(iter)：如果可迭代对象iter至少存在一个bool(x)为True的元素x，则返回True，否则返回False
     - all(iter)：如果可迭代对象iter为空，或所有元素x的bool(x)都为True，则返回True，否则返回False
     - sum(iter, init=0)：返回数值序列和init的总和（效果同reduce(operator.add, seq, init)）
-    - max(iter, key=None)，min(iter, key=None)：key是一个用于比较的函数，按该比较函数返回迭代对象中的最大和最小值。（此外，这两个函数还有一个可变参数版本：max(arg1, arg2, …, key=None)，min(arg1, arg2, …, key=None)
+    - max(iter, key=None)，min(iter, key=None)：key是一个函数返回一个用于比较的值，按该函数返回的值选出迭代对象中的最大和最小值。（此外，这两个函数还有一个可变参数版本：max(arg1, arg2, …, key=None)，min(arg1, arg2, …, key=None)
     - reduce(func, iter[, init])：func是一个需要两个参数的函数对象，每次从iter中取出一个元素和上次func的结果作为本次func的参数，如果提供了init参数，则初始init作为上次func的结果，如果未提供init参数，则首次取iter的两个元素作为func的参数。这里func不能是None。
 
 ##### 相关模块
@@ -2373,6 +2373,12 @@ threading.BoundedSemaphore
 ### threading 模块
 ### multiprocessing 模块
 
+## 网络编程
+### socket 模块
+### urllib 和urllib2 模块
+### requests 模块
+<https://zhuanlan.zhihu.com/p/21976757>
+
 ## 结构化数据处理
 ### json
 json 模块
@@ -2381,7 +2387,7 @@ json 模块
 #### HTMLParser 模块
 ##### HTMLParser 类
 一般通过继承该类，实现若干事件处理函数，当处理遇到tag/text/comment等文本时回调对应的handle
-该类无构造参数（并且该类不支持super关键字，因此调用父类的构造函数只能是`HTMLParser.__init__(self)`）
+该类无构造参数（并且该类不支持super关键字，因此其子类调用父类的构造函数只能是`HTMLParser.__init__(self)`）
 
 ###### handle 方法（需要重写）
 + handle_starttag(tag, attrs)：遇到开始tag 时调用，参数tag 是标签名（已转化为小写）；attrs 是一个(name, value) 二元组的列表，name 是属性名（已转化为小写），value 是属性值（转义字符已替换）
@@ -2396,6 +2402,156 @@ json 模块
 + reset()：丢弃未处理的缓存数据
 + getpos()：返回一个(lineno, offset) 的二元组，lineno是当前处理的行号（第一行为1），offset 是列偏移（第一列为0）。在handle 方法中调用，返回在刚刚遇到指定内容的位置。
 + get_starttag_text()：返回最近遇到的一个打开的开始tag
+
+#### Beautifulsoup 库
+第三方库，用于帮助解析Html/XML等内容
+[BeautifulSoup官网](http://www.crummy.com/software/BeautifulSoup/)
+##### 安装
+```
+pip install beautifulsoup4      # BeautifulSoup 是BeautifulSoup3 的包（pip 支持卸载）
+
+easy_install beautifulsoup4
+
+python setup.py install     # 源码安装
+```
+##### BeautifulSoup 类
+```
+from bs4 import BeautifulSoup
+soup = BeautifulSoup(html_doc)
+```
+第一个参数可以使用字符串，或文件对象
+第二个参数 是解析器（HTML 支持内置标准库'html.parser'，C 解析器'lxml'支持XML，纯Python实现的'html5lib'，XML 使用'xml'，只支持lxml），如果未指定，则由BeautifulSoup选择最适合
+如果使用HTML 解析器返回的对象会自动补全`<html><head><body>` 并将自关闭标签拆成一对开闭标签，如果使用XML 解析器，则加XML头。
+
+Beautiful Soup 将复杂HTML文档转换成一个复杂的树形结构，每个节点都是Python对象，所有对象可以归纳为4种: Tag, NavigableString, BeautifulSoup, Comment.
+HTML解析器把这段字符串转换成一连串的事件，例如: 打开`<html>`标签, 打开一个`<head>`标签, x打开一个`<title>`标签, 添加一段字符串, 关闭`<title>`标签, 打开`<p>`标签, 等等.
+BeautifulSoup 对象代表了一个HTML 或 XML文档的全部内容，大部分时候，可以把它当作 Tag 对象，因为它继承自Tag 类
+`<html>`就是其唯一子结点，其parent属性为None。
+因为 BeautifulSoup 对象并不是真正的HTML或XML的tag，所以它没有name和attribute属性。但有时查看它的name 属性是很有用的，所以BeautifulSoup 对象包含了一个值为u'[document]' 的特殊属性 .name
+
+`new_string(s, subclass=<class 'bs4.element.NavigableString'>)`：创建一个NavigableString 对象，也可以传入bs4.Comment 作为第二个参数可以创建一个注释对象
+`new_tag(name, namespace=None, nsprefix=None, **attrs)`：创建一个Tag 对象，可以用关键字参数表示Tag 标签属性。
+
+##### Tag
+Tag是HTML或XML中一个完整的标签
+可以当做一个字典对象访问标签属性，可以直接修改和删除
+Tag对象也可以有很多子结点（包含分支结点Tag和叶子结点NavigableString）
+
+###### 属性
+name：Tag 的标签名，可修改
+attrs：Tag 的标签属性，用法很像字典，支持增删改，对于HTML中的多值属性（例如class, rel, rev, accept-charset, headers, accesskey），访问这种属性是一个list（默认是一个str）而XML则不会，当多值属性序列化时，就会合并为一个空格分隔的字符串。
+string：该标签的文本内容，对应NavigableString 类，用法类似Unicode 字符串，可以直接将一个字符串赋值给该属性进行修改（如果该Tag 还有其他子Tag，那么子Tag将被覆盖；注意：对于包含有多个子结点的的标签，由于无法确定具体引用那个子结点的string，故其string 属性为None
+strings：该属性是一个生成器，可以递归向下遍历该标签下的所有文本内容
+stripped_strings：同上，只不过移除了空行和段收尾的空白
+tag 名：可以递归向下（深度优先）查找第一个发现的该标签名的Tag 对象，如果找不到返回None（其实际上是调用了find 方法）
+contents：将子结点以列表方式给出
+children：该属性是一个迭代器，可以遍历子结点
+descendants：该属性是一个生成器，可以递归遍历后代结点
+parent：父节点
+parents：该属性是一个生成器，可以递归遍历所有祖先节点
+next_sibling 和previous_sibling：相邻兄弟结点（注意，相邻标签直接的分隔符或换行符也会被视为一个NavigableString，从而成为一个兄弟结点），不存在为None，这两个属性同样可以后面加 s 用于递归遍历
+next_element 和previous_element：按照深度优先的遍历顺序的前一个和后一个元素，这两个属性同样可以后面加 s 用于递归遍历。
+
+###### 方法
+Tag类标签可以使用 find 和 find_all 方法进行搜索（搜索当前结点和子孙结点），这两个方法的参数都可以接受多种的参数类型：
++ 字符串：完全匹配（最好使用Unicode 字符串，否则将认为utf-8 编码进行转换）
++ re.compile 的正则对象：正则匹配
++ 列表：完全匹配其中一个
++ True：匹配所有存在指定属性的结点（例如存在标签名即Tag结点，存在某个标签属性等）
++ 函数对象：该函数接受一个参数，返回一个布尔值，True表示匹配，False反之。
+
+`find_all(name=None, attrs={}, recursive=True, text=None, limit=None, **kwargs)`
+name 为标签名过滤器，可以使用上面五种参数类型（函数参数的参数为Tag 结点对象）
+attrs 为标签属性过滤器，可以提供一个字典参数
+text 为标签文本过滤器，可以使用上面五种参数类型（函数参数的参数为NavigableString 结点对象）
+kwargs 可以指定标签属性名作为参数名，作为标签属性过滤器，可以使用字符串、正则、列表、True，其中True表示具有某属性，None表示没有某属性；不过，由于有些属性不满足python的命名规范，所以这些属性不能用于kwargs 过滤，比如HTML5中的`data-*` 属性；另外，class属性因为是Python关键字也不能使用，不过可以使用`class_` 作为属性名查找（可以使用字符串、正则、True、函数对象，函数参数为字符串），另外由于class 是一个多值属性，所以使用任何一个class 的字符串都可以独立进行查找，当然可以使用所有的class 的字符串进行完全匹配（要求顺序也必须一致）
+limit 限定返回结果集的数量（到达数据就会停止搜索，可以加快返回）；
+recursive 默认为True，进行递归搜索，可以设为False，则只搜索直接子节点。
+返回所有匹配命中的结点列表
+由于该方法很常用，所以可以直接使用Tag 结点对象进行调用，如`soup('a', text=True)`
+find 方法等价于find_all 方法参数limit=1，不过前者直接返回一个结点，后者还是一个结点列表，当没有匹配命中时，前者返回None，后者返回空列表。
+
+`find_parents(name=None, attrs={}, limit=None, **kwargs)`：向祖先结点遍历的搜索
+find_parent 方法：find_parents 参数limit=1 的情形，返回最近的一个祖先结点
+
+`find_next_siblings(name=None, attrs={}, text=None, limit=None, **kwargs)`：前向兄弟结点遍历搜索
+find_next_sibling 方法：find_next_siblings 参数limit=1 的情形，返回后面最近的一个兄弟结点
+find_previous_siblings 方法：类似find_next_siblings 不过是前向兄弟结点遍历
+find_previous_sibling 方法：find_previous_siblings 参数limit=1 的情形，返回前面最近的一个兄弟结点
+
+`find_all_next(name=None, attrs={}, text=None, limit=None, **kwargs)`：通过next_elements 属性进行遍历搜索
+find_next 方法：find_all_next 参数limit=1 的情形
+find_all_previous 方法：通过previous_elements 属性进行遍历搜索
+find_previous 方法：find_all_previous 参数limit=1 的情形
+
+select(selector)：该方法可以使用[CSS 元素选择器](http://www.w3school.com.cn/css/css_selector_type.asp)的语法
+
+`get_text(separator=u'', strip=False, types=(<class 'bs4.element.NavigableString'>, <class 'bs4.element.CData'>))`：得到所有的文本内容（报告子孙的文本内容），用指定分隔符分隔，可以指定strip=True，滤除文本前后的空白
+
+has_attr(key)：key 是标签属性名，检查标签是否具有该属性
+
+append(tag)：给当前对象追加内容，tag 可以是一个字符串，工厂方法 BeautifulSoup.new_string()、BeautifulSoup.new_tag() 返回的对象
+insert(position, new_child)：给当前对象内容的指定位置添加新的内容，new_child 同上tag
+insert_before(predecessor)：在当前对象的前面添加内容，predecessor 同上tag
+insert_after(successor)：在当前对象的后面添加内容，successor 同上tag
+replace_with(new_tag)：将当前对象替换为new_tag，并返回当前对象，new_tag 同上tag
+wrap(outer_tag)：将当前对象包进outer_tag 中返回
+unwrap()：方法别名是replace_with_children，即去掉当前对象的标签，返回被移除的tag
+clear(decompose=False)：移除当前对象的所有内容
+extract()：将自身从文档树中移除，并返回一个移除对象
+decompose()：将自身从文档树中移除，并销毁
+
+prettify(encoding=None, formatter='minimal')：返回一个带缩进的HTML字符串
+而如果只想要字符串，而不关心显示效果的话，可以直接用str()或unicode()进行转型即可（unicode 会将HTML中的特殊字符转换成Unicode，str 默认返回UTF-8编码的字符串，可以指定编码设置）
+encode(encoding='utf-8', indent_level=None, formatter='minimal', errors='xmlcharrefreplace')
+decode(indent_level=None, eventual_encoding='utf-8', formatter='minimal')
+
+##### NavigableString
+NavigableString是HTML中的文本内容，通常通过Tag 对象的string 属性获得，还可以使用 .strings 属性递归遍历所有NavigableString，.stripped_strings 属性是对应去除多余空白符的结果。
+可以使用unicode() 函数将该对象转换为一个Unicode字符串，而且最好这么做，因为该对象会引用BeautifulSoup 对象，使用该对象会导致BeautifulSoup 对象无法释放，比较浪费内存。
+不能直接编辑，但可以调用.string.replace_with()方法进行替换。
+NavigableString 对象支持 遍历文档树 和 搜索文档树 中定义的大部分属性, 但并非全部。而且NavigableString是叶子结点，因此不能包含其它内容，即不支持 .contents 或 .string 属性或 find() 方法.
+
+##### Comment
+获得该对象的方式和获得NavigableString的方式相同，因为它就是一种特殊的NavigableString。
+查看该对象只能看到注释文本的内容，当进行HTML 序列化时才会转换为HTML 注释的格式。
+*其他XML 对象CData, ProcessingInstruction, Declaration, Doctype 类似的也都是NavigableString 的一个子类*
+
+##### 编码
+任何HTML或XML文档都有自己的编码方式,比如ASCII 或 UTF-8,但是使用Beautiful Soup解析后,文档都被转换成了Unicode
+Beautiful Soup用了 编码自动检测 子库来识别当前文档编码并转换成Unicode编码. BeautifulSoup 对象的 .original_encoding 属性记录了自动识别编码的结果。编码自动检测 功能大部分时候都能猜对编码格式,但有时候也会出错.有时候即使猜测正确,也是在逐个字节的遍历整个文档后才猜对的,这样很慢.如果预先知道文档编码,可以设置编码参数来减少自动检查编码出错的概率并且提高文档解析速度.在创建 BeautifulSoup 对象的时候设置 from_encoding 参数.
+特别的，当文档混杂了其他编码格式，Unicode编码就不得不将文档中少数特殊编码字符替换成特殊Unicode编码,“REPLACEMENT CHARACTER” (U+FFFD, �)。如果Beautifu Soup猜测文档编码时作了特殊字符的替换,那么Beautiful Soup会把 UnicodeDammit 或 BeautifulSoup 对象的 .contains_replacement_characters 属性标记为 True .这样就可以知道当前文档进行Unicode编码后丢失了一部分特殊内容字符.如果文档中包含� 而 .contains_replacement_characters 属性是 False ,则表示� 就是文档中原来的字符, 不是转码失败.
+
+编码自动检测 功能可以在Beautiful Soup以外使用,检测某段未知编码时,可以使用这个方法:
+```
+from bs4 import UnicodeDammit
+dammit = UnicodeDammit("Sacr\xc3\xa9 bleu!")
+print(dammit.unicode_markup)    # Sacré bleu!
+dammit.original_encoding
+```
+如果Python中安装了 chardet 或 cchardet 那么编码检测功能的准确率将大大提高.输入的字符越多,检测结果越精确,如果事先猜测到一些可能编码,那么可以将猜测的编码作为参数,这样将优先检测这些编码:
+```
+dammit = UnicodeDammit("Sacr\xe9 bleu!", ["latin-1", "iso-8859-1"])
+print(dammit.unicode_markup)    # Sacré bleu!
+dammit.original_encoding
+```
+
+##### 解析部分文档
+如果想在加载文档时就对文档进行一次过滤（仅解析某些文档片段），可以使用SoupStrainer这个类，它的构造参数和find方法相同，使用时只需在构造BeautifulSoup实例时，使用parse_only参数指定一个这个类的实例即可
+
+##### 附注
+BeautifulSoup本身没有文本解析功能，它的解析功能来源于他使用的解析器
+目前他支持3种解析器：
+Python标准库（Python2的HTMLParser，Python3的html.parser）
+lxml（目前唯一支持XML解析的解析器，C实现，速度快）
+html5lib（更好的容错性）
+
+安装：
+pip install lxml
+pip install html5lib
+用这两种解码器可以解决很多标准库存在的编码问题
+
+参考：<http://www.crifan.com/files/doc/docbook/python_topic_beautifulsoup/release/htmls/index.html>
 
 
 ### xml
@@ -2454,6 +2610,7 @@ parseString('...')：从字符串解析出Document
 ##### xml.dom.pulldom 模块
 支持部分DOM树的构建
 
+
 #### xml.sax 模块
 两部分内容：解析器和事件处理器
 解析器负责读取XML文档，并向事件处理器发送事件；事件处理器处理事件，处理传入的XML数据
@@ -2478,59 +2635,193 @@ ContentHandler的一些重要接口：
 + characters(content)：处理内容数据，content就是两个标签之间或与换行之间的内容
 通常，从该类继承并重写相应的事件处理函数，用于处理解析事件。
 
+
 #### xml.etree.ElementTree 模块
 并不扩展外部实体，而是抛出ParserError异常
+C 实现的模块：xml.etree.cElementTree
+
 两个类：
-ElementTree——代表整个XML文档
-Element——代表树上的一个节点
+ElementTree：代表整个XML文档
+Element：代表树上的一个节点
 
 ```
 import xml.etree.ElementTree as ET
-tree = ET.parse('country_data.xml')           #得到ElementTree
-root = tree.getroot()                         #得到Element
-root = ET.fromstring(country_data_as_string)  #从字符串得到Element
+tree = ET.parse('country_data.xml')     # 从文件得到ElementTree，文件名也可以是一个文件对象
+root = tree.getroot()                   # 得到Element
+root = ET.fromstring(xml_string)        # 从字符串得到Element
+bEle = ET.iselement(root)               # 检查是否是Element对象。
+xml_str = ET.tostring(element, encoding="us-ascii", method="xml")
+
+ET.dump(Element)                        # 导出字符串到标准输出中
 ```
 如果不是良构的XML，parser将抛异常，但异常信息比较模糊，如果想要详细的错误信息，可以使用lxml模块，import lxml.etree as ET（另外，合法验证也需要该模块）
 
 ##### Element
-属性：
-tag：str，标签名
+被设计为灵活的容器对象，既可表达为一个列表也能表达为一个字典，可以用序列的方式访问子元素，可以用访问字典的方法访问属性
+当进行遍历时，是按照序列方式遍历的子元素
+
+###### 属性
+tag：str，元素的标签名
 attrb：dict，元素属性
 text：str，文本内容（从开始标签到下一个标签之间的内容，如果没有为None），读写
 tail：str，文本后缀（从结束标签到下一个标签之间的内容，如果没有为None），读写
-可以用序列的方式访问子元素，可以用访问字典的方法访问属性
 
-方法：
-iter('tagname')：递归查找指定标签名的后代元素（迭代器，深度优先）
-iterfind('tagname')：同上，安装文档顺序
-itertext('tagname')：迭代后代元素的text
-findall('tagname')：查找指定标签名的直接子元素，返回Element列表
-find('tagname')：查找指定标签名的首个子元素
-findtext('tagname',default)：查找指定tag的text
+###### 方法
+iter('tagname')：递归查找指定标签名（缺省则为任意标签名）的后代元素（迭代器，深度优先前序遍历），返回迭代器
+itertext()：迭代后代元素的text
+findall('xpath')：查找满足指定条件元素，xpath如果是tagname，表示其直接子元素，返回Element列表
+iterfind('xpath')：findall的迭代器版本
+find('xpath')：查找满足指定条件的首个子元素
+findtext('xpath', default=None)：查找指定tag首个子元素的text
 
-词典方法：
+词典方法
 clear()：重置元素（清除所有子元素、属性、文本）
-get('attr_name', default)：获取属性值，未找到返回default
+get('attr_name', default=None)：获取属性值，未找到返回default
 set('attr_name', 'val')：设置或修改属性值
 items()：返回属性kv二元组序列
 keys()：返回属性名列表
 
-列表方法：
+列表方法
 append(Element)：追加子元素
 extend(Elements)：追加子元素序列
 insert(index, Element)：在指定位置插入元素
 remove(Element)：移除一个子元素
 len
 
-##### ElementTree
-方法：
-同Element，有find, findall, findtext, iter, iterfind，该元素为根
-parse(file, parser=None)
-getroot()
-write(file, ...)：修改XML写回
-
-##### 直接构造XML
+###### 直接构造XML
 ET.Element('tag_name', {attrib})：创建一个根元素
 ET.SubElement(Element, 'tag_name', {attrib})：创建一个子元素并指定父元素
-ET.dump(Element)：导出字符串
-ET.iselement(Element)：检查是否是Element对象。
+
+##### ElementTree
+###### 构造
+ET.ElementTree(element=None, file=None)：element指定root，文件用于初始化
+同Element，有find, findall, findtext, iter, iterfind方法，该元素为root
+getroot()：获得root Element
+parse(file, parser=None)
+write(file, ...)：修改XML写回
+
+
+#### lxml 模块
+基于C 库libxml2 和libxslt 封装的python 模块，不仅能处理XML，还能处理HTML。
+[参考](http://lxml.de/tutorial.html)
+
+##### lxml.etree
+###### lxml.etree.Element
+```
+from lxml import etree
+root = etree.Element("root", interesting="totally")
+etree.Entity("#234")
+etree.Comment("some comment")
+
+root = etree.XML('''\
+        <?xml version="1.0"?>
+        <!DOCTYPE root SYSTEM "test" [ <!ENTITY tasty "parsnips"> ]>
+        <root>
+            <a>&tasty;</a>
+        </root>
+''')
+tree = etree.ElementTree(root)
+```
+lxml.etree.Element 继承xml.etree.ElementTree.Element 的所有接口
+但要注意的是，lxml 的元素具有移动语义，即如果将一个元素赋值给另一个元素，那么代表了将前者移动并替换后者，也正是因此，lxml 的每个元素都有唯一确定的位置
+如果确实不需要移动语义，则需要使用copy.deepcopy() 对元素进行深拷贝之后再赋值
+
+增强的方法：
+iter() 支持多个tagname的过滤，此外，它还支持按节点类型进行过滤，即可以将Element, Comments, ProcessingInstructions 和 Entity 的构造方法作为参数：
+```
+root.iter(tag=etree.Element)    # 只返回Element
+root.iter('d', 'a', etree.Comment)  # 返回tagname 为a 或b 或注释节点
+```
+
+lxml新增的方法：
+`iterchildren(*tags, reversed=False)`：遍历该元素的子元素，tags参数同iter，reversed 可以逆序遍历
+`iterancestors(*tags)`：遍历祖先节点（从父节点向上）
+`iterdescendants(*tags)`：遍历后代节点（和iter 相比少了当前结点）
+`itersiblings(*tags, preceding=False)`：遍历兄弟元素，默认后向遍历，preceding 可以进行前向遍历
+index(Element)：返回指定子元素的索引位置
+getparent()：返回该元素的父元素
+getprevious()：返回该元素的前一个兄弟元素
+getnext()：返回该元素的后一个兄弟元素
+xpath("string()")：使用xpath 方法，返回一个list，如果使用xpath 的text()函数，则对于每个成员可以通过is_text、is_tail 属性判断是哪种text
+
+###### lxml.etree.ElementTree
+lxml.etree.ElementTree 是建立在一个文档树根节点，对XML文档的封装
+对该对象使用tostring 方法，会带有DTD
+其属性：
+docinfo.xml_version
+docinfo.doctype
+docinfo.public_id
+docinfo.system_url
+
+新方法
+getelementpath(Element)：返回指定元素的xpath
+
+###### 模块方法
++ 解析
+    - etree.fromstring(some_xml_data) 直接从字符串解析，返回Element
+    - etree.XML(some_xml_data) 直接从字符串解析xml，返回Element
+    - etree.HTML(some_html_data) 直接从字符串解析html，返回Element
+    - etree.parse(some_file_or_file_like_object) 从类文件对象解析，返回ElementTree
+    参数可以是文件名、http/ftp url（支持有限，能力不足可以引入urllib2 或requests 支持）、具有read(byte_count)方法返回二进制字符串的对象
+第二个参数可以配置解析器，未指定则使用默认的标准解析器，可以通过etree.XMLParser() 配置一个解析器传入
++ etree.tostring(root, method="text", pretty_print=True,  with_tail=False, xml_declaration=True, encoding='iso-8859-1')
+method="text" 表示只显示root 结点下的text，并递归向下，其他还支持xml（默认）、html
+with_tail=False 表示不显示root 结点后的tail，默认为True
+xml_declaration=True 表示带开头的xml 声明
+encoding 默认是plain ASCII（str类型，如果需要unicode，可以指定unicode）
++ etree.iselement(root)
++ etree.XPath("//text()")
+返回一个函数对象，接受一个元素作为参数，调用该元素的xpath 方法（这种方式会预编译xpath，带来性能提升）
+
+###### 分批解析
+两种方法：
+1. 传给etree.parse 的类文件对象
+这样会不断调用类文件对象的read 方法（每次可能只返回文档的一部分），直到返回空
+2. 使用etree.XMLParser() 对象的feed() 方法
+每次调用feed(xml_fragment) 都只解析一部分，直到调用该对象的close() 方法，返回Element
+
+###### 事件驱动解析
+可以不必加载整棵文档树到内存，而在特定条件下调用对应接口完成解析
+
+方法1 （更快也更简单）
+通过etree.iterparse(some_file_like, events, tag) 方法可以返回一个迭代器
+该迭代器返回一个(event, element) 的二元组
+event是触发事件，默认只有end，除非指定参数events=("start", "end")，可以迭代start 和end 两种事件，这是因为在处理start 事件时，元素的text, tail 和子元素还是未知的，而在end 事件才能确定。
+element 是触发事件的Element 对象
+参数tag 可以限定触发事件的标签。
+**注：iterparse并不会释放每一次迭代的结点引用，所以如果想要节省内存，需要在遍历过程中对不再需要的element对象调用clear() 方法，将其重置为空，并清理其父节点对其的引用`del element.getparent()[0]`**
+
+方法2
+还可以使用类SAX 的事件接口，例如：
+```
+class ParserTarget:
+    def start(self, tag, attrib):
+        '''
+            在元素打开时被调用
+            tag 是元素的标签名
+            attr 是元素属性的字典
+        '''
+        pass
+    def end(self, tag):
+        '''
+            在元素关闭时被调用
+            tag 是元素的标签名
+        '''
+        pass
+    def data(self, data):
+        '''
+            文本结点被调用
+            data 是文本字符串
+        '''
+        pass
+    def close(self):
+        '''
+            解析完成后被调用
+        '''
+        pass
+
+parser_target = ParserTarget()
+parser = etree.XMLParser(target=parser_target)
+```
+当调用这个parser 时，将返回close()方法的返回值
+

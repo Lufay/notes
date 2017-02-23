@@ -232,7 +232,7 @@ function funname(p1, p2, p3)
 + 算术
 
 int（截断取整）、sqrt（平方根）、exp（自然指数）、log（自然对数）、sin、cos、atan、atan2(y, x)（y/x的反正切）
-rand（随机`[0,1)`）、srand([expr])（设置随机种子为expr，若省略为时间，返回先前的种子值）
+rand（随机数`[0,1)`）、srand([expr])（设置随机种子为expr，若省略为时间，返回先前的种子值）
 
 + 字符串
 
