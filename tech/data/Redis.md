@@ -181,7 +181,7 @@ SMOVE source destination member：将 member 元素从 source 集合移动到 de
 
 SCARD key：获取集合的成员数
 SMEMBERS key：返回集合中的所有成员
-ISMEMBER key member：判断 member 元素是否是集合 key 的成员。如果成员元素是集合的成员，返回 1 。 如果成员元素不是集合的成员，或 key 不存在，返回 0 。
+SISMEMBER key member：判断 member 元素是否是集合 key 的成员。如果成员元素是集合的成员，返回 1 。 如果成员元素不是集合的成员，或 key 不存在，返回 0 。
 
 SINTER key1 [key2]：返回给定所有集合的交集
 SINTERSTORE destination key1 [key2]：返回给定所有集合的交集并存储在 destination 中。如果指定的集合已经存在，则将其覆盖。返回交集的成员数

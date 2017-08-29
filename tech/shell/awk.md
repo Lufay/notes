@@ -101,6 +101,7 @@ RLENGTH	由match函数所匹配的字符串的长度。
 2. 字符串
 使用双引号括住，其中可以使用`\` 转义字符
 两个字符串写在一起（中间可以使用空格分隔），就视为字符串连接。
+*注：由于awk 常用单引号包装awk 代码，使用如果想在awk 代码中使用单引号，无法简单的使用转义符，不过可以使用\047 来作为单引号字符*
 
 类型取决于上下文并在需要时自动转换
 
@@ -201,14 +202,16 @@ getline var
 ###### 重定向
 getline var < "file"
 输入从 file 文件中读入，可以通过返回值判断（成功读取，返回1，如果遇到EOF，则返回0，否则返回-1）来进行不断读入
-文件将被持续打开，文件名字符串相同就使用之前打开的文件继续读入
-如果想要获取终端的输入，file可以使用/dev/tty
+文件将被持续打开，文件名字符串相同就使用之前打开的文件继续读入，直到调用close 关闭
+如果想要获取终端的输入，file可以使用"/dev/tty" 或 "-"
 
 ###### 管道
 ```
 awk 'BEGIN{ while(("ls" | getline d) > 0) print d}' file
 ```
-调用popen子进程（r打开），后续多次访问，只要字符串相同就使用同一管道取后续数据
+其中，字符串"ls" 通过调用popen（r打开）子进程，后续发现"ls"字符串调用，只要字符串相同就使用同一管道取后续数据，直到调用close("ls") 关闭该管道
+
+**注意：这里由于使用的popen 打开的管道，而且对于一个字符串只打开一个管道，所以只能只读或只写，而不能同时。即print | "tee aa" | getline d 的命令是行不通的**
 
 ##### 流程控制
 exit 直接退出，执行END块（除非在END块中执行）（类似awk自身循环的break），后面可以跟一个表达式，表达式的值作为awk命令的返回值
@@ -234,6 +237,11 @@ function funname(p1, p2, p3)
 int（截断取整）、sqrt（平方根）、exp（自然指数）、log（自然对数）、sin、cos、atan、atan2(y, x)（y/x的反正切）
 rand（随机数`[0,1)`）、srand([expr])（设置随机种子为expr，若省略为时间，返回先前的种子值）
 
++ 位运算
+
+and（位与）、or（位或）、xor（位异或）、compl（按位取反）
+lshift(val, c)、rshift(val, c)（val 左移、右移c 位）
+
 + 字符串
 
 length([str])、blength([str])
@@ -247,6 +255,9 @@ split(str, substr[, sp])
 
 tolower(str)、toupper(str)
 返回将str所有字符转换为小写（大写）的字符串。大写和小写的映射由当前语言环境的 `LC_CTYPE` 范畴定义。
+
+strtonum(string)
+字符串转换为数字
 
 sprintf(format, expr, expr, ...)
 格式化字符串（见附），并返回之（格式化方式同printf）
@@ -296,7 +307,8 @@ system(strCmd)
 ```
 awk 'BEGIN {system("echo \"Input your name:\\c\""); getline d;print "\nYour name is",d,"\b!\n"}'
 ```
-创建子进程执行命令，返回子进程的退出状态
+创建子进程执行命令，返回子进程的退出状态（类似C 的system() 函数）
+其输出结果将被直接打印
 
 systime()
 返回当前秒级时间戳
@@ -306,7 +318,18 @@ mktime("YYYY MM dd HH MM ss[ DST]")
 
 strftime([format [, timestamp]])
 格式化时间戳（见附），返回字符串
-
+格式字符串的语法格式如下：
+`%[flag][width]format_character`
+其中：
+可选的标记（flag）可以是：
+| flag | 说明 |
+| - | 连字符，不填充数字区域 |
+| _ | 下划线，使用空格填充数字区域 |
+| 0 | 数字 0，使用 0 填充数字区域。日期的数字区域默认是以 0 填充的 |
+| ^ | 使用大写字母 |
+| # | 使用相反的大小写字母 |
+可选的输出域宽度（width）是一个十进制数字
+format_character 参考下面附录
 
 ## 附
 ### 格式化字符串

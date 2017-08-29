@@ -103,6 +103,33 @@ logfile.close()
 ```
 这里logfile，还可以是 sys.stderr （不需要打开，直接 import sys 即可）
 
+##### pprint 模块
+使打印python 的结构化数据更可读
+该模块有一个类PrettyPrinter 和几个简易函数：
+pformat(object, indent=1, width=80, depth=None)：返回一个字符串
+pprint(object, stream=None, indent=1, width=80, depth=None)：默认打印到sys.stdout，除非设置stream 参数
+isrecursive(object)：检查对象是否递归包含
+isreadable(object)：检查对象是否可以使用 eval() 函数进行重建（如果递归包含返回False）
+saferepr(object)：返回一个字符串（对递归包含处理为`<Recursion on typename with id=number>`，但不会做格式化）
+
+###### PrettyPrinter 类
+构造：`PrettyPrinter(indent=1, width=80, depth=None, stream=None)`
+stream 可以设置为支持write 方法的类文件对象，如果未指定，则使用sys.stdout
+depth 是打印的最大嵌套深度，对于超过深度的内容，将表示为...
+indent 是显示坐进量
+width 是显示宽度
+
+方法：
++ pformat(object)
++ pprint(object)
++ isrecursive(object)
++ isreadable(object)：对于超过深度的对象也返回False
++ format(object, context, maxlevels, level)：该方法用于该类被继承后修改格式化字符串的实现，默认使用saferepr() 实现
+context 参数是一个字典，包含了当前上下文中已经存在的对象id，如果该对象再次被发现，说明有递归包含，递归调用format 方法将容器对象添加到这个字典中
+maxlevels 指定支持的最大嵌套深度，0 表示无限，在递归调用中，该参数不修改直接传递
+level 指定当前的层级
+该函数需要返回三个值：格式化字符串，一个表示是否可读的flag，一个表示是否发现递归包含的flag
+
 #### 1.2 输入
 ```
 user_in = raw_input('Enter login name: ')
@@ -473,9 +500,86 @@ E表示程序自身异常
 
 `fail(msg=None)`		直接fail掉
 
+##### nose
+[参考](http://nose.readthedocs.io/en/latest/)
+###### 安装
+```
+easy_install nose
+pip install nose
+python setup.py install
+```
+
+###### 测试执行
+```
+nosetests [options] [test_case]
+```
+对于options，除了在命令行指定，还可以通过项目中的setup.cfg 配置文件或用户主目录的.noserc 或 nose.cfg 配置文件进行指定，该文件是一个ini 格式的配置文件，将nosetests 的配置放在[nosetests] 的section 下，例如：
+```
+[nosetests]
+verbosity=3
+with-doctest=1
+```
+如果有这些配置文件，其中的配置将被组合，也可以使用-c 选项指定（可以使用多次以指定多个，其中的配置将被组合）
+如果某次执行nosetests 时想要忽略配置文件，可以设置`NOSE_IGNORE_CONFIG_FILES` 环境变量
+
+`test_case`如果缺省，则默认在当前目录下（可以使用-w 选项指定工作目录）进行测试用例的发现
+否则，可以指定为：
+1. 文件或目录名（绝对或相对路径）
+1. 模块名
+1. 文件或模块名:函数名
+1. 文件或模块名:类名
+1. 文件或模块名:类名.方法名
+
+除了使用nosetests 脚本，还可以在测试脚本里导入nose 模块使其通过nose 执行：
+```
+import nose
+nose.main()
+```
+执行并打印结果，脚本exit 0 表示成功，1 表示失败
+```
+import nose
+result = nose.run()
+```
+如果成功，result 为True，否则为False 或抛出一个未捕获的异常
+
+如果需要使用nose 的插件，只要安装即可，插件将给nosetests 增加命令行参数，为了确认插件是否安装，可以使用：
+```
+nosetests --plugins
+```
+还可以使用-v 或-vv 获得每个插件的更详细信息
+如果使用`nose.main(plugins=[])`或`nose.run(plugins=[])`，可以指定一个使用的插件列表
+
+###### 测试用例发现
+nose会自动识别源文件，目录或包中的测试用例。任何符合正则表达式`(?:\b|_)[Tt]est``(?:^|[\\b_\\.-])[Tt]est`（可以使用-m 选项进行更改）的类、函数、文件或目录，以及TestCase的子类都会被识别并执行。
+*注意：nose 不会包含那些可执行的文件，所以要想要这些文件被包含，就需要移除可执行位，或使用–exe选项*
+
+###### 测试用例编写
+在测试用例中可以使用assert或raise AssertionErrors
+
+nose支持setup和teardown函数，在测试用例的前后执行。四种作用域：
+1. package。可以在`__init__.py`中定义，setup方法名可以是setup, `setup_package`, setUp, setUpPackage，而teardown方法名可以是teardown, `teardown_package`, tearDown, tearDownPackage
+1. module。在模块内定义setup, `setup_module`, setUp, setUpModule，和/或teardown, `teardown_module`, tearDownModule
+1. class。除了继承自unittest.TestCase 的类，其他被发现的测试类也可以定义setUp 和tearDown 方法使之在每个测试方法之前和之后执行；在类中还可以定义`setup_class`, setupClass, setUpClass, setupAll, setUpAll 和`teardown_class`, teardownClass, tearDownClass, teardownAll, tearDownAll 类方法，使之在整个类的加载前和后执行
+1. function。任何符合正则的函数都会被包装成FunctionTestCase，可以修改函数对象的setup 和teardown 属性，也可以通过`with_setup`这个装饰器进行设置
+```
+def setup_func():
+    "set up test fixtures"
+
+def teardown_func():
+    "tear down test fixtures"
+
+@with_setup(setup_func, teardown_func)
+def test():
+    "test ..."
+```
+
+###### 测试用例批量生成
+可以将测试函数和方法做成生成器。这个生成器必须yield 一个tuple，这个tuple 的第一个元素必须是一个可调用对象，剩下的参数是传给这个可调用对象的参数。
+
+
 #### 4.2 调试器
 pdb，支持（条件）断点，逐行执行，检查堆栈。还支持事后调试。
-可以在执行Python时加上-m pdb选项（python -m pdb a.py），进行调试，断点是在程序执行的第一行之前。
+可以在执行Python时加上-m pdb选项（python -m pdb a.py args），进行调试，断点是在程序执行的第一行之前。
 当然，也可以在代码中import pdb；而后通过调用`pdb.run('mymodule.test()')`进行调试，或`pdb.set_trace()`设置断点。
 
 ##### 调试命令
@@ -587,7 +691,7 @@ logging.FileHandler('/tmp/test.log')
 
 logging.StreamHandler()
 
-RotatingFileHandler('myapp.log', maxBytes=10*1024*1024,backupCount=5)
+RotatingFileHandler('myapp.log', maxBytes=10*1024*1024, backupCount=5)
 ```
 
 方法：
@@ -638,7 +742,7 @@ close()：从handler的map中清除该handler
 ###### Formatter
 获得一个Formatter：
 ```
-logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.Formatter(fmt=None, datefmt=None)
 ```
 
 ###### Filter
@@ -1017,7 +1121,7 @@ UTF-16是定长的16位编码（易于读写）（这里的定长是针对基本
 # vim: set fileencoding=cp936 :
 ```
 以上三种格式选一即可
-那么，当python解析器读入代码文件时，如果是Unicode字符串，就会先将文件中的字节串按指定的编码说明进行decode（如果文件本身编码和声明编码不兼容就可能报错）；如果是字节串，则会直接原样读取，但在和Unicode字符串进行连接操作进行decode 的时候，就会按文件中指定的编码说明进行decode（此时不兼容会报错）。
+那么，当python解析器读入代码文件时，如果是Unicode字符串，就会先将文件中的字节串按指定的编码说明进行decode（如果文件本身编码和声明编码不兼容就可能报错）；如果是字节串，则会直接原样读取，但在和Unicode字符串进行连接等操作进行decode 的时候，就会按文件中指定的编码说明进行decode（此时不兼容会报错）。
 因此，在python 代码中写中文，尽量使用Unicode字符串（因为能和大多数软件兼容）
 如果在命令行直接使用python，则需要考虑命令行的编码（Windows下为gbk，也即cp936）
 ******
@@ -1064,7 +1168,7 @@ s.substitute(lang='Python', howmany=3)，必须给出全部$变量的替换，�
 
 
 ###### 相关模块
-re          正则表达式
+[re](http://www.cnblogs.com/huxi/archive/2010/07/04/1771073.html)          正则表达式
 struct      字符串和二进制之间的转换
 StringIO/cStringIO      字符串缓冲对象，操作方法类似file对象（后者是C版本，更快一些，但不能被继承）
 base64      Base 16/32/64数据编解码
@@ -1109,6 +1213,7 @@ reverse()：反转序列
 del alist：销毁列表
 del alist[i]：删除列表的第i项（还可以删除一个切片）
 alist[1:3] = []：切片更新操作（等号右侧必须是一个可迭代对象），将指定切片替换为赋值的列表，例子所示为删除，[1:1]相当于在1的位置插入，其他相当于替换（区别[1:2]和[1]，前者的替换是扩展式的，即右侧的可迭代对象的元素替换切片元素；而后者单索引替换则是使用右侧的对象整体替换索引位置的元素）
+*注：并没有拷贝函数，所以浅拷贝可以使用c = a[:] 或c = list(a) 或copy.copy 函数*
 
 ###### 列表解析
 ```
@@ -1176,6 +1281,12 @@ dict(x=1, y=2)				{'x':1, 'y':2}
 dict([(ak, av), (bk, bv)])	{ak:av, bk:bv}（二元可迭代对象构造字典，二元不一定是元组）
 dict(d)				使用另一个字典构造，比copy方法慢
 
+###### 字典推导
+类似于列表解析
+```
+{ key_expr: value_expr for value in collection if condition }
+```
+
 ###### 方法
 d[key] = value：有则改值，无则添加key:value（注：当aaa[key]不存在且作为右值时，则将抛出KeyError，不会添加）
 setdefault(key, default=None)方法：有key则返回对应值（并不会修改字典），无key则将key:default加入字典，返回default
@@ -1205,6 +1316,9 @@ fromkeys(iterkey, value=None)方法：返回一个字典，字典的键来自于
 集合有两种：
 可变集合set和不可变集合frozenset
 只能使用上面两种名字的构造函数进行构造，数据源（参数）可以来自可迭代对象
+
+###### 集合推导
+类似于列表解析，只不过把`[]`换成`{}`
 
 ###### 集合运算
 比较运算符表示集合的包含关系
@@ -1545,6 +1659,8 @@ fs = map(lambda i: lambda n: i+n, range(10))
 def func():
     pass
 相当于func = deco1(deco_arg)(deco2(func))
+装饰器通常使用闭包实现，即在装饰器函数内定义一个函数，作为替换函数，该函数会调用被装饰函数，从而完成装饰，最后装饰器返回该替换函数。
+
 通过装饰器，可以实现AOP编程
 
 ### 4. 匿名函数lambda
@@ -1617,19 +1733,39 @@ type(b)        # <class ‘__main__.B’>
 访问权限、嵌套类?
 
 ## 第七章. 模块
-当你创建了一个 Python 源文件，模块的名字就是不带 .py 后缀的文件名
+当你创建了一个 Python 源文件，就是一个独立的模块，模块名是不带 .py 后缀的文件名
+在该源文件中，
+变量`__name__`就是当前模块的名字。一般作为主模块直接执行的，`__name__`都是`__main__`，而被import的模块使用`__name__`则显示该模块的模块名。
+变量`__file__`是模块文件的路径（包含文件名，可能是一个相对路径）
 
-导入模块：`import module_name [as alias_name]`
-访问模块中的：
+### 导入模块
+```
+import module_name [as alias_name]
+
+from module_name import identifier
+```
+前者是导入整个模块
+后者是导入模块中的某个标识符
+
+sys.modules 变量是一个字典，它保存了已经加载的模块名和模块实例的映射关系
+
+#### 搜索路径
+想要成功导入模块，就要确保该模块在搜索路径中可以找到
+
+搜索路径是环境变量PYTHONPATH 指示一组路径
+在解释器启动后，搜索路径被保存在sys.path 变量里，该变量是一个字符串列表，可以进行动态修改
+搜索时是按照该列表顺序进行搜索，如果找到就不再搜索后面的路径
+
+### 名字空间
+Python 解释器首先加载内建名称空间，即`__builtins__`中的标识符；而后加载模块的全局名字空间；当调用函数时创建局部名字空间
+可以通过globals() 和 locals() 内建函数判断出某一名字属于哪个名称空间
+
+访问导入模块中的：
 ```
 module_name.variable
 module_name.function()
 ```
-导入模块中的内容：`from module_name import var`
-而后就可以不用`module_name`直接访问var
-不加前缀的`__name__`就表示显示当前模块的名字，一般作为主模块直接执行的`__name__`都是`__main__`，而被import的模块使用`__name__`则显示该模块的模块名。
 
-查找模块的路径？
 
 ### 1. 作用域
 在函数中定义的变量拥有函数级作用域（局部作用域），在函数外定义的变量拥有模块级作用域（全局域）
@@ -1797,7 +1933,9 @@ hashable（可用于字典key）
 
 #### calendar 模块
 isleap(year)：是否是闰年
-
+leapdays(y1, y2)：返回y1, y2 两年之间的闰年个数
+monthrange(year, month)：返回一个二元组(w, d)，w 是该月1号的星期码（0是星期一，6是星期日），d 是该月的天数
+weekday(year, month, day)：返回指定日期的星期码（0是星期一，6是星期日）
 
 #### smtplib 模块
 smtplib 模块主要通过SMTP类和其子类`SMTP_SSL`定义一个SMTP 客户端会话对象来完成邮件发送
@@ -1917,8 +2055,10 @@ file(name, mode=’r’, buffering=1)
 linesep        系统的行分隔符。（如Windows使用'\r\n'，Linux使用'\n'）
 sep            用来分隔文件路径名的字符串
 pathsep        多个路径之间的分隔符（如Windows使用’;’，Linux使用’:’）
+extsep         文件名和扩展名之间的分隔符
 curdir        返回当前目录（’.’）
 pardir        返回当前目录的父目录（’..’）
+environ       当前环境变量的一个字典
 
 #### 2.2 模块方法
 ##### 2.2.1 文件与目录
@@ -1994,6 +2134,7 @@ mkfifo
 + getatime(filename)            返回文件的最近访问时间，该信息来自于os.stat()
 + getmtime(filename)        返回文件的最近修改时间，该信息来自于os.stat()
 + abspath(path)                返回指定路径的绝对路径
++ realpath(filename)        返回指定文件的绝对路径（会对符号链接进行解析到真实路径）
 + normpath(path)            返回指定路径的规范字符串形式（滤除多余的os.sep）
 + expanduser(path)            将路径中的~或~user转换为对应用户的主目录后的path的绝对路径（如果用户未知或$HOME未定义，则不返回）
 
@@ -2260,8 +2401,6 @@ csv            访问csv文件（逗号分隔文件）
 filecmp        比较目录和文件
 fileinput        多个文本文件的行迭代器
 glob/fnmatch    Unix样式的通配符（`*`和?）匹配功能（但并不支持~）
-socket        网络文件访问
-urllib        通过URL建立到指定web服务器的网络连接
 
 ## 第九章. 异常
 面对错误，应用程序应该成功的捕获并处置，而不至于灾难性的影响其执行环境。
@@ -2375,8 +2514,78 @@ threading.BoundedSemaphore
 
 ## 网络编程
 ### socket 模块
+socket        网络文件访问
 ### urllib 和urllib2 模块
+urllib        通过URL建立到指定web服务器的网络连接
+
+#### urllib2
+<https://docs.python.org/2/library/urllib2.html>
+用于打开URL 链接（通常是HTTP），包括了数字认证、重定向、cookies 等等
+
+##### 函数
++ urlopen(url, data=None[, timeout[, cafile[, capath[, cadefault[, context]]]]])
+该函数的行为是构造了一个Request对象（无论是传入的还是构造的），经过编码，发到指定URL，并获得response的过程。该函数默认会自动处理重定向，而其他的错误（400-599的错误码）则需要自己处理。
+其中：
+url 可以是一个字符串或者Request 对象
+data 是一个字符串，表示传给server 的额外数据（此时为POST 请求），没有为None（此时为GET 请求）。data 的格式必须是application/x-www-form-urlencoded，可以使用urllib.urlencode() 函数将一个字典或二元组序列转化成该格式。
+timeout 是请求超时时间（秒），仅用于HTTP, HTTPS 和FTP 连接，如果未指定，则使用全局的默认超时时间
+context 是ssl.SSLContext 实例
+cafile 和capath 用于提供HTTPS 请求的受信CA 证书集，前者指定一个单文件，后者指定一个目录
+cadefault 参数忽略
+该函数返回一个类文件对象（addinfourl这个类），除了read、readline、readlines、close这些方法外，还有：
+getcode()：返回HTTP 状态码
+geturl()：返回获取页面的真实URL（因为其间可能存在重定向）
+info()：返回一个httplib.HTTPMessage 对象，可以直接print 查看Response对象的各种头信息（kv）
+该函数失败产生URLError（继承自IOError），它有一个reason属性（是一个错误状态码和错误信息的二元组），HTTPError是其子类，它有一个code 属性，是HTTP 状态码
++ install_opener(opener)
+安装一个OpenerDirector 实例作为默认的全局opener（即urlopen 函数默认使用的opener）
++ build_opener([handler, ...])
+按照给定的handler 顺序构造并返回一个OpenerDirector 实例。这些handler 是BaseHandler 或其子类的实例（而且必须可以进行无参构造）
+另外，在这些handler 之前还有一些默认的handler，除非参数handlers 中包含了这些handler 或其子类的实例：ProxyHandler (if proxy settings are detected), UnknownHandler, HTTPHandler, HTTPSHandler (if ssl module can be imported), HTTPDefaultErrorHandler, HTTPRedirectHandler, FTPHandler, FileHandler, HTTPErrorProcessor
+
+##### 类
++ `Request(url, data=None[, headers][, origin_req_host][, unverifiable])`
+其中：
+url 必须是一个有效URL 的字符串
+data 同urlopen 函数的data 参数
+headers 是一个字典，表示各种头信息
+    注意一些header：
+    - User-Agent：有些 Server 或 Proxy 会检查该值，用来判断是否是浏览器发起的 Request；此外，浏览器信息也被用于服务器识别来发送不同版本的内容。默认，urllib2把自己作为“Python-urllib/x.y”（x和y是Python主版本和次版本号）
+    - Content-Type：在使用 REST 接口时，Server 会检查该值，用来确定 HTTP Body 中的内容该怎样解析，设置错误会导致 Server 拒绝服务。常见的取值有：
+    application/x-www-form-urlencoded：浏览器提交 Web 表单时使用（会进行编码）
+    application/xml：在 XML RPC，如 RESTful/SOAP 调用时使用 
+    application/json;charset=UTF-8：在 JSON RPC 调用时使用
+    text/plain;charset=UTF-8：空格转换为`+`加号，但不对特殊字符编码
+    multipart/form-data：文件上传（不编码）
+后两个参数用于处理第三方的HTTP cookies
++ OpenerDirector
+opener 类
++ BaseHandler
+handler 基类
++ HTTPPasswordMgr
+维护一个`(realm, uri) -> (user, password)` 映射的数据库
+    - add_password(realm, uri, user, passwd)
+    uri 可以是一个单个uri，也可以是uri 序列
+    realm, user, passwd 是一个字符串
+    - find_user_password(realm, authuri)
+    根据给定的realm 和 URI获取user/password，如果没有匹配，返回(None, None)
++ HTTPPasswordMgrWithDefaultRealm
+维护一个`(realm, uri) -> (user, password)` 映射的数据库，对于找不到合适realm 时，会使用realm 为None 的映射
+兼容HTTPPasswordMgr 接口
+即调用其add_password 方法时，可用设realm 参数为None
++ HTTPBasicAuthHandler([password_mgr])
+如果提供password_mgr 参数，必须兼容HTTPPasswordMgr 接口
+当需要基础验证时，服务器发送一个header(401错误码) 请求验证。这个指定了scheme 和一个realm，形如：`Www-authenticate: SCHEME realm="REALM"`，例如：`Www-authenticate: Basic realm="cPanel Users"`
+客户端必须使用新的请求，并在请求头里包含正确的姓名和密码。这是“基础验证”
+如果你知道realm(从服务器发送来的头里)是什么，你就能使用HTTPPasswordMgr；如果不关心realm是什么，就能用方便的HTTPPasswordMgrWithDefaultRealm。
+
+##### 定制化
+当你获取一个URL 你使用的是一个opener（一个urllib2.OpenerDirector的实例），而该opener 可以使用它管理的Handler 针对特定的协议和请求进行处理。
+可以通过使用build_opener() 函数创建一个新的OpenerDirector实例，而后直接调用其open() 方法打开一个URL（当然也可以用install_opener() 函数安装后用urlopen 进行打开）
+
+
 ### requests 模块
+<http://requests.readthedocs.io/en/master/>
 <https://zhuanlan.zhihu.com/p/21976757>
 
 ## 结构化数据处理

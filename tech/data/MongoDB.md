@@ -205,6 +205,9 @@ project 使用`{"key":{"$slice": n}}`，其中n 可以是正数（表示前n 项
 可以对结果再调用：
 pretty()：得到一个格式化的输出
 count()：获得返回的文档数
+> On a sharded cluster, count can result in an inaccurate count if orphaned documents exist or if a chunk migration is in progress.
+> 由于分布式集群正在迁移数据，它导致count结果值错误，需要使用aggregate pipeline来得到正确统计结果
+> 参考<https://docs.mongodb.com/manual/reference/command/count/>
 limit(NUMBER)：返回指定个数的文档数
 skip(NUMBER)：跳过指定个数的文档
 sort({<KEY>: 1})：排序，val的1表示升序，-1表示降序
@@ -495,9 +498,27 @@ collection中的文档数
 collection.group(key, condition, initial, reduce, finalize=None, **kwargs)
 collection.aggregate(pipeline, **kwargs)
 collection.map_reduce(map, reduce, out, full_response=False, **kwargs)
-inline_map_reduce(map, reduce, full_response=False, **kwargs)
+collection.inline_map_reduce(map, reduce, full_response=False, **kwargs)
 ```
+key 是分组的键，可以是形如`{"Year":-1,"Rank":1}`的字典，或一个字段列表
+condition 是筛选条件（一个python 字典）
+initial 是一个python 字典，其中是聚集结果的初值
+reduce 是一个js 函数，形如
+```
+from bson.code import Code
+code = Code('''
+    function (obj, prev) {
+        prev.count++;
+    }
+''')
+```
+其中函数参数obj是一个文档，prev 是对应key 的一个initial 字典
+group 函数返回一个类似字典列表的对象，每个对象包括key 的prev 字典
+注：在sharded collection 上group 函数无法工作；*另外，该函数从3.4 废弃，请使用aggregate()函数的$group 或使用`map_reduce`*
 
 
 注：文档对象如果想要使用json.dumps() 函数进行序列化，必须`del doc['_id']`，因为ObjectId类型无法序列化
 不过可以使用`bson.json_util.dumps()`进行序列化（对应的反序列化方法是`bson.json_util.loads()`）
+
+
+<http://www.cnblogs.com/cswuyg/p/4355948.html>

@@ -77,7 +77,7 @@ py object -> json
 | True/False | true/false |
 | None | null |
 ```
-dump(obj, skipkeys=False, ensure_asci=True, check_circular=True, allow_nan=True, cls=None, indent=None, separators=None, encoding='utf-8', default=None, sort_keys=False,...)
+dumps(obj, skipkeys=False, ensure_asci=True, check_circular=True, allow_nan=True, cls=None, indent=None, separators=None, encoding='utf-8', default=None, sort_keys=False,...)
 ```
 + obj 就是序列化的Python对象；
 + skipkeys 如果设置为False，则如果obj字典的key不是基本类型就会被忽略而不是抛出一个TypeError异常；

@@ -305,13 +305,13 @@ git remote rm $remote_repo
 
 #### 本地库推送远程库
 ```
-git push -u $remote_repo [$local_b_name[:$remote_b_name]]
+git push [OPTIONS] $remote_repo [$local_b_name[:$remote_b_name]]
 ```
 `$remote_repo`是远程仓库，可以是短别名，也可以是url
 `$local_b_name`是推送的本地分支名，如果缺省而远程分支未缺省，表示推送一个空的分支到远程分支，相当于删除远程分支即`git push $remote_repo --delete $remote_b_name`
 `$remote_b_name`是推送的远程分支，如果远程分支不存在则创建，如果有追踪关系可以缺省；如果和本地分支都缺省表示从当前分支推到远程追踪的分支
-如果当前分支与多个主机存在追踪关系，则可以使用-u选项指定一个默认主机，这样后面就可以不加任何参数使用git push
-不管是否存在对应的远程分支，将本地的所有分支都推送到远程主机，这时需要使用--all选项
+如果当前分支与多个远程库存在追踪关系，则可以使用-u | --set-upstream 选项指定一个默认远程库，这样后面就可以不加任何参数使用git push
+如果不管是否存在对应的远程分支，将本地的所有分支都推送到远程库，这时需要使用--all选项
 如果远程主机的版本比本地版本更新，推送时Git会报错，要求先在本地做git pull合并差异，然后再推送到远程主机。这时，如果你一定要推送，可以使用--force选项
 git push不会推送标签(tag)，除非使用--tags选项
 --recurse-submodules=check|on-demand
@@ -323,6 +323,7 @@ git pull [$remote_repo [+][$remote_b_name[:$local_b_name]]]
 ```
 如果因为自动合并失败导致pull失败，则需要先解决冲突，再提交，再push
 `$remote_repo` 和 `$remote_b_name` 缺省的默认值是当前分支配置中的remote 和 merge 项
+*如果远程库和当前库的分支没有共同的祖先，merge 时会失败，提示refusing to merge unrelated histories. 如果想要强制合并，可以使用--allow-unrelated-histories 选项*
 
 只拉取不合并
 ```

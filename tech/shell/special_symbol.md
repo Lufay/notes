@@ -52,6 +52,13 @@ find ./ -name '' -maxdepth 1 -type f | grep -v 'keep' | xargs rm
 shell对函数输出重定向后，如果函数中的某条语句在使用重定向则会劫走外部的重定向输出
 若想要两个地方获得输出，可以使用 `| tee fileName`，但管道只导出标准输出，而不导出标准错误，所以如果标准错误也要导出到文件，则管道前需将标准错误重定向（`2>&1`）
 
+### 重定向正在运行的进程
+1. 获得程序的进程号(PID)
+1. 使用gdb调试这个进程。(gdb -p $pid)
+1. 通过close系统调用关闭标准输出(STDOUT：`call close(1)`)或者标准错误(STDERR：`call close(2)`)
+1. 通过creat系统调用打开一个文件并将其文件描述符通过dup2系统调用复制给标准输出或者标准错误(`call dup2(creat("/tmp/log", 0600), 1)`)
+1. 退出调试器。现在可以将程序通过“CTRL+z”, “bg”, “disown“放入后台运行了(quit)
+
 ## 清空文件
 1. 利用NOP命令：
 ```
