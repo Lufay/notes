@@ -5,6 +5,7 @@
 # vim file
 .*.swp
 .*.un~
+*~
 
 # output file
 *.htm
