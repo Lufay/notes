@@ -957,8 +957,6 @@ complex(1.2, 4.5)       (1.2+4.5j)
 conjugate()方法：返回共轭复数
 
 ##### 1.1.6 相关模块
-+ decimal		十进制浮点运算类
-+ array			高效数值数组
 + math/cmath	标准C数学函数库，前者是常规运算，后者是复数运算
 + operator		函数形式调用操作符（不仅仅是数值运算可以，下面的容器运算也可以使用该模块）
 + random		多种分布的伪随机数发生器
@@ -1004,7 +1002,6 @@ step缺省或为None时默认为1；
 
 相关模块
 copy        提供浅拷贝copy(obj)和深拷贝deepcopy(obj)的能力（为了优化深拷贝的性能，对于包含的完全是不可变类型的对象，即使使用深拷贝，执行的也是浅拷贝）
-collections 高性能容器数据类型（例如，判断是否是可迭代对象：isinstance(obj, collections.Iterable)）
 
 ##### 1.2.1 字符串
 引号之间的字符集合（单引号和双引号均可）。
@@ -1348,6 +1345,112 @@ fromkeys(iterkey, value=None)方法：返回一个字典，字典的键来自于
 `symmetric_difference(iter)`方法：返回本集合和s集合的XOR集（元素只属于一个集合），即^运算
 上述运算返回的结果的类型取决于左操作数，即本集合的类型。方法和操作符的区别，在于方法支持传入一个可迭代对象，而运算符只支持集合间的运算
 `copy()`方法：浅拷贝一个自己的副本，比构造函数要快
+
+#### 1.2.6 collections 模块
+提供一些高性能容器数据类型和容器的抽象基类（ABC）
+
+容器的抽象基类可以使用isinstance()函数进行实例判断
+| ABC | Abstract Methods |
+|-----|------------------|
+| Container | `__contains__` |
+| Sized | `__len__` |
+| Iterable | `__iter__` |
+|     Iterator | next |
+|     Sequence | `__getitem__` |
+|         MutableSequence | `__setitem__`, `__delitem__`, insert |
+|     Set |  |
+|         MutableSet | add, discard |
+|     Mapping | `__getitem__` |
+|         MutableMapping | `__setitem__`, `__delitem__` |
+| Hashable | `__hash__` |
+| Callable | `__call__` |
+
+##### namedtuple
+生成一个命名元组类，通过该类构造的元组，可以类似访问属性的方式访问成员（而不必用索引），而且其很轻量，不比普通元组占用更多内存。
+生成函数：
+```
+namedtuple(typename, field_names, verbose=False, rename=False)
+```
+返回一个名为typename 的tuple的子类。（一般接受返回值的变量也命名为typename，因为typename 是类型名，但却并不是当前空间中有效的标识符，相当于返回了一个匿名类型，并起了一个别名为接受的返回值，而真实名字typename 并不能使用）
+field_names 可以是一个字符串序列，或者是一个字符串（用空格或逗号分隔）。用以表示各个成员的命名，如果命名不符合规范，且rename 参数为True，则使用`_n`进行命名替换（n 是成员的索引）
+verbose 如果是True，则在构造子类前打印其定义
+
+返回的这个类型，可以使用位置参数，也可以使用关键字参数进行构造；同时既可以当作tuple 操作，也可以当作一个对象操作（支持`.`和getattr函数）。
+此外还有一些新增的属性和方法：
+`_fields`：字符串元组
+`_make(iterable)`：类方法，使用一个可迭代对象生成一个对象
+`_asdict()`：对象方法，返回一个OrderedDict 对象
+`_replace(**kwargs)`：对象方法，修改部分成员，并返回一个新的对象
+
+使用namedtuple 可以很容易定义枚举常量
+
+##### deque
+双端队列类，支持常数时间，线程安全的双端操作
+```
+deque([iterable[, maxlen]])
+```
+使用可迭代对象从左而右地构造，如果maxlen 被指定且不是None，那么双端队列就被限定最大长度，当充满时，在一端插入会在另一端丢弃相应成员。
+支持属性和方法：
+maxlen：只读属性，如果未制定为None
+append(x)：右端插入
+appendleft(x)：左端插入
+extend(iterable)：右端插入多个
+extendleft(iterable)：左端插入多个
+pop()：右端弹出
+popleft()：左端弹出
+remove(value)：删除第一个值为x的元素，不存在则抛异常
+count(x)：返回,值为x的元素在队列中出现的次数
+reverse()：原地反转
+clear()：清空队列
+rotate(n)：如果n为正，则队列循环右移n 个位置；n为负则向左
+
+支持容器通用操作，可迭代，可pickle，支持reversed，可使用copy模块进行拷贝
+支持索引，但不支持切片（访问中间位置的元素具有线性复杂度，因此不适合随机访问）
+
+##### defaultdict
+带默认值生成器的字典（dict的子类）
+```
+defaultdict([default_factory[, …]])
+```
+default_factory默认是None，可以是一个无参的函数，当字典索引key失败时，调用该函数返回一个默认值插入字典并返回。剩余参数将传给dict，进行构造
+该对象有一个同名属性，可以修改这个生成器
+**注意：仅当索引key失败会触发生成器，如果使用get()等方法，则不会而保持其默认行为**
+
+##### OrderedDict
+有序字典（按插入顺序）（dict的子类）
+**注意：对于使用关键字参数的构造器和update方法，其顺序将丢失，因为python使用dict 进行参数传递**
+更新值并不影响顺序
+和OrderedDict 进行等值比较顺序敏感，和其他Mapping 对象比较则顺序不敏感
+额外支持的方法：
+popitem(last=True)：默认弹出最后插入的kv二元组，last为False，则弹出最早插入的kv二元组
+还支持reversed()函数进行逆序
+
+##### Counter
+计数器类（dict的子类）
+```
+Counter([iterable-or-mapping])
+```
+可以从Mapping 对象构造，也可以给一个可迭代对象进行统计构造
+支持0 和负值
+该对象不强制要求key/val的类型，只要它们能满足操作条件即可
+在使用索引key 访问计数时，如果key 不存在则返回0
+
+额外的方法：
+elements()：返回一个迭代器，对每个key 迭代对应计数次（顺序随机），计数不大于0则忽略
+most_common([n])：返回一个(key, count)二元组的列表，如果指定n且不为None，则返回count最大的n个，对于count相同的值则随机排序
+subtract([iterable-or-mapping])：减去另一个计数，并更新自身
+
+有2个字典方法行为变化：
+fromkeys(iterable)：未实现
+update([iterable-or-mapping])：加上另一个计数，并更新自身
+
+该对象该支持一些运算符：
+c1 + c2：将每个计数对应相加
+c1 - c2：将每个计数对应相减
+c1 & c2：取每个计数的最小值
+c1 | c2：取每个计数的最大值
+**注意：返回结果会丢弃那些不大于0 的计数值**
+
 
 ### 2. 其他内建类型
 类型type
