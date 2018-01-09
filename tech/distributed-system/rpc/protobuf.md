@@ -1,5 +1,5 @@
-[TOC]
 # Protocol Buffers
+[TOC]
 一种结构化数据的序列化协议
 [开源项目地址](https://github.com/google/protobuf)
 [开发者指南](https://developers.google.com/protocol-buffers/)

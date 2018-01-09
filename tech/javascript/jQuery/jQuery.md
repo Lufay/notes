@@ -1,6 +1,7 @@
+# jQuery
 [TOC]
 
-### jQuery 库的特性
+## 特性
 + HTML 元素选取
 + HTML 元素操作
 + CSS 操作
@@ -10,6 +11,7 @@
 + AJAX
 + Utilities
 
+## 使用
 ### 基础语法
 `$(selector).action()`
 美元符号定义为jQuery: 指定查询范围

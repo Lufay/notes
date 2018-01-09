@@ -346,6 +346,42 @@ built-in 是`__builtins__`模块的成员，在你的程序开始或在交互解
 如果一行写一条语句，则不需要语句分隔符，否则，需要用分号“;”
 如果一行语句分多行写，可以在行末使用“\”进行续行（此外，括号和三引号内的内容，可以直接跨行而不用“\”）
 
+推荐缩进格式（参考PEP8）：
+```
+# 对齐缩进
+foo = long_function_name(var_one, var_two,
+                         var_three, var_four)
+
+# 参数缩进
+def long_function_name(
+		var_one, var_two, var_three,
+		var_four):
+	print(var_one)
+
+# 续行缩进
+foo = long_function_name(
+	var_one, var_two,
+	var_three, var_four)
+
+# 使用注释区别同级缩进
+if (this_is_one_thing and
+    that_is_another_thing):
+    # Since both conditions are true, we can frobnicate.
+    do_something()
+
+# 运算符增加缩进
+if (this_is_one_thing
+        and that_is_another_thing):
+    do_something()
+
+# 运算符和右操作数一起
+income = (gross_wages
+          + taxable_interest
+          + (dividends - qualified_dividends)
+          - ira_deduction
+          - student_loan_interest)
+```
+
 #### 2.5 代码结构
 首行指定解释器（类Unix下）
 模块的文档描述
@@ -361,6 +397,12 @@ built-in 是`__builtins__`模块的成员，在你的程序开始或在交互解
 ''' module __doc__
 ...
 '''
+
+from __future__ import barry_as_FLUFL
+
+__all__ = ['a', 'b', 'c']
+__version__ = '0.1'
+__author__ = 'Cardinal Biggles'
 
 import module_a
 
@@ -1346,7 +1388,7 @@ fromkeys(iterkey, value=None)方法：返回一个字典，字典的键来自于
 上述运算返回的结果的类型取决于左操作数，即本集合的类型。方法和操作符的区别，在于方法支持传入一个可迭代对象，而运算符只支持集合间的运算
 `copy()`方法：浅拷贝一个自己的副本，比构造函数要快
 
-#### 1.2.6 collections 模块
+##### 1.2.6 collections 模块
 提供一些高性能容器数据类型和容器的抽象基类（ABC）
 
 容器的抽象基类可以使用isinstance()函数进行实例判断
@@ -1451,6 +1493,20 @@ c1 & c2：取每个计数的最小值
 c1 | c2：取每个计数的最大值
 **注意：返回结果会丢弃那些不大于0 的计数值**
 
+##### 1.2.7 heapq
+堆队列，该实现是一个最小堆，即`heap[k] <= heap[2*k+1] and heap[k] <= heap[2*k+2]`，故最小的元素是 heap[0]
+
+###### 模块函数
+heapify(x)：把一个list 转换成一个最小堆（原地，线性时间）
+heappush(heap, item)：给堆加入一个元素，并保持堆的特性
+heappop(heap)：弹出heap[0]，并保持堆的特性
+heappushpop(heap, item)：先push，后pop（更有效率）
+heapreplace(heap, item)：先pop，后push
+
+`merge(*iterables)`：把多个有序的输入合并为一个有序输出，返回一个迭代器（省内存）
+nlargest(n, iterable[, key])：返回迭代器中n 个最大的数组成的列表，key 可以提供一个获取比较key 的函数
+nsmallest(n, iterable[, key])：返回迭代器中n 个最小的数组成的列表，key 可以提供一个获取比较key 的函数
+*注：nlargest 和nsmallest 仅当n 较小时比较有效，如果较大，使用sorted() 更有效，如果n == 1，则使用min 和max 更有效*
 
 ### 2. 其他内建类型
 类型type
@@ -1557,7 +1613,7 @@ math.factorial(x)，x!
     + 列表和元组的比较，逐元素进行比较，若不同则直接返回结果，否则继续，若一个先比较完所有元素，则其较小。
     + 字典的比较，首先比较len，长者较大；相同长度，则按keys()顺序比较各个键，若不同则返回结果；否则再比较各个键对应的值，若不同则返回结果，否则则相同。
     + Instance，classobj之间比较？？？（实例和类型均按名的字符串比较）
-1. 混合类型比较
+1. 混合类型比较（Python3 将不再支持这种混合类型比较）
 instance  <  数字型  <  classobj  <  dict  <  function  <  list  <  str  <  tuple
 
 ##### 内置的比较函数
@@ -1841,46 +1897,103 @@ type(b)        # <class ‘__main__.B’>
 变量`__name__`就是当前模块的名字。一般作为主模块直接执行的，`__name__`都是`__main__`，而被import的模块使用`__name__`则显示该模块的模块名。
 变量`__file__`是模块文件的路径（包含文件名，可能是一个相对路径）
 
-### 导入模块
+### 1. 导入模块
 ```
 import module_name [as alias_name]
 
-from module_name import identifier
+from module_name import identifier1 [as alias_name1][, identifier2 [as alias_name1][, ...identifierN [as alias_nameN]]]
 ```
 前者是导入整个模块
-后者是导入模块中的某个标识符
+后者是导入模块中的某个标识符，但这种导入方式只能读取不能改写模块变量
+想要改写只能使用前者
 
 sys.modules 变量是一个字典，它保存了已经加载的模块名和模块实例的映射关系
 
-#### 搜索路径
-想要成功导入模块，就要确保该模块在搜索路径中可以找到
+模块导入遵循作用域原则，模块顶层导入的有全局作用域，函数中导入的，是局部作用域
+首次导入模块会加载模块的代码，即会执行模块的顶层代码
 
-搜索路径是环境变量PYTHONPATH 指示一组路径
-在解释器启动后，搜索路径被保存在sys.path 变量里，该变量是一个字符串列表，可以进行动态修改
+#### 1.1 搜索路径
+想要成功导入模块，就要确保该模块在搜索路径中可以找到
+搜索路径在启动Python时，通过环境变量PYTHONPATH（冒号分隔的一组路径）读入。在解释器启动后，搜索路径被保存在sys.path 变量里，该变量是一个字符串列表，可以进行动态修改
 搜索时是按照该列表顺序进行搜索，如果找到就不再搜索后面的路径
 
-### 名字空间
+还支持从zip 归档文件中导入模块（.py, .pyc, .pyo），只需要将归档文件当做一个目录即可
+只不过Python 不会为py 文件生成pyc 文件，所以如果zip 归档中如果没有pyc，导入速度会较慢
+
+### 2. 名字空间
+名字空间是标识符到对象的映射集合
 Python 解释器首先加载内建名称空间，即`__builtins__`中的标识符；而后加载模块的全局名字空间；当调用函数时创建局部名字空间
 可以通过globals() 和 locals() 内建函数判断出某一名字属于哪个名称空间
+globals()：返回当前全局标识符到对象映射的字典
+locals()：返回当前局部标识符到对象映射的字典（在全局作用域下调用，返回和globals()函数相同）
 
-访问导入模块中的：
+访问导入模块中的成员：
 ```
 module_name.variable
 module_name.function()
 ```
 
+### 3. 作用域
+作用域是标识符的可见性
+在函数中定义的变量拥有函数级作用域（局部作用域），在所有函数之外定义的变量拥有模块级作用域（全局域）
+当搜索一个标识符的时候，python 先从当前的局部作用域开始搜索。如果在当前的局部作用域内没有找到那个名字，就会逐层向外查找该标识符（自由变量），直到全局域，如果还没找到最后确认该标识符是否是一个内置标识符，如果依然找不到就会被抛出 NameError 异常。
 
-### 1. 作用域
-在函数中定义的变量拥有函数级作用域（局部作用域），在函数外定义的变量拥有模块级作用域（全局域）
-当搜索一个标识符的时候,python 先从局部作用域开始搜索。如果在局部作用域内没有找到那个名字，就就会逐层向外查找该标识符（自由变量），直到全局域确认这个变量是否存在，最后确认该标识符是否是一个内置标识，如果依然找不到就会被抛出 NameError 异常。
-
-#### 1.1 函数作用域
+#### 3.1 作用域覆盖
 如果函数没有对全局变量（以及外部的自由变量）进行赋值，则可以直接读取该变量的值；
 如果函数内对全局变量（以及外部函数的同名变量）赋值，则视为定义了一个局部变量隐藏了同名的全局变量（或外部变量），而如果在赋值前读取该变量的值将抛出 UnboundLocalError 异常；
 想要真正对全局变量赋值，需使用`global var[, var, ...]`声明（位于对全局变量的读写操作之前，否则会有警告）
 Python 3.x引入了nonlocal 关键字，和global 功能类似，用于声明一个变量是外部（自由）变量，并且在当前作用域中需要修改这个外部变量。
 
-### 2. 常用模块
+### 4. 包
+包是带有`__init__.py` 文件的目录
+通过目录这种层次结构，可以实现包的层次关系（子目录带上`__init__.py` 文件就是一个子包）
+`__init__.py`的内容可以为空，一般用来进行包的某些初始化工作或设置`__all__`的值，`__all__`是在使用`from package-name import *`语句决定导出哪些模块，它由一个模块名字符串组成的列表
+`__init__.py` 文件会在包被首次导入时执行，当导入子包时，会从顶层到导入的子包，依次执行未加载的包的`__init__.py` 文件
+
+#### 导入包和使用包
+通过包导入模块
+```
+import package_name.sub_package_name.module_name
+package_name.sub_package_name.module_name.identifier
+```
+也可以只导入某一层包，那么能够使用的只有那一层以及上面各层包的`__init__.py` 文件中的内容
+只要保证顶层包在搜索路径中就可以保证该包下的任何子包和模块都可以成功导入
+
+当包中标识符和模块或者包重名，如果模块或包被导入，则模块或包优先绑定该标识符；
+当模块和子包重名，则子包优先绑定该标识符
+
+导入子包
+```
+from package_name import sub_package_name
+sub_package_name.module_name.identifier
+
+from package_name.sub_package_name import module_name
+module_name.identifier
+
+from package_name.sub_package_name.module_name import identifier
+identifier
+```
+注意：如果名字和标准库模块的符号冲突，会覆盖标准库的定义
+
+
+
+### 5. 自定义导入器
+需要两个类：查找器和载入器。查找器的实例接受一个参数：模块或包的全名。如果找到，返回一个载入器对象。载入器把模块载入内存，完成创建一个模块所需的所有操作，返回模块。
+把这些实例加入到`sys.path_hooks`，`sys.path_importer_cache` 只是用来保存这些实例, 这 样就只需要访问 `path_hooks` 一次。 最后, `sys.meta_path` 用来保存一列需要在查询 sys.path 之 前访问的实例, 这些是为那些已经知道位置而不需要查找的模块准备的。 meta-path 已经有了指定模块或包的载入器对象的读取器。
+
+由于import 语句实际上是调用`__import__()` 函数，例如import sys 相当于`sys = __import__('sys')`
+当然也可以覆盖它的实现来自定义导入。只不过这样比较麻烦
+```
+__import__(module_name[, globals[, locals[, fromlist]]])
+```
+参数是导入的模块名，当前全局符号表名字的字典，局部符号表名字的字典，使用 from-import 语句所导入符号的列表
+后三个参数默认值为globals(), locals() 和 []。
+
+reload(module)
+可以重新导入一个已经导入的模块，module 是你想要重新导入的模块（必须是已经成功全部导入的模块，而不能只是导入部分标识符）
+*注：该函数会再次执行一次模块的顶层代码*
+
+### 6. 常用模块
 #### time 模块
 有两种时间表示方式：时间戳表示，元组表示
 1. 时间戳表示：从Epoch 而来的秒数（整数或浮点，范围在1970 – 2038 之间）
@@ -2584,7 +2697,17 @@ BaseException 是所有异常的基类，Exception 是除 SystemExit 和 Keyoboa
 assert expression[, arg]
 expression是这个判断的表达式，arg提供给AssertionError作为参数，进行异常构建
 
-### 5. 资源自动释放
+### 5. 警告
+warnings 模块
+可以产生警告、过滤警告
+
+警告类的基类Warning 直接从Exception 继承
+
+警告会有一个默认的输出显示到 sys.stderr , 不过有钩子可以改变这个行为
+
+命令行也可以控制警告过滤器。可以在启动 Python 解释器的时候使用 -W 选项。
+
+### 6. 资源自动释放
 ```
 with context_expr [as var]:
     code_suite

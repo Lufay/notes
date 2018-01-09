@@ -1,13 +1,79 @@
 # Vim 小技巧备忘
 [TOC]
 
+## 管理
+### 窗口
+1. 分屏打开vim
+水平：vim -oN
+垂直：vim -ON
+N 是分屏的个数
+1. 创建新窗口并打开文件
+水平：`:new [file]` 或`:sp [file]`
+垂直：`:vnew [file]` 或`:vsp [file]`
+如果缺省file，new 会打开一个空白窗口；sp则打开当前文件，相当于Ctrl+w s/v
+1. 关闭窗口
+:close
+Ctrl+w c
+Ctrl+w q（最后一个窗口会关闭vim）
+1. 只保留当前窗口
+:only
+1. 切换窗口
+Ctrl+w w/h/j/k/l
+1. 调整大小
+Ctrl+w +/-/=
+`:Nwinc+/-/</>`：N 是数字
+1. 打开当前目录
+:Ex[plore]
+:Sex
+
+### tab
+tab 是一个page，在一个page里可以分割多个window
+
+1. 新建tab 并打开文件：`:tabnew [file]` 或`:tabe [file]`
+如果file 缺省，则打开一个空白tab
+还可以用`:Ex`打开目录后，选择文件后按t，就可以在新的tab 中打开
+1. 关闭Tab：`:tabc` 或`:q`
+1. 切换Tab：`gt` 和`gT` 或 `:tabn` 和`:tabp`（后一个tab、前一个tab）
+还可以用`Ngt` 或`:tabn N`，N 是tab page ID，可以直接跳到对应tab
+1. 显示所有tab详情：`:tabs`
+
+### buffer
+每个打开的文件都对应了一个buffer，每个buffer都有一个特定的编号和名字
+buffer 是所有window 和Tab 共享的的后台数据
+
+1. 新建一个buffer：`:badd [file]`
+1. 新建一个buffer 并在当前窗口打开文件：`:edit [file]`
+1. 查看当前的buffers list：`:buffers` 或`:ls` 或`:files`
+第一列是buffer id，第二列是状态（% 表示当前，# 表示次当前，a 表示active，即显示在窗口中），第三列是name（默认使用打开的文件名命名）
+1. 切换当前窗口的buffer：`:b[uffer] [N]`
+N 可以是buffer id
+1. 删除一个buffer：`:bdelete [N]`
+N 可以是buffer id，如果缺省则默认是当前窗口的buffer
+如果被删除的buffer 占用了一个窗口，且不是最后一个窗口，则窗口也关闭
+1. 可以使用`:f name`命令给buffer 改名
+
+### session
++ 会话信息中保存了所有窗口的视图，外加全局设置
++ viminfo信息中保存了命令行历史、搜索字符串历史、输入行历史、非空的寄存器内容、文件的位置标记、最近搜索/替换的模式、缓冲区列表、全局变量等信息
+
+创建会话：`:mksession [file]`，如果文件名省略为Session.vim
+会话文件中保存哪些信息，是由'sessionoptions' 选项决定的。缺省的'sessionoptions'包括"blank,buffers,curdir,folds,help,options,tabpages,winsize"，即当前编辑环境的空窗口、缓冲区、当前目录、折叠相关的信息、帮助窗口、所有的选项和映射、所有的标签页、窗口大小。
+如果你使用windows上的VIM，并且希望你的会话文件可以同时被windows版本的VIM和UNIX版本的VIM共同使用的话，在'sessionoptions' 中加入'slash' 和'unix' ，前者把文件名中的’\’替换为’/’，后者会把会话文件的换行符保存成unix格式。
+可以通过命令：`:set sessionoptions-=curdir` 和 `:set sessionoptions+=sesdir` 类似的进行增删
+在你通过网络访问其它项目时，或者你的项目有多个不同版本（位于不同的目录），而你想始终使用一个会话文件时，你只需要把会话文件拷贝到不同的目录，然后使用就可以了。会话文件中保存的是文件的相对路径，而 不是绝对路径。
+恢复会话：`:source [file]` 或 `vim -S [file]`
+
+在VIM退出时，每次都会保存一个.viminfo文件在用户的主目录。之所以手动创建一个viminfo文件，因为缺省的.viminfo文件会在每次退出VIM时自动更新，谁知道你在关闭当前软件项目后，又使用VIM做过些什么呢？这样的话，.viminfo中的信息，也许就与你所进行的软件项目无关了。还是手动保存一个保险。
+创建一个viminfo文件：`:wviminfo [file]`
+保存哪些内容，以及保存的数目，由'viminfo' 选项决定
+读入你所保存的viminfo文件，使用`:rviminfo [file]`
+******
+
 ## 光标控制
 | 快捷键 | 作用 |
 |:---:|---|
 | % |跳转到配对的括号|
 | `[[` |跳转到代码段的开头|
-|``` `` ```|跳转到光标上次停靠的地方|
-|``` `. ```|跳转到上次修改的地方|
 |`<C-O>`|沿跳转记录回跳|
 |`<C-I>`|沿跳转记录前跳|
 | gD |跳转到局部变量的定义处|
@@ -20,11 +86,15 @@
 `:marks` 显示所有设置的标记
 `:delm x y z` 删除标记
 有一些常用的自动标记：
-`'` 跳转前的位置
-`"` 最后编辑的位置
-`[` 最后修改位置的开头
-`]` 最后修改位置的结尾
-0-9 在 .viminfo 文件中设置
+`'` 或`` ` ``	光标上次停靠的位置
+`.`	最近修改的位置
+`"`	上次退出当前缓冲区时光标的最后位置（在普通模式下）
+`^`	上次退出当前缓冲区时光标的最后位置（在插入模式下）
+`[`	最近修改或拷贝位置的开头
+`]`	最近修改或拷贝位置的结尾
+`<`	最近可视化选择区的开头
+`>`	最近可视化选择区的结尾
+0-9	在 .viminfo 文件中设置
 
 ### 搜索
 #### 行内搜索（单个字符）
@@ -64,7 +134,6 @@ I 进行前插入
     :[m,n]s/\n/.../
 1. 滤除回车符“^M”
 :%s/\r//g
-******
 
 ### 大小写变换
 guu		行变小写
@@ -76,6 +145,7 @@ gUw		从当前位置到单词结尾变小写
 g~w		从当前位置到单词结尾大小写切换
 
 也可以在可视模式下选择后使用u/U 进行大小写变换
+******
 
 ## 设置
 ### vim 粘贴不缩进
@@ -124,13 +194,13 @@ map! 在插入和命令行模式生效
 `<S-...>` Shift + 键
 `<C-...>` Control + 键
 `<M-...>` Alt＋键 或 meta＋键
-`<A-...>` 同 <M-...>
+`<A-...>` 同 `<M-...>`
 `<D-...>` Command + 键
 `<Esc>` Escape 键
 `<Up>` 光标上移键
 `<Space>` 插入空格
 `<Tab>` 插入Tab
-`<CR>` 等于<Enter>
+`<CR>` 等于`<Enter>`
 
 ### 特殊参数
 这些参数置于map 命令之后，表示
@@ -141,6 +211,7 @@ map! 在插入和命令行模式生效
 `<unique>`  用于定义新的键映射或者缩写命令的同时检查是否该键已经被映射，如果该映射或者缩写已经存在，则该命令会失败
 `<nowait>`
 `<script>`
+******
 
 ## 正则
 支持分组引用
@@ -183,6 +254,7 @@ vim的正则运行于4中模式
 + very magic：扩展正则模式。\v
 + very nomagic：无正则模式，所有字符均为文本意。\V
 默认magic模式，除了使用set magic这样进行统一处理外，还可以在搜索命令 / 使用\m等，表示一次使用。
+******
 
 ## 其他
 ### 重新加载打开的文件：
@@ -190,21 +262,11 @@ vim的正则运行于4中模式
 :e
 ```
 如果后面加 ! 表示放弃当前修改，而重新加载
-******
 
 ### 自动调整缩进版式：
 先将光标移到自动调整的起始位置（例如：gg，nG）
 点 =
 再将光标移到自动调整的终止位置（例如：nG，G）
-******
-
-### 分屏
-http://www.cnblogs.com/me115/archive/2011/05/05/2037273.html
-http://blog.csdn.net/brince101/article/details/6322421
-http://blog.sina.com.cn/s/blog_7d34486c0100ztku.html
-http://hi.baidu.com/iamzangzhi/item/7b5d1dda96937619d78ed025
-http://www.yqdown.com/chengxukaifa/shujujiegou/15800.htm
-******
 
 ### 多粘贴板
 用`:reg`命令可以查看各个粘贴板里的内容
@@ -231,17 +293,11 @@ http://www.yqdown.com/chengxukaifa/shujujiegou/15800.htm
 "\_ 不存储，直接丢弃
 
 如果要使用其他粘贴板，只需在命令前带上粘贴板的板号即可（例如"a）
-******
 
 ### 打开文件并定位到某一行
 ```
 vim filename +n
 ```
-******
-
-### 文件浏览
-:Ex
-:Sex
 
 ### 其他
 [垂直对齐线](http://www.oschina.net/code/snippet_574132_13357)

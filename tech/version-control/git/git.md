@@ -115,6 +115,7 @@ git diff [--options] --cached [<commit>] [<path>...]
 查看指定路径下的文件暂存区和指定的提交（如果缺省表示HEAD）之间的文件diff
 其中option可以使用
 --color[=<when>]：<when>可以使用always（默认）, never, auto
+--name-status：只看改动文件和改动状态
 --submodule[=<format>]：查看子模块的diff，format可选log, short
 
 
