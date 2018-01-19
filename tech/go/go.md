@@ -259,6 +259,8 @@ select {
 select 首先会对每个chanStmt，进行求值，顺序是自上而下、从左到右
 都求值完毕后如果有一个或多个IO操作可以完成，则Go运行时系统会随机的选择一个执行；否则的话，如果有default分支，则执行default分支语句；如果连default都没有，则select语句会一直阻塞，直到至少有一个IO操作可以进行
 select 中管道出现问题并不会报错，只不过不会走该case
+如果使用一个空的`select {}`语句，则将永远阻塞线程
+由于`code_block` 中可以使用break 跳出select，所以当select 外面套一个for 循环时，break 是无法跳出for 循环，这里就必须使用带标签的break，标记外层循环后break 该标记
 
 
 ## 包

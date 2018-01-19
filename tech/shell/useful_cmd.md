@@ -87,7 +87,7 @@ wc -l `find ./ -name "*.cpp" -o -name "*.h" -o -name "*.sh" -o -name "*.py" -o -
 
 ### 获得文件所在的目录名
 ```
-LOCALPATH=$(cd `dirname $0`;pwd)
+LOCALPATH=$(cd `dirname $0` && pwd -P)
 ```
 
 ### 批量变tab为4个空格
