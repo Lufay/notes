@@ -1124,9 +1124,9 @@ width 和 precision 可以使用 `*` 表示宽度和精度的设置来自于`fil
 `capitalize()`方法：首字母大写
 `title()`方法：所有单词首字母大写，其他字母为小写
 `expandtabs(tabsize=8)`方法：把字符串中的tab符号转换为指定数量的空格
-`lstrip()`方法：把字符串中左侧的空格去除
-`rstrip()`方法：把字符串中右侧的空格去除
-`strip()`方法：同时执行lstripe()和rstripe()方法
+`lstrip([chars])`方法：把字符串中左侧的空白符去除（可以指定一个字符串chars，则字符串开头的所有字符如果在chars中，都会被删掉）
+`rstrip([chars])`方法：把字符串中右侧的空白符去除（可以指定一个字符串chars，则字符串结尾的所有字符如果在chars中，都会被删掉）
+`strip([chars])`方法：同时执行lstripe()和rstripe()方法
 `center(width)`方法：返回一个原字符居中，并使用空格填充至给定长度width的新字符串。
 `ljust(width)`方法：同上，左对齐
 `rjust(width)`方法：同上，右对齐
@@ -1344,7 +1344,8 @@ pop(key[, default])方法：如果key存在，将key对应的键值对从字典�
 popitem()方法：按print序删除并返回一个元素（作为二元组形式），若字典为空，则抛出KeyError异常
 clear()方法：清空字典
 copy()方法：返回一个和自己一样的字典（浅拷贝）
-fromkeys(iterkey, value=None)方法：返回一个字典，字典的键来自于iterkey（可迭代对象），值都是value
+
+dict.fromkeys(iterkey, value=None)函数：返回一个字典，字典的键来自于iterkey（可迭代对象），值都是value
 
 注意：
 + 不支持连接`+`和重复`*`操作
@@ -1979,7 +1980,7 @@ identifier
 
 ### 5. 自定义导入器
 需要两个类：查找器和载入器。查找器的实例接受一个参数：模块或包的全名。如果找到，返回一个载入器对象。载入器把模块载入内存，完成创建一个模块所需的所有操作，返回模块。
-把这些实例加入到`sys.path_hooks`，`sys.path_importer_cache` 只是用来保存这些实例, 这 样就只需要访问 `path_hooks` 一次。 最后, `sys.meta_path` 用来保存一列需要在查询 sys.path 之 前访问的实例, 这些是为那些已经知道位置而不需要查找的模块准备的。 meta-path 已经有了指定模块或包的载入器对象的读取器。
+把这些实例加入到`sys.path_hooks`，`sys.path_importer_cache` 只是用来保存这些实例, 这样就只需要访问 `path_hooks` 一次。 最后, `sys.meta_path` 用来保存一列需要在查询 sys.path 之 前访问的实例, 这些是为那些已经知道位置而不需要查找的模块准备的。 meta-path 已经有了指定模块或包的载入器对象的读取器。
 
 由于import 语句实际上是调用`__import__()` 函数，例如import sys 相当于`sys = __import__('sys')`
 当然也可以覆盖它的实现来自定义导入。只不过这样比较麻烦

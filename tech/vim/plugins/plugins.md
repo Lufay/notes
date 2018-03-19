@@ -165,6 +165,7 @@ cpp.vim
 stl.vim
 
 <https://github.com/fatih/vim-go>
+<https://github.com/derekwyatt/vim-scala>
 
 [tern_for_vim](https://github.com/ternjs/tern_for_vim.git)：js的定义、调用快速跳转和自动补全
 
