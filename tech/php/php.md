@@ -78,6 +78,7 @@ PSR-4 autoload补充
 + vprintf ( string $format , array $args )：printf 的数组版本
 + `print_r ( $expression [, bool $return ] )`：可以打印数组和对象，默认返回TRUE，如果第二个参数为TRUE，则返回字符串
 + `var_dump ( $expression, ... )`：可以将多个表达式的的类型、值详细显示出来
++ `var_export ( $expression [, bool $return ] )`：打印对象的可解析字符串（该字符串是合法的PHP代码），默认返回NULL，如果第二个参数为TRUE，则返回字符串
 
 
 ## 数据类型

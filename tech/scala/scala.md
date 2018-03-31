@@ -1,5 +1,6 @@
 # Scala
 [官网](http://www.scala-lang.org/)
+[API](http://www.scala-lang.org/api)
 
 ## 概述
 一门多范式（multi-paradigm）的编程语言，设计初衷是要集成面向对象编程和函数式编程的各种特性。
@@ -76,8 +77,13 @@ camel 命名规则
 + Any		所有其他类的超类
 + AnyRef	所有引用类(reference class)的基类
 
+### 随机数
+util.Random([seed])
+seed 是一个整数，可选
+
 ### 字符串
-实际上就是java.lang.String，不可变字符串；如果需要一个可以修改的字符串可以使用StringBuilder 类
+实际上就是java.lang.String，不可变字符串；默认值是null
+如果需要一个可以修改的字符串可以使用StringBuilder 类
 
 #### 方法
 length()：返回字符串长度
@@ -106,6 +112,7 @@ endsWith(str)
 matches(regex)：是否匹配给定的正则表达式
 
 #### StringBuilder 类
+可变字符串
 ```
 val buf = new StringBuilder;
 buf += 'a'			// 连上一个字符
@@ -136,8 +143,8 @@ None	Option类型的空值（单例对象），Option类型是Some() 或None（O
 ### 数组
 ```
 var arr:Array[type] = new Array[type](length)	//定义并初始化为默认值（如果不写new 则只定义数组，不初始化）
-var arr1 = Array(1, 2, 3)	// 简洁形式
-arr(0) = 
+val arr = Array("aa", "bb", "cc")	//相当于伴生对象val arr = Array.apply("aa", "bb", "cc")
+arr(0) = "dd"						//相当于对象本身arr.update(0, "dd")
 ```
 type 为数组元素的类型，length 是数组的长度
 定长同类型，首元素索引为0
@@ -146,13 +153,73 @@ type 为数组元素的类型，length 是数组的长度
 数组的type 可以又是一个数组
 也可以使用`Array.ofDim[type](n1, n2, ...)` 构造一个多维规则数组，其中type 是多维数组基本元素的类型，n? 是每一维的长度
 
-#### Array 包里的方法
+#### 方法
+length：数组长度
+sum：只支持数值数组
+reverse：返回一个反序的数组
+sorted：返回一个排序的数组
+toBuffer：返回一个ArrayBuffer
+mkString：返回一个字符串，将各个元素的字符串表示连在一起
+++(arr)：和另一个数组arr连接后返回
+
+##### Array 包里的方法
 需要`import Array._`
 
+empty：返回长度为 0 的数组
+range(start, end, step=1)
+`fill(len)(ele: =>T)`：返回长度为len 的数组，该函数还可以指定多个len 来创建多维数组
+tabulate(len)(f)：返回长度为len 的数组，把0 until len 依次代入函数f，将返回值赋给每个元素，该函数还可以指定多个len 来创建多维数组
+iterate(s, len)(f)：返回长度为len 的数组，第一个元素是s，而后把前一个元素代入函数f，返回值作为下一个元素
+
+`concat(arr*)`：连接多个数组返回之
+copy(src, srcPos, dest, destPos, length)：复制数组元素
+
 #### 变长数组
+scala.collection.mutable.ArrayBuffer
+```
+import collection.mutable.ArrayBuffer
+val arr = new ArrayBuffer[Int]	// 获得一个空变长数组
+val arr = ArrayBuffer[type]()
+val arr = ArrayBuffer.empty[type]
+
+arr += 99		// 元素追加
+arr += (1, 2, 3, 4)	// 追加多个元素
+arr ++= Array(7, 8, 9)	// 追加任何集合
+arr.trimEnd(n)	// 移除最后n 个元素
+
+arr.insert(pos, addEle*)	// 在索引pos 的位置传入多个元素
+arr.remove(pos, n)		// 从索引pos 的位置移除n 个元素
+
+
+arr.toArray		// 返回一个Array
 ```
 
-```
+### 容器类型
+scala.collection 有三个子包类型：
+scala.collection.immutable：不可变容器（默认）
+scala.collection.mutable：可变容器
+scala.collection.generic：实现容器的构建块
+为了方便，这些包里的有些类在scala 包下创建了别名，从而可以直接使用，这些类包括：
+Traversable, Iterable, Seq, IndexedSeq, Iterator, Stream, Vector, StringBuilder, Range, List, Set, Map
+
+共有的操作
+apply 工厂：都可以通过罗列创建（Map 特别一些，元素可以是`key -> val` 或 `(key, val)`）
+toString
+
+#### Traversable
+它是一个trait，是所有容器的根
+它只有一个抽象操作：foreach(func)，每个容器类都必须实现这个遍历操作（参数是一个一元函数，对每个元素进行操作，不在意返回类型）
+
+##### 操作
+++(t)：连上另一个容器或迭代器返回
+foreach(func)：遍历每个元素
+map(func)：用每个元素调用func 的返回值组成另一个容器返回
+flatMap(func)：用每个元素调用func 的返回值（是一个容器），再将这些容器连起来作为一个容器
+collect(
+
+
+#### 
+
 
 ## 运算符、表达式、语句
 ### 运算符和表达式
@@ -200,16 +267,19 @@ for(var1 <- Range1; var2 <- Range2
 	// 语句
 }
 ```
-其中Range，可以是`i to j`（整数区间[i, j]）、`i until j`（整数区间[i, j)）
+其中Range，可以是`i to j`（整数区间[i, j]）、`i until j`（整数区间[i, j)）；后面可以跟`by k`，表示step 为k，也可以j,k 合在一起写作`(j, k)`
 也可以是一个Array、List
 有多重迭代时，后面的迭代先进行，类似于嵌套（后面的是内层循环）
+*注：for 会比同规模的while 循环慢4倍左右*
 
 ###### for-yield
 ```
 var newList = for{ a <- oldList
 	if cond1; if cond2
-}yield a
+}yield expr
 ```
+花括号和小括号都可以
+expr 表达式可以是使用a
 
 ##### 循环控制
 没有break 和continue 关键字
@@ -295,11 +365,81 @@ Int => String	// 返回一个字符串、接受一个整数参数的函数
 ```
 ([arg1:arg1_type[=default_val1], arg2:arg2_type[=default_val2], ...[, argN:argN_type*]]) => ret_expr
 ```
+实际上，匿名函数是下面的的简写法：
+```
+new FunctionN[arg1_type,arg2_type,...,argN_type,ret_type]{
+	def apply([arg1:arg1_type[=default_val1], arg2:arg2_type[=default_val2], ...[, argN:argN_type*]]) = ret_expr
+}
+```
+其中N 可以是0-22，表示参数个数
+后面的类型列表是参数类型和返回类型（最后一个）
+
++ Function1 的内置方法
+andThen(func1)：接收另一个Function1 对象，返回一个新的Function1（先执行本对象，再将结果传入func1执行）
+compose(func1)：接收另一个Function1 对象，返回一个新的Function1（先执行func1，再将结果传入本对象执行）
++ Function2 的内置方法
+curried：返回一个柯里化的版本
+tupled：返回一个接收元组参数的版本
 
 ### 柯里化(Currying)
 柯里化(Currying) 指的是原来多参数函数，变为单参数函数链
 ```
 def strcat(s1: String)(s2: String) = s1 + s2
+```
+
+
+## 类和对象
+### 方法
+对于无参的方法，方法调用的括号可以省略
+对于单个参数的方法，可以变方法调用为运算调用：
+```
+str.equals(str_1)	//等价于 str equals str_1
+```
+
+### 伴生对象
+Scala 的类没有静态成员，但可以给类同名定义一个伴生对象（companion object，单例）
+伴生对象必须和他的类在同一文件中定义，类和伴生对象可以相互访问私有成员
+
+### 注入方法和抽取方法
+使用类或对象直接进行函数调用，实际上是调用该类的伴生对象或该对象本身（定义在类中）的apply 方法或update 方法
+
+而unapply 方法和unapplySeq 方法则常用于模式匹配
+这两个方法的参数就是模式匹配的左值，case 是类名(返回值列表)
+```
+class Money(val value: Double, val country: String) {}
+
+// 伴生对象
+object Money {
+	// apply 做工厂方法
+    def apply(value: Double, country: String) : Money = new Money(value, country)
+
+    def unapply(money: Money): Option[(Double, String)] = {
+        if(money == null) {
+            None
+        } else {
+            Some(money.value, money.country)
+        }
+    }
+}
+
+val money = Money(1.1, "RMB")
+money match {
+	case Money(v, "RMB") => println("RMB: " + v)
+	case _ => println("no money")
+}
+
+object Name {
+	def unapplySeq(input: String): Option[Seq[String]] =
+		if (input == "") None else Some(input.trim.split("\\s+"))
+}
+
+
+"aa bb cc" match {
+	case Name(first, second, third) => {
+		println(s"$first $second $third")
+	}
+	case _ => println("nothing matched")
+}
 ```
 
 
@@ -324,6 +464,6 @@ import java.awt.{Color, Font}  // 引入包中的几个成员，可以使用sele
 import java.util.{HashMap => JavaHashMap}  // 重命名成员
 import java.util.{HashMap => _, _} // 引入了util包的所有成员，但是HashMap被隐藏了
 ```
-*注意：默认情况下，Scala 总会引入 java.lang._ 、 scala._ 和 Predef._，这里也能解释，为什么以scala开头的包，在使用时都是省去scala.的。*
+*注意：默认情况下，Scala 总会引入 java.lang._ 、 scala._ 和 Predef._，所以以scala开头的包，在使用时可以省去`scala.`。*
 
 
