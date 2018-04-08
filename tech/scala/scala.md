@@ -1,6 +1,7 @@
 # Scala
 [官网](http://www.scala-lang.org/)
 [API](http://www.scala-lang.org/api)
+[TOC]
 
 ## 概述
 一门多范式（multi-paradigm）的编程语言，设计初衷是要集成面向对象编程和函数式编程的各种特性。
@@ -139,6 +140,11 @@ Nothing	任何其他类型的子类型，无实例，作为返回类型时指非
 Nil		List[Nothing]的子类，单例对象，与类型无关的空容器
 None	Option类型的空值（单例对象），Option类型是Some() 或None（Option类型可以理解为一个长度可能为0 或1 的容器）
 
+### Any
+方法：
+isInstanceOf[type]：测试是否是某种具体类型
+asInstanceOf[type]：转换为某种具体类型
+
 
 ### 数组
 ```
@@ -212,10 +218,12 @@ toString
 
 ##### 操作
 ++(t)：连上另一个容器或迭代器返回
+
 foreach(func)：遍历每个元素
 map(func)：用每个元素调用func 的返回值组成另一个容器返回
 flatMap(func)：用每个元素调用func 的返回值（是一个容器），再将这些容器连起来作为一个容器
-collect(
+collect(pf)：同map，只不过接收一个偏函数，如果isDefinedAt 检查失败会忽略
+
 
 
 #### 
@@ -225,10 +233,13 @@ collect(
 ### 运算符和表达式
 #### 赋值与销毁
 ```
-var myVar: String = "Foo"		// 变量
+var myVar: String = _		// 变量，用默认值赋值
 val myVal: String = "Foo"		// 常量
+lazy val tVal: String = myVar	// 并不立即求值，在首次引用时才进行求值
+def nVal: String = myVar		// 常量，并不立即求值，而在每次引用都重新求值（call-by-name）
 val xmax, ymax = 100	// xmax, ymax都声明为100，并被推断为Int
-val pa = (40,"Foo")		// 元组
+val pa = (40, "Foo", 1.1)		// 元组
+val (_, str, fl) = pa			// 从元组中取值，相当于val str = pa._2; val fl = pa._3
 ```
 如果不指定类型，则通过初始值进行推断
 
@@ -251,6 +262,7 @@ x指代某个所属的包、类或单例对象。
 
 #### 表达式块
 表达式可以是一个大括号括起来的语句块，其值为最后一条语句的值
+可以将其进行赋值或作为参数
 
 ### 语句
 #### 条件
@@ -316,55 +328,59 @@ println()
 printf("浮点型变量为 %f, 整型变量为 %d, 字符串为 %s", floatVar, intVar, strVar)
 
 
-## 函数
-函数名可以有以下特殊字符：+, ++, ~, &,-, -- , \, /, : 等
-### 声明、定义、调用
+## 函数与方法
+由于scala 是纯面向对象的，所以不允许游离在class 或object 之外的函数
+由于scala 是函数式的，所以函数也是一种对象，它也有它的类型和方法
+而方法属于对象，最终执行的动作都是方法描述的，它只有签名，没有类型
+
+### 方法的声明、定义、调用
 ```
 def funcName([arg1:arg1_type[=default_val1], arg2:arg2_type[=default_val2], ...[, argN:argN_type*]])[: ret_type] = {
 	// func body
-	return xxx
+	[return ]xxx
 }
 
 [instance.]functionName(a, b, ...)
 ```
+funcName 可以有这些特殊字符：+, ++, ~, &,-, -- , \, /, : 等
 不写等号和函数体是声明，会被隐式声明为"抽象(abstract)"，包含它的类型于是也是一个抽象类型。
-支持默认参数值
+支持默认参数值（并不要求从后向前依次给默认值）
 支持嵌套函数定义、闭包
 最后一个参数类型后面加`*`，表示可变长参数。函数内可以当做一个列表
 支持指定参数名调用
+支持方法重载
 支持递归调用
 
-+ 如果args 为空，则函数定义和调用时都可以省去小括号
++ 如果args 为空，则调用方法时可以省去小括号
 + 无结果返回，`ret_type`使用Unit
-+ 如果`ret_type`缺省，则return 也必须缺省，返回结果是最后一个表达式的结果
++ 如果`ret_type`缺省，则return 也必须缺省，返回结果是最后一个表达式的结果（反之，可以只省return，不省`ret_type`）；即如果写return，则必须显示写`ret_type`
 	- 最简形式：`def funcName([args]) = ret_expr`
 + 如果`ret_type` 和`=` 缺省，相当于`ret_type` 为Unit
 
-### 传名调用
+### 传名调用（call-by-name）
 在`arg_type`前加上` =>`表示该参数的实参延迟求值，即在函数体内每次需要改变量的值的时候，都会重新计算一下
 如果函数内多次使用这个值，传值调用更好；而如果这个函数本身会被多次调用，但只有很少次会用到这个值，传名调用更好
 
-### 偏应用函数
-只提供部分参数，不提供的使用`_: arg_type`，进行占位
+对于call-by-name 的对象，其行为相当于一个无参方法
+同样可以使用eta-expansion 将其转换为一个函数对象：
 ```
-import java.util.Date
-def log(date: Date, msg: String) = println(date + "------" + msg)
-val logWithDate = log(new Date, _: String)
-logWithDate("test")
+def r = new Random().nextInt
+val t = r _
 ```
 
 ### 高阶函数
 函数式编程，函数可以作为值传给其他函数，也可以作为返回值从其他函数返回
 类型标识可以是
 ```
-() => Unit		// 一个返回为空的无参函数
-Int => String	// 返回一个字符串、接受一个整数参数的函数
+() => Unit		// 一个返回为空的无参函数，是Function0[Unit] 的简写
+Int => String	// 返回一个字符串、接受一个整数参数的函数，是Function1[Int, String] 的简写
 ```
 
 ### 匿名函数
 ```
 ([arg1:arg1_type[=default_val1], arg2:arg2_type[=default_val2], ...[, argN:argN_type*]]) => ret_expr
 ```
+如果可以通过上下文推断类型（如将该匿名函数赋值给显式声明类型的对象或作为确定类型的参数），则可以省略`arg?_type`
 实际上，匿名函数是下面的的简写法：
 ```
 new FunctionN[arg1_type,arg2_type,...,argN_type,ret_type]{
@@ -380,6 +396,57 @@ compose(func1)：接收另一个Function1 对象，返回一个新的Function1�
 + Function2 的内置方法
 curried：返回一个柯里化的版本
 tupled：返回一个接收元组参数的版本
+
+#### 占位符匿名函数
+由占位符`_` 组成的表达式，Scala 会自动将其转换为匿名函数。
+*如果`_`需要指明类型，可以写作`(_:type)`*
+转换过程是：
+1. 找到这个表达式：尽可能长，直到找到括号、逗号、分号为边界
+如果这个表达式是`_`，那么就忽略这个边界，继续找一个更大的表达式
+1. 将这个表达式中的每个`_`，转换为一个变量（不复用）
+1. 有几个`_`就是几个参数，函数体就是该表达式
+
+### 偏应用函数
+只提供部分参数，不提供的使用`_` 进行占位
+```
+import java.util.Date
+def log(date: Date, msg: String) = println(date + "------" + msg)
+val logWithDate = log(new Date, _: String)		//logWithDate 类型需要推断，所以占位符必须带类型
+// 或者val logWithDate: String => Unit = log(new Date, _)
+logWithDate("test")
+```
+**注：这里不能根据log 的参数类型来自动推断logWithDate 的类型，因为偏应用函数中的参数类型可以是原函数或方法的参数类型的派生类，所以必须指明占位符参数类型**
+
+#### eta-expansion
+特别的`func _` 等价于`func(_, _, ..., _)`，此时不用指明每个参数的类型；并且如果可以通过上下文推断类型（如将该匿名函数赋值给显式声明类型的对象或作为确定类型的参数），可以用`func` 代替`func _`
+但如果func 是重载方法，则必须指明类型，例如
+```
+func _ : ((String, Int) => Int)		// 类型外面这个括号是必须的
+func(_: String, _: Int)
+```
+不过也有例外，当两个重载方法，其中一个只有一个 AnyRef 的参数，那么`func _`就会默认选择另一个方法
+
+实际上，这里是Scala的会被解析为`(x$1, x$2, ..., x$n) => func(x$1, x$2, ..., x$n)`这样的匿名函数，这个过程叫做eta-expansion
+eta-conversion是一种lambda变换，意思是上面的lambda 表达式和func 是等价的（入参一致，结果一致），所以可以用func 表示这个lambda 表达式；
+eta-expansion 就是Scala 自动将func 这个方法转换为一个匿名函数的过程
+
+### 偏函数
+普通的函数是针对参数数据类型的全集来做映射，是否满足入参条件是有编译检查完成的；而偏函数是只针对其子集的映射，是否满足入参条件还通过该函数的isDefinedAt方法进行判断
+
+偏函数是PartialFunction[-A,+B] 的实例，它是一个trait，继承自Function1，需要实现两个操作：apply 和isDefinedAt
+isDefinedAt 则用于判断参数是否满足该偏函数的执行条件；调用偏函数前都必须进行该检查，因为可能这里检查失败，但apply 方法也可以执行，只不过那未必是期望的
+apply 和普通函数一样，表示该函数的执行方法；实际上调用的是偏函数的applyOrElse(x, PartialFunction.empty) 方法（返回PartialFunction[Any, Nothong]对象），后者是一个默认方法，是当isDefinedAt 判断失败执行的默认函数
+
+其他方法：
+继承Function1 的andThen 和compose
+lift：转化为一个普通函数返回。这个普通函数返回是Option
+orElse(pf)：结合另一个偏函数，返回一个结合这两个入参子集并集的偏函数（对于交集部分，则本函数优先）
+runWith(action)：返回一个函数相当于`if(this isDefinedAt x) { action(this(x)); true } else false`
+
+
+通常，偏函数通过case 语句块来实现（但并不是意味着case 语句块就一定是偏函数，case 语句块既可以编译为普通函数，也可以编译为偏函数，这取决于其期望类型——赋值变量的类型或参数类型）
+之所以PartialFunction 是Function1 的子类而不是更多参数的，就是因为case 的结构，每个case 语句只能声明一个对象，所以偏函数只有一个参数。如果真的需要多个参数，完全可以通过tuple 来实现
+
 
 ### 柯里化(Currying)
 柯里化(Currying) 指的是原来多参数函数，变为单参数函数链
@@ -467,3 +534,9 @@ import java.util.{HashMap => _, _} // 引入了util包的所有成员，但是Ha
 *注意：默认情况下，Scala 总会引入 java.lang._ 、 scala._ 和 Predef._，所以以scala开头的包，在使用时可以省去`scala.`。*
 
 
+## IO 相关
+scala.io.Source
+```
+val source = Source.fromFile(filename)
+source.getLines()	// 返回一个Iterator[String]，迭代每一行
+```
