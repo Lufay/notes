@@ -324,3 +324,10 @@ cut -d: -f1 /etc/group # 查看系统所有组
 如果想要修改永久有效，可以修改 /etc/security/limits.conf 文件
 soft 和 hard 表示硬限制和软限制
 
+
+### 命令类型
+```
+type "test"
+type "["
+type "[["
+```
