@@ -97,3 +97,15 @@ test:
   host:     localhost
 ```
 
+## 格式化与解析
+### PHP 解析
+[PECL扩展YAML](http://pecl.php.net/package/yaml)
+需要PHP 5.2+
+PECL 需要编译安装
+使用`yaml_emit($arr)`可以将其转化成YAML 字符串
+使用`yaml_parse($yaml)`解析YAML 字符串
+
+[spyc](https://github.com/mustangostang/spyc)
+需要PHP 5.3+
+可以使用Composer安装，当然也可以直接`require_once`或include
+解析YAML 文件可以使用Spyc::YAMLLoad('spyc.yaml')，也可以使用`spyc_load_file('spyc.yaml')`

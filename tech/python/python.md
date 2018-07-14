@@ -74,7 +74,7 @@ JavaScript 是基于原型系统的， 而 Python 则遵循传统的面向对象
 ## 第二章. 开始
 Python之禅，输入import this就可以查看
 
-### 1. 交互
+### 1. 交互REPL
 Python 的主提示符( >>> )和次提示符( ... )，其功效类似于SHELL中的主提示符( $ )和次提示符( > )。主提示符是解释器告诉你它在等待你输入下一个语句，次提示符告诉你解释器正在等待你输入当前语句的其它部分。
 退出交互：使用exit()函数或者输入EOF（Linux下的Ctrl+D，Windows下的Ctrl+Z）
 
@@ -2614,7 +2614,6 @@ zipfile        访问zip归档文件的工具
 gzip/zlib        访问GNU zip（gzip）文件（压缩需要zlib 模块）
 bz2            访问bz2格式的压缩文件
 shutil        高级文件访问功能（比如复制文件、复制文件权限、目录树递归复制）
-csv            访问csv文件（逗号分隔文件）
 filecmp        比较目录和文件
 fileinput        多个文本文件的行迭代器
 glob/fnmatch    Unix样式的通配符（`*`和?）匹配功能（但并不支持~）
@@ -2816,8 +2815,41 @@ handler 基类
 <https://zhuanlan.zhihu.com/p/21976757>
 
 ## 结构化数据处理
-### json
-json 模块
+### csv 模块
+<https://docs.python.org/2.7/library/csv.html>
+CSV(Comma-Separated Values)即逗号分隔值，一种表格数据，所有值都是字符串
+在打开文件时，最好使用'b' mode
+#### 函数
+`reader(iter, dialect='excel', **fmtparams)`：返回一个reader 对象，可逐行迭代，每行的数组作为一个列表。iter 是一个每次返回一个字符串的可迭代对象，dialect 可以是Dialect 子类的实例或`list_dialects()`函数返回的其中一个字符串，其他的格式化参数会覆盖dialect 定义的格式
+`writer(iter, dialect='excel', **fmtparams)`：返回一个writer 对象。iter 是一个有write()方法的对象，dialect 可以是Dialect 子类的实例或`list_dialects()`函数返回的其中一个字符串，其他的格式化参数会覆盖dialect 定义的格式。注：None 将被写为空串，float 使用repr() 字符串化，其他非字符串数据使用str() 字符串化
+
+#### 类
+`DictReader(f, fieldnames=None, restkey=None, restval=None, dialect='excel', *args, **kwds)`：返回一个reader 对象，可逐行迭代，每行的数组作为一个字典，如果fieldnames 参数缺省，则使用reader 对象的第一行作为fieldnames，如果key 的个数小于val 的个数，则剩下的val 将以restkey 为key，val 是一个序列，如果key 的个数大于val 的个数，则这些key 将以restval 为值。其他的参数都类同 reader
+`DictWriter(f, fieldnames, restval='', extrasaction='raise', dialect='excel', *args, **kwds)`：返回一个writer 对象。fieldnames 是一个字符串的序列，用以表示将字典写入文件的顺序。如果fieldnames 中有字典中不存在的列名，则使用restval 作为值。反之，如果字典有的key 不在fieldnames 中时，由extrasaction 决定采取的策略：'raise' 表示抛ValueError 异常，'ignore' 表示忽略该多余key。其他的参数都类同 writer
+
+#### Dialect 属性
+delimiter：field 分隔符，必须是单字符，默认是','
+lineterminator：行终结符，默认是'\r\n'
+quotechar：当字段内有delimiter 和lineterminator 时，可以使用该字符引用，必须是单字符，默认是'"'
+doublequote：决定quotechar 如果出现在字段内，如何做转义。如果该值为True（默认），则使用双写转义，否则使用escapechar 在quotechar 之前进行转义（如果此时escapechar 未设置，将抛出一个Error）
+quoting：在writer 生成quote 和reader 识别quote 时进行控制，默认是QUOTE_MINIMAL
+escapechar：若quoting 设为QUOTE_NONE 并且doublequote 为False，使用其去转义后面一个字符的特殊含义。默认是None，表示不使用转义
+skipinitialspace：delimiter 之后的空白符是否被忽略，默认是False
+strict：当输入格式错误时，是否抛Error
+
+#### Reader 对象属性
+dialect：只读的
+`line_num`：行数（从1开始），由于CSV 文件中可能有多行记录，所以并不等同于记录数
+fieldnames：如果创建对象时未指定，则该属性按照文件中的第一条记录初始化
+
+#### Writer 对象
+writerow(row)：row 是一个字符串或数字的序列（对于DictWriter 对象是一个fieldnames 到字符串或数字的字典）
+writerows(rows)：rows 是row 的迭代对象
+writeheader()
+dialect：只读的
+
+
+### json 模块
 
 ### html
 #### HTMLParser 模块

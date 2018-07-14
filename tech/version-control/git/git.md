@@ -5,7 +5,7 @@
 + 工作区（workspace）：编辑的目录
 + 暂存区（index）：准备入库的文件
 + 本地仓库（local repository）：已提交的本地仓库
-+ 远程仓库（remote repository）
++ 远程仓库（remote repository）：用于同步的其他仓库
 
 这几个概念的关系：
 ![](./1.png)
@@ -172,7 +172,7 @@ git checkout $b_name
 如果 `$b_name`分支不存在，可以加-b选项，将先进行`branch $b_name`操作
 
 ```
-git merge $b_name
+git merge [$repo_short_name/]$b_name
 ```
 合并分支`$b_name` 到当前分支（如有冲突，需先解决冲突，再提交，合并完成）
 通常合并使用Fast forward模式（如果没有合并冲突，就直接移动指针，不新建合并提交，看起来就好像没有这次分支合并一样），可以使用--no-ff 选项禁用Fast forward模式，禁用后，合并就要创建一个新的commit，所以需要加上-m "xxx"选项
@@ -324,6 +324,7 @@ git pull [$remote_repo [+][$remote_b_name[:$local_b_name]]]
 ```
 如果因为自动合并失败导致pull失败，则需要先解决冲突，再提交，再push
 `$remote_repo` 和 `$remote_b_name` 缺省的默认值是当前分支配置中的remote 和 merge 项
+如果不带+ 表示使用fast-forward 进行fetch，带+ 表示强制更新
 *如果远程库和当前库的分支没有共同的祖先，merge 时会失败，提示refusing to merge unrelated histories. 如果想要强制合并，可以使用--allow-unrelated-histories 选项*
 
 只拉取不合并

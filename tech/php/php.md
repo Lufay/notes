@@ -200,7 +200,8 @@ list($a, $b, $c) =  array('a', 'b', 'c')
 + range ( mixed $start , mixed $limit, number $step = 1 )：创建从start到limit步进step的数组，常用数字和字符
 + `array_slice ($arr, $offset, $len)`：截取从$offset位置开始，长为$len的子数组，$offset若为负表示倒数，若$len为负，表示不要结尾的$len个元素
 + `array_splice ($arr, $offset, $len)`：和上面相反，去掉上面截取的部分，接合起来组成新shu'zu
-+ `array_merge_recursive ( $arr, ... )`：递归合并一个或多个数组
++ `array_merge ( $arr, ... )`：对于整数key，会按序连在一起，key从0开始重排；对于字符串key，会用后面的val 覆盖同key 的前一个val
++ `array_merge_recursive ( $arr, ... )`：`array_merge`的递归版本，如果val 是一个数组，另一个是单值，则将单值视为单值数组进行递归
 + `array_combine($arr_key, $arr_val)`：合并两个数组来创建一个新数组，其中的一个数组元素为键名，另一个数组元素为键值
 + `array_keys ($array, mixed $search_value = null, $strict = false ]] )`：返回数组的所有键（数字和字符串）组成数组。如果指定`$search_value`，则返回指定值的所有键，默认使用`==`做比较，strict为true 时，使用`===`
 + `array_values($array)`：返回数组所有值，组成数组。
@@ -337,9 +338,10 @@ eval($str)：把字符串当做PHP 代码执行，$str 必须使用分号结尾�
 + 函数内创建的静态变量，外部不可见，但有静态的生命期
 
 注意：函数内是无法引用外部变量（如果赋值的话，相当于声明一个新的局部变量），除非在函数内使用global来声明该变量，来可以引用。
+`global $var;` 等价于 `$var = &$GLOBALS['var'];`
 
 ##### 超级全局变量
-`GLOBALS`：所有全局变量数组（就像global关键字）
+`GLOBALS`：所有全局变量数组，key是变量名，val是变量值（global关键字是将全局变量引入函数内，GLOBALS 数组可以直接访问全局变量本身）
 `_SERVER`：服务器环境变量数组，比如`$_SERVER['DOCUMENT_ROOT']`指向Web服务器文档树的根。
 `_GET`：通过get方式转发给该脚本的表单变量数组
 `_POST `：通过post方式转发给该脚本的表单变量数组
@@ -355,12 +357,16 @@ eval($str)：把字符串当做PHP 代码执行，$str 必须使用分号结尾�
 `__NAMESPACE__`：当前的名空间，全局环境则返回空串
 `__METHOD__`：当前方法
 `__FUNCTION__`：当前函数
+`argc`, `argv`：命令行个数和命令行数组（0 是命令本身，1、2...是命令行参数）
 ##### 表单变量（全局的）
 下面的`var_name`，就是表单输入框指定的name属性
 `$var_name`：需要配置`register_globals`为on（默认为off），这种风格常用于自定义变量，易混淆，不推荐
 `$_POST['var_name']、$_GET[]、$_REQUEST[]`：推荐使用，数组形式，前两种受限于表单数据的转发方式，而第三种则不限，提交的所有数据都可以使用其检索
 `$HTTP_POST_VARS['var_name']`：已废弃的用法
 自定义变量使用前必须初始化，而表单变量则不必
+
+###### 相关函数
+getopt(string $opts [, array $longopts [, int &$optind]])：opts 是短选项，每个字符表示一个选项；longopts 是长选项，每一项表示一个选项；optind 用于标识解析停止的索引。（无论长短选项，每个字符或数组中的一项后面，如果无冒号，表示flag，不接收值；有一个冒号，表示该选项需要一个值；有两个冒号，表示可以有值）返回一个数组，key 是选项名，val 是选项值
 
 ### 算术运算符
 同C，支持自增自减
@@ -619,7 +625,7 @@ require/ include filename
 导入文件中的文本将直接输出到标准输出中，PHP代码则会进行解析，其中的代码继承该语句所在行的变量作用域，即 从该行以后，被导入文件中定义的变量视为在该行定义的变量（不过，被导入文件中定义的函数和类则具有全局的作用域）。任何在该行可用的变量都可以在被导入的文件中使用。
 尽管该语句并不会检测导入文件的文件名，但如果该文件不是以.php作为扩展名，并且保存在Web文档树中，用户可以在浏览器中直接载入它们，即以文本形式查看到源码，所以要么，就将这种文件保存在文档树之外（推荐），或者以标准文件扩展名保存。
 
-**被导入的脚本使用return语句并不会导致导入结束，依然会继续执行导入脚本的后续代码，而这个return的值可以从require这里返回接收，常用于导入配置（return array()）**
+**被导入的脚本（必须带`<?php`头，否则会被认为是普通文件，直接打印而不会执行）使用return语句并不会导致导入结束，依然会继续执行导入脚本的后续代码，而这个return的值可以从require这里返回接收，常用于导入配置（return array()）**
 
 incluce在用到时加载
 require在一开始就加载

@@ -19,7 +19,7 @@ export CLASSPATH=.:$CLASSPATH
 date [OPTION]... [+FORMAT]
 在类UNIX系统中，日期被存储为一个整数，其大小为自世界标准时间（UTC）1970年1月1日0时0分0秒起流逝的秒数。
 OPTION:
--d 指定一个需要显示的时间，缺省为"now"。字符串前后必须加上双引号。可以使用"2004-02-29 16:21:42"这样，也可以使用"1 day ago"、"2 sec"、"-3 min"、"next/last Thursday"，还可以是两者的组合"1970-01-01 1234567890 seconds"
+-d 指定一个需要显示的时间，缺省为"now"。字符串前后必须加上双引号。可以使用"2004-02-29 16:21:42"这样，也可以使用"1 day ago"、"2 sec"、"-3 min"、"next/last Thursday"，还可以是两者的组合"1970-01-01 1234567890 seconds"，还可以使用"@1523510852" 表示UNIX 时间戳
 -s 指定一个要设置的时间*在系统启动时，Linux操作系统将时间从CMOS中读到系统时间变量中，以后修改时间通过修改系统时间实现。为了保持系统时间与CMOS时间的一致性，Linux每隔一段时间会将系统时间写入CMOS。由于该同步是每隔一段时间（大约是11分钟）进行的，在我们执行date -s后，如果马上重起机器，修改时间就有可能没有被写入CMOS。如果要确保修改生效可以执行clock –w命令，这个命令强制把系统时间写入CMOS。*
 -u 显示或设置UTC 时间
 FORMAT:
@@ -110,6 +110,18 @@ done
 + bus/usb/devices: USB设备
 + /proc/bus/pci/devices: PCI设备
 + ioports: I/O端口号信息
++ /proc/${pid}/：进程的相关信息
+	- exe：可执行文件链接
+	- status：进程状态信息
+	- statm：7个数依次是（单位4K）
+		- size：进程总大小
+		- resident：驻留集大小
+		- share：共享页
+		- trs：text (code)
+		- drs：data/stack
+		- lrs：library
+		- dt：dirty pages
+
 
 ### CPU
 都在 /proc/cpuinfo 文件中

@@ -46,7 +46,7 @@ buffer 是所有window 和Tab 共享的的后台数据
 1. 查看当前的buffers list：`:buffers` 或`:ls` 或`:files`
 第一列是buffer id，第二列是状态（% 表示当前，# 表示次当前，a 表示active，即显示在窗口中），第三列是name（默认使用打开的文件名命名）
 1. 切换当前窗口的buffer：`:b[uffer] [N]`
-N 可以是buffer id
+N 可以是buffer id；也可以是# 进行来回切换
 1. 删除一个buffer：`:bdelete [N]`
 N 可以是buffer id，如果缺省则默认是当前窗口的buffer
 如果被删除的buffer 占用了一个窗口，且不是最后一个窗口，则窗口也关闭
@@ -153,6 +153,11 @@ g~w		从当前位置到单词结尾大小写切换
 ******
 
 ## 设置
+### 当前环境
+```
+:pwd	" 当前工作目录
+:f		" 当前文件名（或Ctrl+g）
+```
 ### vim 粘贴不缩进
 ```
 :set paste
@@ -177,6 +182,8 @@ Windows 的CR 符显示为 ^M
 ******
 
 ## 键映射
+设置`<Leader>` 键：`let mapleader = "\<Space>"``
+
 map 命令
 ### 命令前缀
 + nore: 非递归映射，即不对映射内容进行递归映射

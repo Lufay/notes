@@ -29,6 +29,7 @@ Command-T：基于Ruby和C扩展实现的快速文件浏览的插件（需要vim
 [EasyGrep](https://github.com/dkprice/vim-easygrep)：全局查找并替换
 
 [ack](https://github.com/mileszs/ack.vim)：全局查找，用perl编写<https://github.com/beyondgrep/ack2>
+或者使用ag
 
 [ctags](https://sourceforge.net/projects/ctags/?source=typ_redirect)：符号收集和定位
 
@@ -56,11 +57,16 @@ taglist：符号表
 [YankRing](https://github.com/vim-scripts/YankRing.vim)：多剪贴板可视化
 
 [gitgutter](https://github.com/airblade/vim-gitgutter)：显示git diff
+[fugitive.vim](https://github.com/tpope/vim-fugitive)：git 工具集成
 
 [gundo](https://github.com/sjl/gundo.vim.git)：支持分支的 undo
 [undotree](https://github.com/mbbill/undotree)：同上，不依赖Python
 
 [repeat](https://github.com/tpope/vim-repeat)：重复之前的操作
+
+[vim-markdown](https://github.com/plasticboy/vim-markdown)：Markdown 语法高亮
+[vim-instant-markdown](https://github.com/suan/vim-instant-markdown)：实时的Markdown 预览（需要node.js）
+[python-vim-instant-markdown](https://github.com/isnowfy/python-vim-instant-markdown)：同上，需要python2支持，保存文件才能看到效果
 
 [conqueTerm](https://code.google.com/archive/p/conque/)：在vim在模拟Terminal
 
