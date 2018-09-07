@@ -4,7 +4,32 @@
 
 ## tac
 
+## tr
+对标准输入的字符串进行字符替换
+格式：`tr [OPTION] SRC_CHARSET [OBJ_CHARSET]`
+将SRC_CHARSET 替换为OBJ_CHARSET 中的字符，若SRC_CHARSET 比OBJ_CHARSET 长，则使用OBJ_CHARSET 的最后一个字符补充；若SRC_CHARSET 比OBJ_CHARSET 短，OBJ_CHARSET 超长部分被忽略。
+若SRC_CHARSET 中包含重复字符，则以最后的映射为准。
+CHARSET 支持
++ '\n'、'\t'、'\r'等特殊字符
++ 'A-Z'、'a-z' 表示的集合（按ASCII 码表）
++ `[c*n]`字符c 重复n 次（0 开头表示八进制）
++ `[c*]`在OBJ_CHARSET 中填充c 到长度等同于SRC_CHARSET，
++ [:alnum:]、[:alpha:]、[:digit:]、[:lower:]、[:upper:]、[:blank:]、[:space:]、[:graph:]、[:print:]
+OPTION:
+-c	SRC_CHARSET 集合取补集（若有OBJ_CHARSET，则只有最后一个字符有效）
+-d	删除SRC_CHARSET 集合中的字符（不需要OBJ_CHARSET）
+-s	把SRC_CHARSET 中连续重复的字符以单独一个字符表示（若没有OBJ_CHARSET，相当于去重）
+-t	把SRC_CHARSET 中长度超过OBJ_CHARSET 的部分进行截断
+
 ## nl
+
+## paste
+把多个文件的每一行用多个TAB 分隔进行合并输出
+格式：`paste [OPTION]... [FILE]...`
+FILE 缺省或为`-`使用标准输入，每个`-`就从标准输入中读一次
+OPTION:
+-d：指定分隔字符（只能一个字符）替换TAB
+-s：将每个文件各行连成一行，一行输出一个文件（类似将原结果转置）
 
 ## pg
 
@@ -18,6 +43,18 @@ OPTION:
 -d：自定义分隔符，默认为制表符。只支持单字符
 -f：与-d 一起使用，指定显示哪个区域。支持形如3-5, -3, 3-（缺省到端）的写法
 *注：可以使用`sed -n l`命令查看空格、制表、换行符的位置*
+
+## split
+文件分割到{PREFIX}aa、{PREFIX}ab、{PREFIX}ac ...等文件中，默认按1000 行切一个文件
+格式：`split [OPTION]... [INPUT [PREFIX]]`
+INPUT 缺省则使用标准输入，PREFIX 默认是x
+OPTION:
+-a：指定后缀串的长度，默认是2
+-d：使用数字后缀
+-b：使用字节数切分，可以指定单位K, M, G, T, P, E, Z, Y（1024 为单位，KB, MB, ...则以1000 为单位）
+-l：按行切分
+-C：按字节数整行切分（如果字节数不够一行则切行，如果够一行则保留尽可能多的整行）
+
 
 ## tail
 格式：`tail [OPTION] [FILE]`
@@ -60,4 +97,11 @@ OPTION:
 -M   将前面3个字母依照月份的缩写进行排序
 -m   合并多个已经排序的文件（并不检查这些文件是否已经排序）
 -oOUTPUT   将排序后的结果存入指定的文件OUTPUT，为的是解决不能将输出重定向到原文件
+
+## comm
+用于有序文件比较，以求交集和差集
+OPTION:
+-1	不显示只出现在第一个文件的内容
+-2	不显示只出现在第二个文件的内容
+-3	不显示同时出现在两个文件的内容
 

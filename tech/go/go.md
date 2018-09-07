@@ -154,7 +154,24 @@ s1 + s2 字符串连接
 += 会产生一个新字符串回赋
 
 #### strings 包
+Count(s, sep)：在字符串s 中查找sep 串出现次数
+Index(s, sep)：在字符串s 中查找sep 串首次出现的位置（找不到返回-1，sep 空串返回0）
+LastIndex(s, sep)：在字符串s 中查找sep 串最后一次出现的位置（找不到返回-1，sep 空串返回字符串长度）
+IndexRune(s, rune)：在字符串s 中查找rune 字符首次出现的位置（找不到返回-1）
+Contains(s, substr)：在字符串s 中查找是否含有substr 串
+ContainsAny(s, chars)：在字符串s 中查找是否含有chars 串中的任一字符
+ContainsRune(s, rune)：在字符串s 中查找是否含有rune 字符
 Join(strSeq, s)：用字符串s 把字符串序列strSeq 连接起来
+Replace(s, old, new, n)：将字符串s 中的old 串替换为new，最多替换n 次，若为-1，则全部替换
+
+#### strconv 包
+ParseBool(str)：将字符串转为布尔值（字符串1、t、T、true、True、TRUE 为true，字符串0、f、F、false、False、FALSE 为false）
+FormatBool(b)：将布尔值转为字符串"true" 或 "false"
+ParseFloat(str, size)：字符串转浮点数（size 指定32 还是64）返回float64
+ParseInt(str, base, size)：字符串转整数（base 是2 到36 进制，如果为0，则使用字符串前缀判断；size 是0:int, 8:int8, 16:int16, 32:int32, 64:int64）返回int64
+ParseUint(str, base, size)：字符串转无符号整数，返回uint64
+Atoi
+
 
 ### 数组和slice
 []string
@@ -173,7 +190,8 @@ s[m:n] 获取子切片（m 缺省为0，n 缺省为len(s)）
 copy(rsp.BookCoupon, req.BookCoupon)
 把后一个复制给前一个
 
-append(sinfo.healthyNodesOne, host)
+append(slice, ele...)
+向切片中添加元素（可以一次添加多个），并返回一个新的切片
 把第二个元素追加到第一个数组最后
 
 ### map
