@@ -18,18 +18,19 @@ netrw.vim：已内置，文件浏览器，当打开的文件不是普通文件�
 
 [nerdtree](https://github.com/scrooloose/nerdtree.git)：树形文件浏览器
 
-Command-T：基于Ruby和C扩展实现的快速文件浏览的插件（需要vim支持ruby扩展）
 
 #### 查找
-[ctrlp](https://github.com/ctrlpvim/ctrlp.vim.git)：模糊查找
-[LeaderF](https://github.com/Yggdroot/LeaderF)：同上
+[ctrlp](https://github.com/ctrlpvim/ctrlp.vim.git)：模糊查找file, buffer, MRU, Tags, ...
+Command-T：同上，基于Ruby和C扩展实现（需要vim支持ruby扩展）速度好于ctrlp，但匹配度较差
+[LeaderF](https://github.com/Yggdroot/LeaderF)：同上，性能精度更好
+[fzf](https://github.com/junegunn/fzf.git)：同上
 
-[grep.vim](https://github.com/yegappan/grep)：工程内查找和替换
-
+[grep.vim](https://github.com/yegappan/grep)：内容查找
 [EasyGrep](https://github.com/dkprice/vim-easygrep)：全局查找并替换
+[ctrlsf](https://github.com/dyng/ctrlsf.vim)：内容查找和替换，有上下文
 
 [ack](https://github.com/mileszs/ack.vim)：全局查找，用perl编写<https://github.com/beyondgrep/ack2>
-或者使用ag
+推荐使用ag，性能更好
 
 [ctags](https://sourceforge.net/projects/ctags/?source=typ_redirect)：符号收集和定位
 
@@ -94,11 +95,11 @@ neocomplcache.vim
 
 new-omni-completion：代码补全
 
-[YouCompleteMe](https://github.com/Valloric/YouCompleteMe.git)：基于clang引擎通过语义检查为C/C++/Objective-C进行代码补全，集成clang_complete、AutoComplPop、Supertab、neocomplcache、Syntastic。集成Jedi引擎完成Python的代码补全。通过OmniSharp完成C#的补全。通过 Gocode and Godef完成Go的补全。通过 Tern完成js的补全。通过eclim完成Java和ruby的补全。其他语言使用 vim内置的omnifunc补全。
+[YouCompleteMe](https://github.com/Valloric/YouCompleteMe.git)：基于clang引擎通过语义检查为C/C++/Objective-C进行代码补全，集成clang_complete、AutoComplPop、Supertab、neocomplcache、Syntastic。集成Jedi引擎完成Python的代码补全。通过OmniSharp完成C#的补全。通过 Gocode and Godef完成Go的补全。通过 TSServer完成js/ts的补全（原为Tern）。通过eclim完成Java和ruby的补全。其他语言使用 vim内置的omnifunc补全。
 
 eclim：结合eclipse的代码提示
 
-jedi-vim：python提示，需要--enable-pythoninterp 的配置和安装jedi
+jedi-vim：python提示，需要--enable-pythoninterp 的配置和安装jedi（已集成到YouCompleteMe中）
 
 pydiction：python补全
 
@@ -109,7 +110,7 @@ EnhancedCommentify：块注释
 
 NerdCommenter：块注释
 
-tComment：同上
+[tComment](https://github.com/vim-scripts/tComment)：同上
 
 DoxygenToolkit.vim：文档注释
 
@@ -120,7 +121,7 @@ DoxygenToolkit.vim：文档注释
 
 [surround.vim](https://github.com/tpope/vim-surround.git)
 
-matchit：vim自带，默认不安装，通过 :help matchit-install查看
+[matchit](https://github.com/tmhedberg/matchit)：vim自带，默认不安装，通过 :help matchit-install查看
 
 [MatchTag](https://github.com/gregsexton/MatchTag)
 [MatchTagAlways](https://github.com/Valloric/MatchTagAlways.git)
@@ -145,7 +146,7 @@ Molokai：配色方案
 solarized：配色方案
 
 #### 代码片段
-snipMate：代码片段
+[snipMate](https://github.com/msanders/snipmate.vim)：代码片段
 
 [xptemplate](https://github.com/drmingdrmer/xptemplate.git)：同上，更复杂，更强大
 
@@ -161,7 +162,7 @@ ultisnip：同上
 
 [javascript-indent](https://github.com/vim-scripts/JavaScript-Indent.git)：js缩进
 
-tabular：快速对齐
+[tabular](https://github.com/godlygeek/tabular)：快速对齐
 
 ### 具体语言一体插件
 c.vim：c语言插件
