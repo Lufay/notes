@@ -30,11 +30,13 @@ Command-T：同上，基于Ruby和C扩展实现（需要vim支持ruby扩展）�
 [ctrlsf](https://github.com/dyng/ctrlsf.vim)：内容查找和替换，有上下文
 
 [ack](https://github.com/mileszs/ack.vim)：全局查找，用perl编写<https://github.com/beyondgrep/ack2>
-推荐使用ag，性能更好
+[ag](https://github.com/ggreer/the_silver_searcher)：性能更好
 
 [ctags](https://sourceforge.net/projects/ctags/?source=typ_redirect)：符号收集和定位
++ [Exuberant Ctags](http://ctags.sourceforge.net/)：老版，已不更新
++ [Universal Ctags](https://ctags.io/)：新项目，更推荐
 
-Cscope：强化ctags
+Cscope：ctags 查定义，它还可以查被引用
 
 taglist：符号表
 

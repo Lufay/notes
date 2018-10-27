@@ -1,4 +1,8 @@
-# Exuberant Ctags
+# Ctags
+
+## 依赖
+autoreconf，需要安装：`apt install autoconf`
+aclocal，需要安装：`apt install automake`
 
 ## 安装
 ```
