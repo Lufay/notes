@@ -41,6 +41,9 @@ set fenc=utf8
 set tenc=utf8	" not suit for win
 set fencs=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 
+noremap j gj
+noremap k gk
+
 set list listchars=tab:▸\ ,eol:¬,	" ,trail:·,extends:>,precedes:<
 "hi TabSOL ctermbg=yellow guibg=yellow
 "match TabSOL \t
