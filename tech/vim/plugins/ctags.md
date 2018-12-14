@@ -47,3 +47,8 @@ g]                          同上，pattern为当前光标下Word
 在跳转后使用:split命令，则将分割窗口进行显示，如果要直接分割使用:stag命令和CTRL+W+]
 这些命令加前缀 p，则将以preview窗口展示（不跳转，可以使用:pclose关闭preview窗口）
 
+### 用例
+首先在代码根目录，使用`ctags -R`命令，生成tags文件（代码改动后需要重新生成）
+1. 找定义
+`Ctrl+]` 跳到当前光标下的定义处，而后使用`Ctrl+o` 或 `Ctrl+t`（pop）即可跳回
+也可以直接使用tag 指定pattern
