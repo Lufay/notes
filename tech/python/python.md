@@ -2355,6 +2355,19 @@ mkfifo
 + normpath(path)            返回指定路径的规范字符串形式（滤除多余的os.sep）
 + expanduser(path)            将路径中的~或~user转换为对应用户的主目录后的path的绝对路径（如果用户未知或$HOME未定义，则不返回）
 
+### 3. Unix样式的通配符
+支持 Unix样式的通配符（`*` ? `[]` `[!]`），对于这些元字符，要表示字面值，可以将其放在`[]`中
+#### glob 模块
+该模块只有 2个函数：glob(path) 和 iglob(path)
+它们的行为就像shell 中的ls 命令一样，后者和前者的区别是后者返回的是一个迭代器而前者是一个列表
+
+#### fnmatch 模块
+和 glob 的区别是它不会把`/` 和文件开头的`.` 特殊处理
++ fnmatch(filename, pattern)：使用os.path.normcase 把filename 进行处理后，和pattern进行匹配，返回是否匹配
++ fnmatchcase(filename, pattern)：大小写严格匹配
++ filter(names, pattern)：相当于`[n for n in names if fnmatch(n, pattern)]`
++ translate(pattern)：将pattern 转换为正则字符串，可以使用re.compile 处理
+
 ### 3. subprocess 模块
 用于调用shell（为了代替os.system/`os.popen*`/`os.spawn*`/`popen2.*`/`commands.*`）
 该模块提供了一个类和三个简易函数
@@ -2616,7 +2629,6 @@ bz2            访问bz2格式的压缩文件
 shutil        高级文件访问功能（比如复制文件、复制文件权限、目录树递归复制）
 filecmp        比较目录和文件
 fileinput        多个文本文件的行迭代器
-glob/fnmatch    Unix样式的通配符（`*`和?）匹配功能（但并不支持~）
 
 ## 第九章. 异常
 面对错误，应用程序应该成功的捕获并处置，而不至于灾难性的影响其执行环境。
