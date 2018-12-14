@@ -36,7 +36,7 @@ primary key
 foregin key(<字段名>) references tableName(filedName) [on delete|update casecade | no action]
 not null
 unique
-default '0'
+default now()
 check()
 auto_increment
 ```

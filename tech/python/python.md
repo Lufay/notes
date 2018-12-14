@@ -252,7 +252,7 @@ ArgumentParser的方法：
 	- required，使之作为必选参数（对于option argument来说是不合理的，尽量不用）
 	- help，帮助信息，可以通过%(prog)s、%(default)s、%(type)s来引用脚本名、默认值、类型需求。此外，如果指定为argparse.SUPPRESS，则不再为该选项生成帮助信息。
 	- version，版本信息，可以通过%(prog)s、%(default)s、%(type)s来引用脚本名、默认值、类型需求。
-	- metaver，用以提醒用户，该选项期望的参数的描述（用以帮助信息中的占位），默认为positional argument或option argument 的dest属性变大写。当需要多个期望参数是，该项指定为一个tuple.
+	- metavar，用以提醒用户，该选项期望的参数的描述（用以帮助信息中的占位），默认为positional argument或option argument 的dest属性变大写。当需要多个期望参数是，该项指定为一个tuple.
 	- dest，指定保存到`parse_args`返回Namespace对象的属性名（若不指定，则为选项名的长格式名，若没有则使用short格式名，其中间的`-`转换为`_`）
 + `parse_args()`：返回一个Namespace对象（可以通过vars()函数将其转换为dict）。无参调用将自动解析sys.argv，也可以手动提供这样一个list作为参数。
 + `add_argument_group(title=None, description=None)`：增加一个分组，返回一个分组对象，该对象同样可以进行`add_argument`
