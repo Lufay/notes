@@ -101,11 +101,11 @@ new-omni-completion：代码补全
 
 eclim：结合eclipse的代码提示
 
-jedi-vim：python提示，需要--enable-pythoninterp 的配置和安装jedi（已集成到YouCompleteMe中）
+[jedi-vim](https://github.com/davidhalter/jedi-vim)：python提示，需要--enable-pythoninterp 的配置和安装jedi（已集成到YouCompleteMe中）
 
-pydiction：python补全
+[pydiction](https://github.com/rkulla/pydiction)：python补全
 
-SuperTab：简化补全快捷键
+[SuperTab](https://github.com/ervandew/supertab)：简化补全快捷键
 
 #### 注释
 EnhancedCommentify：块注释
