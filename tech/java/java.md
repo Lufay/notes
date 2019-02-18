@@ -232,7 +232,110 @@ Java支持继承重载，即派生类中重载基类的方法。注意，这里�
 
 ## 十一. I/O
 标准输出System.out，错误输出System.err
+### HTTP
+常用的包是org.apache.httpcomponents
+#### request
+HttpGet()
+HttpGet(String url)
+HttpGet(URI)
 
+HttpPost()
+HttpPost(String url)
+HttpPost(URI)
+
+方法：
+setHeader(name, val)
+abort()
+
+##### 请求参数
+对于GET：
+可以使用setParams(HetpParams params)方法来添加请求参数
+对于POST：
+也可以使用setParams(HetpParams params)方法来添加请求参数
+还可以使用setEntity
+```
+List params = paramMap.entrySet().parallelStream().map((entry) ->
+			new BasicNameValuePair(entry.getKey(), entry.getValue())
+	).collect(Collectors.toList());
+request.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
+
+StringEntity stringEntity = new StringEntity(json, "UTF-8");// 解决中文乱码问题
+stringEntity.setContentEncoding("UTF-8");
+stringEntity.setContentType("application/json");
+request.setEntity(stringEntity);
+```
+
+##### 请求配置
+```
+RequestConfig requestConfig = RequestConfig.custom()
+	.setConnectionRequestTimeout(1000)	// 从连接池获取连接的超时时间，单位毫秒
+	.setConnectTimeout(1000)			// 建立连接时间（三次握手），必须设置，以防连接被阻塞
+	.setSocketTimeout(2000)				// 响应过程中数据包之间间隔的最大时间
+	.build();
+request.setConfig(requestConfig);
+```
+此外构造httpClient 时，也可以使用setDefaultRequestConfig() 进行设置
+
+#### response
+HttpResponse
+CloseableHttpResponse
+方法：
+getStatusLine() 可以获取StatusLine 对象，该对象可以通过getStatusCode 获取http 结果状态码，可以通过getReasonPhrase() 获取结果错误信息
+getAllHeaders() 和getHeaders(name) 可以获取响应头
+getEntity() 获取结果实体，可以通过getContent() 方法获取结果流（而后使用IOUtils.toString() 获取String），也可以通过EntityUtils.toString(entity) 将其转化为一个String
+close()
+
+#### httpClient
+HttpClient
+CloseableHttpClient
+```
+HttpClient httpClient = HttpClients.custom()
+	.setXXX()
+	.build();
+```
+其中setXXX 包括上面提到的setDefaultRequestConfig，还有setConnectionManager(), setKeepAliveStrategy(), setSSLSocketFactory()（对于https）
+
+方法：
+execute(request)
+execute(request, httpContext)
+execute(request, responseHandler)
+close()
+其中
+前两个返回的是HttpResponse
+第三个中的responseHandler 可以是一个lambda 表达式，用于对HttpResponse 进行后置处理，将其转换为一个指定的类型返回
+
+##### ConnectionManager
+PoolingHttpClientConnectionManager
+方法：
+setMaxTotal
+setDefaultMaxPerRoute
+
+##### KeepAliveStrategy
+可以使用实现ConnectionKeepAliveStrategy 接口的匿名类，也可以使用lambda 表达式
+例如：
+```
+(HttpResponse response, HttpContext context) -> {
+	BasicHeaderElementIterator it = new BasicHeaderElementIterator(response.headerIterator("Keep-Alive"));
+
+	String param;
+	String value;
+	do {
+		if (!it.hasNext()) {
+			return 120000L;
+		}
+
+		HeaderElement he = it.nextElement();
+		param = he.getName();
+		value = he.getValue();
+	} while(value == null || !param.equalsIgnoreCase("timeout"));
+
+	try {
+		return Long.parseLong(value) * 1000L;
+	} catch (NumberFormatException var8) {
+		return 120000L;
+	}
+}
+```
 
 ## 十二. 随机数
 初始化一个随机数发生器Random rand = new Random(sed);其中sed是一个随机种子（int），也可以省去，将以当前时间作为随机种子。
