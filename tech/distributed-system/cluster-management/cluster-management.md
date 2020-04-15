@@ -77,14 +77,18 @@ google并没有使用虚拟机的方式来进行task之间的资源隔离，而�
 ### 参考
 <http://xpc.im.baidu.com/html/richmedia/show.html?t=1&key=NjQ5ZWExYWJhODJlMjU0NzEwZWNkMjY5MWIzMjlhMTc1NTBjNmQyNGJkN2Y4ZmE0NWQ1ZTIwYzRhNzQwOGY0NA&index=1#>
 
-## galaxy
-百度开源
+## Kubernetes
+
 
 ## Mesos
 由 Twitter 工程师开发，开源
+2009年发布，2019年5月2日宣布转向 Kubernetes
 
 ## Matrix
 百度的现行集群管理系统
+
+## galaxy
+百度开源
 
 ## 伏羲(Fuxi)
 阿里云的资源管理和任务调度系统
