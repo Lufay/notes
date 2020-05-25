@@ -210,6 +210,7 @@ git checkout -- $file
 git reset HEAD $paths
 ```
 把暂存区指定路径下的文件的修改撤销掉（相当于git add 的逆操作）
+
 ```
 git reset [--mode] [<commit>]
 ```
