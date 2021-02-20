@@ -50,17 +50,17 @@
 一个定长字符串，当存储时，总是是用空格填满右边到指定的长度。M的范围是1 ～ 255个字符。当值被检索时，空格尾部被删除。CHAR值根据缺省字符集以大小写不区分的方式排序和比较，除非给出BINARY关键词。NATIONAL CHAR(短形式NCHAR)是ANSI SQL的方式来定义CHAR列应该使用缺省字符集。这是MySQL的缺省。CHAR是CHARACTER的一个缩写。
 `[NATIONAL] VARCHAR(M) [BINARY]`
 一个变长字符串。注意：当值被存储时，尾部的空格被删除(这不同于ANSI SQL规范)。M的范围是1 ～ 255个字符。 VARCHAR值根据缺省字符集以大小写不区分的方式排序和比较，除非给出BINARY关键词值。 VARCHAR是CHARACTER VARYING一个缩写。
-`TINYBLOB`
-`TINYTEXT`
+`TINYBLOB`：二进制
+`TINYTEXT`：非二进制（有字符集）
 一个BLOB或TEXT列，最大长度为255(2^8-1)个字符。
-`BLOB`
-`TEXT`
+`BLOB`：二进制
+`TEXT`：非二进制（有字符集）
 一个BLOB或TEXT列，最大长度为65535(2^16-1)个字符。
-`MEDIUMBLOB`
-`MEDIUMTEXT`
+`MEDIUMBLOB`：二进制
+`MEDIUMTEXT`：非二进制（有字符集）
 一个BLOB或TEXT列，最大长度为16777215(2^24-1)个字符。
-`LONGBLOB`
-`LONGTEXT`
+`LONGBLOB`：二进制
+`LONGTEXT`：非二进制（有字符集）
 一个BLOB或TEXT列，最大长度为4294967295(2^32-1)个字符。
 
 ### 复合类型

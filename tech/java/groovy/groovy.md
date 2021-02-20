@@ -1,17 +1,21 @@
 # Groovy
+<http://docs.groovy-lang.org/latest/html/groovy-jdk/>
 
 ## 简述
 动态语言
 
-### 
+### 语句风格
 可以不用分号结尾
+多条语句连在一行需要使用分号分隔，注意`{}` 也是一条语句，也需要用分号和后面的语句分隔
 
 ### 注释
 和Java 一样
 支持`//` 和 `/* ... */`
 
-## 
+## 打印
+print()
 println(str)
+printf(format, args...)
 
 ## 数据类型
 支持Java 所有基础类型（都会被装箱为对象），可以用`.class`属性查看类型。
@@ -19,13 +23,15 @@ println(str)
 字符串、List、Map 都可以使用== 进行比较，如果要判断引用是否相同，可以使用a.is(b)
 ### 字符
 ```
-char c = 'A'
+char c1 = 'A'
+def c2 = 'B' as char
+def c3 = (char)'C'
 ```
 
 ### 字符串
 ```
-"hello world"							// java.lang.String 类型
-"the sum of 2 and 3 equals ${2 + 3}"	// groovy.lang.GString 类型，支持变量解析和表达式解析
+"hello world"							// java.lang.String 类型，非变量解析的字符串均是该类型
+"the sum of 2 and 3 equals ${2 + 3}"	// groovy.lang.GString 类型，支持变量解析（如果单个变量可以省略大括号）、表达式解析（支持闭包表达式）、多条语句组成的复杂表达式
 
 "abcdefg"[2]							// c，相当于.getAt(2)
 "abcdefg"[1..3]							// bcd，相当于.getAt(1..3) 或substring(1,3)（第二个参数缺省为最后一个字符）
@@ -36,37 +42,48 @@ char c = 'A'
 
 "abcd" + 'ef'							// abcdef，等价于concat/plus（不影响原字符串）
 "abcd" - 'bc'							// ad，删除子串，相当于minus
-"abcd" << "ef"							// abcdef，等价于leftShift
+"abcd" << "ef"							// abcdef，等价于leftShift，返回类型为java.lang.StringBuffer
 "abcd".previous()						// abcc，按字典顺序给最后一个字符-1
 "abcd".next()							// abce，按字典顺序给最后一个字符+1
 "abcd".reverse()
 "abcd".toUpperCase()
 "ABCD".toLowerCase()
-"demo".center(10, '1234')				// 123demo1234，没有第二个参数缺省为空格
-"abcd".padLeft(5,"12")					// 1abcd
-"abcd".padRight(5,"12")					// abcd1
+"demo".center(10, '1234')				// 123demo1234，第二个参数缺省为空格
+"abcd".padLeft(5,"12")					// 1abcd，第二个参数缺省为空格
+"abcd".padRight(5,"12")					// abcd1，第二个参数缺省为空格
 
 'a.b./c/d'.tokenize('./')				// [a, b, c, d]，token 字符串每个字符都是分隔符，缺省为空白符，多个分隔符视为一个，返回List
 ''.split(reg)							// 用正则字符串进行分隔，reg默认空白符，返回string[]
 ''.matches(reg)							// 字符串是否匹配正则字符串
+
+'''
+	code
+'''.stripIndent(4)						// 去掉多行字符串的缩进字符数，缺省参数为多行代码的最小缩进空格数
 ```
 单引号串不对 $ 符号进行占位替换（interpolated）
 双引号串会对 $ 符号进行占位替换
-三引号串支持多行，支持$ 占位替换（三双引号），在行末使用`\`可以取消换行符
+三引号串支持多行，支持$ 占位替换（三个双引号），在行末使用`\`可以取消换行符
 `/`字符串是Slashy 字符串，支持多行，支持$ 占位替换。由于无需转义反斜杠，主要用于正则
 
 支持转义字符，`\u` 开头的UNICODE字符
-可以使用toCharacter() .toInteger() toLong() toFloat() .toDouble() toLong()等转换方法
-可以用`+`操作符进行连接
+可以使用toCharacter() .toInteger() toLong() toFloat() .toDouble() toLong() toString() toList()（单字符列表）等转换方法
+可以直接使用`==` 比较内容相等
 
 #### GString 字符串
-`$` 开头的.表达式
-`${}` 包起来的表达式
+`$` 开头的.表达式（单变量表达式）
+`${}` 包起来的表达式（复合表达式）没有表达式的`${}` 表示null
 
 表达式可以是分号分隔的语句，最后一句是其返回值，如果为空，则为null
-也可以是一个单参数（默认可以省略）的闭包表达式，可以做到延迟解析的效果，即访问该字符串时才调用闭包进行解析
+也可以是0或1个参数（默认可省）的闭包表达式，可以做到延迟解析的效果，因为一般的表达式在创建时绑定完成，闭包表达式在使用时加载绑定
 
-由于该字符串是可变的，所以其 hashCode() 也是可变的，所以不要作为map 的key
+注意同意字符串内容的String 串和GString 串的 hashCode() 是不同的，所以不要作为map 的key
+例如：
+```
+def key = "a"
+def m = ["${key}": "letter ${key}"]
+assert m["a"] == null
+
+```
 
 #### Slashy 字符串
 ```
@@ -74,6 +91,12 @@ char c = 'A'
 $/.*foo.*/$
 ```
 前者转义符是`\`，后者转义符是`$`
+
+##### 正则支持
+\b :单词的开始或者结尾
+\w :匹配字母或者数字或者下划线或汉字
+\d :匹配数字
+\s :匹配任意的空白符
 
 
 ### 容器
@@ -88,7 +111,7 @@ aList[3]		// null，相当于aList.get(3)
 aList[-2]		// string，相当于aList.getAt(-2)，get 方法不支持负参
 aList[1..2]		// ['string', false]，相当于aList.getAt(1..2) 或aList.getAt([1,2])
 aList << 10 << 'bb' << bList	// 追加数据（返回追加后的列表），相当于aList.leftShift(10) 或aList.add(bList) 但add返回为true
-aList + bList + c		// List 连接，相当于aList.plus(bList).plus(c)
+aList + bList + c		// List 连接，相当于aList.plus(bList).plus(c)，性能不如 <<，因为会创建新的列表
 aList += bList			// 连接回赋（会创建新列表）
 aList - c				// 删除元素，相当于aList.minus(c)
 aList - bList			// 差集
@@ -96,7 +119,7 @@ aList -= bList			// 删除回赋（会创建新列表）
 aList.remove(1)			// 删除位置为1 的元素（返回该元素）
 aList.pop()				// 删除第一个元素（返回该元素）
 aList.intersect(bList)	// 交集
-aList.disjoint(bList)	// 是否相交
+aList.disjoint(bList)	// 是否相交（不相交返回true）
 aList.clone()
 aList*n					// 多个重复List 进行连接等价于aList.multiply(n)
 aList[10] = 100			//[5, string, false, null, null, null, null, null, null, null, 100]
@@ -136,6 +159,11 @@ aList.every { cond }	// 都满足条件cond 返回true
 aList.any { cond }		// 至少一个满足条件cond 返回true
 ```
 
+##### 高阶列表
+dList.transpose()		// 矩阵转置
+dList.combinations()	// eg. [[2, 3],[4, 5, 6]] -> [[2, 4], [3, 4], [2, 5], [3, 5], [2, 6], [3, 6]]
+
+
 ##### Range
 ```
 def range1 = 1..5	// [1, 2, 3, 4, 5]
@@ -151,36 +179,45 @@ range.clear()
 range.iterator()	//迭代器
 ```
 
+#### Set
+```
+new java.util.HashSet(list)		// 需要显式声明
+[] as Set						// 默认是LinkedHashSet
+
+set.toList()
+```
+
 #### Map
-默认类型java.util.HashMap（java.util.LinkedHashMap）
+默认类型java.util.LinkedHashMap
 可以直接使用`==` 判断相等
 ```
 def eMap = [:]	// 空map
-def map = [key1: "value1", key2: "value2", key3: "value3"]	// key 可以是int, String（不带引号默认转，若想获取变量的值作为key，则可以使用(key) ）
+def map = [key1: "value1", key2: "value2", *: eMap]	// key 可以是int, String（不带引号默认转，若想获取变量的值作为key，则可以使用(key) ）*:eMap 可以将eMap 的内容放入当前Map
+tMap = new TreeMap()	// 显式声明一个有序Map
 map.size()	// 元素个数
 map.isEmpty()
 map.keySet()
 map.values()
 map.entrySet()
-map.key1	// map['key1']，相当于map.getAt('key1')
+map.key1	// map.'key1' 或map['key1']，相当于map.getAt('key1')
 map?.key1	// 等价于if (map != null) map.key1
 map.get("key1")
 map.get("key4", 1)			// 若没有key4，则返回1，并将该kv 插入map
 map.put("key4", "val4")		// 将key4:val4 放入map，返回key4 原来的val
-map.containsKey("key1")
+map.containsKey("key1")		// 等价于 "key1" in map
 map.containsValue("values1")
 map.remove('key1')
 map.subMap(['key2', 'key3'])
 map.clear()
-map.each {
+map.each {		// 单个参数entry
 	// it.key
 	// it.value
 }
 map.each { k,v ->
 }
-map.collect {}
-map.find {}
-map.findAll {}
+map.collect([init]) {}	// 映射为一个list
+map.find {}		// 返回一个满足条件的entry
+map.findAll {}	// 返回一个满足条件的子Map
 map.any {}
 map.every {}
 
@@ -265,6 +302,8 @@ name != null ? name : "abc"
 // 可以简写为
 name?: "abc"
 ```
+
+instanceof 操作符可以换用 in
 
 ## 语句
 ### 分支

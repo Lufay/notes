@@ -50,6 +50,7 @@ WHERE <条件表达式>
 [GROUP BY <字段1，字段2，...>] [HAVING <条件表达式>]
 [ORDER BY <字段1 [desc/asc]，字段2 [desc/asc]，...>]
 [LIMIT [offset, ]row_count]
+[FOR UPDATE [OF column_list][WAIT n|NOWAIT][SKIP LOCKED]]
 ```
 + DISTINCT 可以用于去重（必须是后面的字段全相同才是重复）
 + <表名>可以是一条嵌套的SELECT 语句（可以用小括号括住，然后用AS 命名这个嵌套表）
@@ -64,6 +65,11 @@ offset 表示从第offset条记录之后开始取（第一条是偏移是0），
 	- MySQL 不支持INTERSECT 和MINUS
 	INTERSECT 的替代方案是join using，或者用union all 之后统计重复度为2的
 	MINUS 的替代方案是where (fa, fb) not in (select a, b from tb)，或者用left join 判断tb.id is null
++ FOR UPDATE 可以给选定的行加上行锁（必须执行在事务里，事务结束才会释放锁；必须使用主键的等值查询，否则为表锁），其他update/delete还是另一个for update 语句都会block 住，仅适用于InnoDB，Myisam 只支持表级锁
+	OF 子句用于指定即将更新的列，即锁定行上的特定列
+	WAIT 子句指定等待其他用户释放锁的秒数，防止无限期的等待（报告“资源已被占用”）
+	nowait子句的作用就是避免进行等待，当发现请求加锁资源被锁定未释放的时候，直接报错返回（“资源正忙”）
+	若使用了skip locked，则可以越过锁定的行，不报告异常
 
 ```
 insert into <表名> [( <字段名1>[,... <字段名n>])] values ( <值1> )[,... ( <值n> )] [ON DUPLICATE KEY update 字段=新值,...]

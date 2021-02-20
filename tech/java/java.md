@@ -92,6 +92,10 @@ String str = String()
 ```
 还可以使用char[]作为构造器参数构造String，该字符数组包含了所有串的字符（不需要尾标志）（反之，将一个String转换为char[]，可以调用toCharArray()方法）
 
+#### 格式化
+String.format(format, args...)方法
+%d是包括了int,long,byte等等类型了
+
 #### 4.2 String的常用方法
 首先，说明的是，使用引号的字符串常量和基本类型常量不同，它可以直接调用这些String类的方法："".fn()，而无需用new String("...").fn()这种复杂形式
 String的intern()方法，调用该方法后，Java将到常量池中找和该字符串有相同内容的存储对象，如果找到，就返回在常量池中找到的对象引用；如果找不到，就在常量池中添加该字符串对象，返回其引用。
@@ -124,7 +128,179 @@ binarySearch()：二分查找元素（基于数组是有序的）
 asList()：以一个对象数组，或者可变个同一类型的对象作为参数，转换为List<T>的容器类型返回。（该容器可以调用toArray()方法变回数组，不过该返回的List<T>是一个数组实现的，无法改变其大小，因此该返回对象不支持进一步的add和remove，不过，可以通过该对象作为其他可变容器构造器的输入）（注意：如果是个数组，必须是对象数组，如果是基本类型的数组，则将视为可变参数的一个，即：就会将这个数组整体作为List的一个成员。这是因为容器全是基于泛型实现的，而一个泛型xxx<T>就是一个xxx<Object>类型，不同于C++的每种T就是一种类型，因此基本类型不继承Object，而数组对象则继承自Object，因此会有该效果）
 
 ### 6. 容器
+根接口Collection
+继承树
+```mermaid
+classDiagram
+	Iterable <|-- Collection
+	<<interface>> Iterable
+	Collection <|.. AbstractCollection
+	<<interface>> Collection
+	
+	Collection <|-- List
+	<<interface>> List
+	List <|.. AbstractList
+	AbstractCollection <|-- AbstractList
+	AbstractList <|-- ArrayList
+	AbstractList <|-- AbstractSequentialList
+	AbstractSequentialList  <|-- LinkedList
+	
+	Collection <|-- Queue
+	<<interface>> Queue
+	Queue <|.. AbstractQueue
+	AbstractCollection <|-- AbstractQueue
+	Queue <|-- BlockingQueue
+	<<interface>> BlockingQueue
+	BlockingQueue <|.. ArrayBlockingQueue
+	AbstractQueue <|-- ArrayBlockingQueue
+	BlockingQueue <|.. LinkedBlockingQueue
+	AbstractQueue <|-- LinkedBlockingQueue
+	BlockingQueue <|.. PriorityBlockingQueue
+	AbstractQueue <|-- PriorityBlockingQueue
+	BlockingQueue <|.. DelayQueue
+	AbstractQueue <|-- DelayQueue
+	BlockingQueue <|.. SynchronousQueue
+	AbstractQueue <|-- SynchronousQueue
+	BlockingQueue <|-- TransferQueue
+	<<interface>> TransferQueue
+	TransferQueue <|.. LinkedTransferQueue
+	AbstractQueue <|-- LinkedTransferQueue
+	Queue <|-- Deque
+	<<interface>> Deque
+	Deque <|.. LinkedList
+	Deque <|.. ArrayDeque
+	AbstractCollection <|-- ArrayDeque
+	Deque <|-- BlockingDeque
+	BlockingQueue <|-- BlockingDeque
+	<<interface>> BlockingDeque
+	BlockingDeque <|.. LinkedBlockingDeque
+	AbstractQueue <|-- LinkedBlockingDeque
+	
+	Collection <|-- Set
+	<<interface>> Set
+	Set <|.. AbstractSet
+	AbstractCollection <|-- AbstractSet
+	AbstractSet <|-- HashSet
+	Set <|-- SortedSet
+	<<interface>> SortedSet
+	SortedSet <|-- NavigableSet
+	<<interface>> NavigableSet
+	NavigableSet <|.. TreeSet
+	AbstractSet <|-- TreeSet
+	NavigableSet <|.. ConcurrentSkipListSet
+	AbstractSet <|-- ConcurrentSkipListSet
+	
+	Map <.. Collection
+	<<interface>> Map
+	Map <|.. AbstractMap
+	AbstractMap <|-- HashMap
+	AbstractMap <|-- WeakHashMap
+	Map <|-- SortedMap
+	<<interface>> SortedMap
+	SortedMap <|-- NavigableMap
+	<<interface>> NavigableMap
+	NavigableMap <|.. TreeMap
+	AbstractMap <|-- TreeMap
+	Map <|-- ConcurrentMap
+	<<interface>> ConcurrentMap
+	ConcurrentMap <|.. ConcurrentHashMap
+	AbstractMap <|-- ConcurrentHashMap
+	ConcurrentMap <|-- ConcurrentNavigableMap
+	<<interface>> ConcurrentNavigableMap
+	ConcurrentNavigableMap <|.. ConcurrentSkipListMap
+	AbstractMap <|-- ConcurrentSkipListMap
+```
 和数组显示不同，容器对象的toString方法已经类似Arrays.toString进行了重写，因此，容器类对象直接输出显示，将显示其内容。
+
+#### List
+##### ArrayList
+大小可变（容量自动扩展），可包含null
+非线程安全
+支持随机访问，但在中间增删元素开销大
+
+##### linkedList
+双向链表，可包含null
+非线程安全
+
+#### Set
+最多有一个null
+##### HashSet
+根据hashCode 决定存储位置
+非线程安全
+如果要把一个对象放入HashSet中，重写该对象对应类的equals方法，也应该重写其hashCode()方法。
+
+##### LinkedHashSet
+hashCode值来决定元素的存储位置，同时使用链表维护元素的次序，可以按添加顺序访问，稍微增加了插入的成本
+
+##### TreeSet
+可以确保集合元素处于排序状态
+采用红黑树算法实现，不允许重复，不允许null值，默认按照升序排序
+
+#### Map
+批量删除key:
+map.keySet().removeAll()
+
+##### HashMap
+哈希表实现，使用链表解决冲突，默认的负载因子是0.75，当超载后自动扩充2 倍后，进行rehash
+非线程安全
+
+##### TreeMap
+通过红黑树实现，可以实现null键和值，根据其键的自然顺序进行排序，或者根据创建映射时提供的 Comparator 进行排序
+非线程安全
+
+#### 同步容器
+同步容器可以简单地理解为通过synchronized来实现同步的容器，如果有多个线程调用同步容器的方法，它们将会串行执行
+Collections.synchronizedList()
+Collections.synchronizedSet()
+Collections.synchronizedMap()
+Collections.synchronizedSortedSet()
+Collections.synchronizedSortedMap()
+
+#### 并发容器
+提供了更细粒度的加锁策略
++ CopyOnWriteArrayList：写入效率低，读取效率高
++ BlockingQueue：阻塞式的线程安全队列的接口，有多种实现，队列为空时获取元素等待，队列为满时存入元素等待
+	ArrayBlockingQueue：基于数组的有界阻塞队列
+	LinkedBlockingQueue：基于链表的有界阻塞队列
+	PriorityBlockingQueue：支持优先级的无界阻塞队列。默认情况下，元素采取自然升序排列
+	DelayQueue：延时获取元素的无界阻塞队列。根据比较机制，实现自定义处理顺序的队列。
+	SynchronousQueue：容量=0 的等待队列
++ ConcurrentLinkedQueue：非阻塞方式实现的线程安全队列，性能很好
++ CopyOnWriteArraySet
++ ConcurrentSkipListSet：TreeSet的线程安全版本
+
+##### ConcurrentMap
+###### ConcurrentHashmap
+主要使用Segment来实现减小锁粒度，把HashMap分割成若干个Segment，在put的时候需要锁住Segment，get时候不加锁，使用volatile来保证可见性，当要统计全局时（比如size），首先会尝试多次计算modcount来确定，这几次尝试中，是否有其他线程进行了修改操作，如果没有，则直接返回size。如果有，则需要依次锁住所有的Segment来计算。ConcurrentHashmap大量的利用了volatile，final，CAS等lock-free技术来减少锁竞争对于性能的影响
+
+但ConcurrentHashMap并不能完全替代HashTable。两者的迭代器的一致性不同的，HashTable的迭代器是强一致性的（Hashtable则会锁定整个map），而ConcurrentHashMap是弱一致的
+
+###### ConcurrentSkipListMap
+TreeMap的线程安全版本，性能比ConcurrentHashmap 稍低
+
+#### BitSet
+内部使用long[] 存储，并按序增长
+##### 构造
+BitSet()
+BitSet(int size)
+BitSet.valueOf(bytes)：bytes 不能是null，否则抛NPE
+
+##### 方法
+length()：取决于最后一个setBit 的长度
+size()：已分配的字节数，因为内部使用long[]，所以是Long.SIZE 整数倍
+cardinality()：setBit 的个数
+isEmpty()：cardinality() == 0
+get: 如果超出length()，则返回false
+set
+clear
+flip：取反
+intersects(BitSet)
+and/andNot
+or/xor
+nextClearBit(fromIndex)：不用考虑长度，返回从fromIndex（含）开始的clearBit 的位置
+nextSetBit(fromIndex)：返回从fromIndex（含）开始的clearBit 的位置，若fromIndex >= length() 则返回-1
+previousClearBit(fromIndex)
+previousSetBit(fromIndex)
 
 
 ## 三. 运算
@@ -174,6 +350,68 @@ void println(Object...args) {
 2. 再找可变参数的函数。
 按重载函数中固定参数部分进行上面所说的优先匹配，而对可变参数部分，如果都是基本类型和另外的包装类型按最近匹配，如果有基本类型和其包装类型同时匹配，则直接报告ambiguous错误。特别的，对于无参调用变参函数，则如果只有基本类型，按基本类型隐式转换，从低到高进行优先匹配，如果同时包含基本类型和类，或者都是类，则报告ambiguous错误。（对于变参的隐式转换，以第一个变参参数为准，后续隐式转换为该类型）
 
+### 函数式
+#### immutable 对象
+内置的Integer、Double、String 都是
+特点：
+1. final 类
+1. 复制构造器执行深拷贝
+1. 所有成员final，且不提供setter；getter 返回成员的拷贝
+
+##### 容器
+JDK 8: 
++ Collections.unmodifiableList(Arrays.asList(a, b, ...))
++ Collections.unmodifiableSet(set)
++ Collections.unmodifiableMap(map)
+
+JDK 9:
++ List.of(a, b, ...)
++ Set.of(a, b, ...)
++ Map.of(a, b, ...)
++ Map.ofEntries(entry(key, val), ...)
+
+JDK10:
+List.copyOf(list)
+Collectors.toUnmodifiableList()
+Collectors.toUnmodifiableSet()
+Collectors.toUnmodifiableMap
+
+#### Stream 函数
+```
+filter(Predicate)
+```
+相当于一个where 条件，过滤掉返回false 的元素
+
+collect 的Collector：
+Collectors.groupingBy(classifier, downstream)
+第一个参数表示如何从元素中获取到key，也就是分组的key
+第二个参数，缺省表示value 为当前元素，否则
+返回一个`Map<key, List<value>>`
+
+Collectors.toMap(keyMapper, valueMapper, mergeFunction)
+第一个参数表示如何从元素中获取到key
+第二个参数表示如何从元素中获取到value
+第三个参数可省，表示当key 冲突时，如何选取合并为一个value（若缺省冲突则抛异常）
+
+
+```
+reduce(U init, F<U, T> accumulator, O<U> combiner)
+```
+init 是个初始值，accumulator 是累加器，即initn + iter，combiner 是合并器即init1 + init2（这个参数是给parallelStream 使用的，用于结果归并，对于stream 只使用前两个参数）
+对于parallelStream 由于每个线程都会复用这个init 进行accumulator 计算，所以需要生成一个线程本地的init，同时也要小心init 的重复累计（所以最佳实践是不要改变原对象，而采用创建新对象的方式，即采用immutable 的方式进行计算），然后在用各个线程的结果调用combiner 计算
+例如
+```
+reduce(new List, (list, u) -> {
+	newList = list.clone();
+	newList.add(u);
+	return list;
+}, (u, v) -> {
+	res = u.clone();
+	res.addAll(v);
+	return res;
+})
+```
+*注意JSONArray 内部保存list 的引用，new JSONArray(list) 是引用的转移，而不是拷贝，所以必须使用clone()*
 
 ## 七. 访问控制
 让使用者无法触及他们不应触及的部分，而不可见就减少了不必要的干扰
@@ -544,15 +782,136 @@ setDefaultMaxPerRoute
 }
 ```
 
-## 十二. 随机数
+## 十二. 并发
+Supplier:get：生成函数（无参有返）
+Function:apply：通道函数（有参有返）
+Predicate:test：检测函数（有参有返bool）
+Consumer:accept：终端函数（有参无返）
+Callable:call：无参有返（和Supplier 的差别在于Supplier 关注的是生成数据，应该是幂等的；而Callable 关注是完成任务，返回一个简单的任务结果，是非幂等的）
+Runnable:run：无参无返
+
+### 多线程
++ 继承Thread类重写run方法
++ 实现Runnable接口重写run方法，然后用该实现的实例初始化Thread
+然后都可以调用Thread 类的start() 方法去启动线程
+
+Thread.currentThread() 可以获取当前的线程
+Thread.sleep(millisec)：线程休眠millisec 毫秒，如果发现中断标识会抛出InterruptedException 异常
+
+
+#### 方法
+isInterrupted()：当前线程的中断标识是否被置位
+interrupt()：线程的中断状态将会被设置为true
+
+
+
+### 线程同步
+#### synchronized
+获得锁才能进入对应的代码块，同一时间只能有一个线程访问代码块
+1. 标记实例方法：锁挂在实例对象上，同一个实例的多个实例方法共享同一把锁
+2. 标记静态方法：锁挂在类对象上
+3. 标记代码块：锁挂在synchronized(obj) 的obj 对象上
+
+### ThreadPoolExecutor
+继承链 -> AbstractExecutorService -> ExecutorService -> Executor
+```
+ThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue,
+	ThreadFactory threadFactory, RejectedExecutionHandler handler);
+```
+最后两个是可选参数
++ corePoolSize：核心池的大小，创建了线程池后，默认情况下，线程池中并没有任何线程，而是等待有任务到来才创建线程去执行任务，除非调用了prestartAllCoreThreads()或者prestartCoreThread()方法
++ maximumPoolSize：线程池最大线程数
++ keepAliveTime：线程保活时长，即线程没有任务执行时最多保持多久时间会终止。默认情况下，只有当线程池中的线程数大于corePoolSize时，keepAliveTime才会起作用，即其仅作用于非核心线程，除非调用了调用了allowCoreThreadTimeOut(boolean)方法，才会作用于线程池中的所有线程
++ unit：keepAliveTime 的时间单位
++ workQueue：等待队列
+	- ArrayBlockingQueue：先进先出，创建时必须指定大小（有界队列）
+	- LinkedBlockingQueue：先进先出，如果创建时没有指定此队列大小，则默认为Integer.MAX_VALUE（无界队列）
+	- SynchronousQueue：没有容量的队列，它不会保存提交的任务
+	- PriorityBlockingQueue
++ threadFactory：用于创建线程
++ handler：拒绝策略，都有
+	- AbortPolicy：丢弃并抛RejectedExecutionException异常
+	- DiscardPolicy：直接丢弃
+	- DiscardOldestPolicy：丢弃队头
+	- CallerRunsPolicy：直接在调用线程中执行该任务
+
+每来一个任务，若没有空闲线程
+如果当前线程池中的线程数目小于corePoolSize，则会创建一个线程去执行这个任务；
+如果当前线程池中的线程数目>=corePoolSize，则会尝试将其添加到任务缓存队列当中，若添加成功，则该任务会等待空闲线程将其取出去执行；若添加失败（一般来说是任务缓存队列已满），则会尝试创建新的线程去执行这个任务；
+如果当前线程池中的线程数目达到maximumPoolSize，则会采取任务拒绝策略进行处理；
+largestPoolSize：仅用于记录线程池中曾经有过的最大线程数目
+
+不提倡直接new，而是使用Executors类的几个静态函数进行创建：
+newCachedThreadPool()：corePoolSize=0，maximumPoolSize=Integer.MAX_VALUE，keepAliveTime=60s，SynchronousQueue
+newSingleThreadExecutor()：corePoolSize=maximumPoolSize=1，LinkedBlockingQueue，返回的是DelegatedExecutorService（继承AbstractExecutorService），目的是为了屏蔽ThreadPoolExecutor 这个类动态修改线程池配置的一些方法
+newFixedThreadPool(size)：corePoolSize=maximumPoolSize=size，LinkedBlockingQueue
+newScheduledThreadPool(coreSize)：corePoolSize=coreSize，maximumPoolSize=Integer.MAX_VALUE，keepAliveTime=0，workQueue=DelayedWorkQueue返回ScheduledThreadPoolExecutor 实例，可定期或者延时执行任务
+
+
+#### 重要方法
+execute(Runnable)：异步执行一个无参无返回的函数
+submit(Callable<T>)：异步执行，该方法返回一个Future<T>，用以获取执行结果
+invokeAll(Collection<? extends Callable<T>>, timeout, unit)：同步执行一组函数，直到全部执行完成或超时，后两个参数可省。若超时，future.isCancelled()==true，若再调用future.get() 会抛出CancellationException 异常
+invokeAny(Collection<? extends Callable<T>>, timeout, unit)：同步执行一组函数，直到其中有一个完成或超时，返回这个函数的返回值
+
+shutdown()/shutdownNow()：关闭线程池，区别是前者允许正常执行的任务继续执行完，后者正在执行的任务也会被停止（通过调用Thread.interrupt()方法来实现，如果线程中没有sleep 、wait、Condition、定时锁等应用, 该方法是无法中断当前的线程的）所以该方法不一定就能立即退出，也要等到所有正在执行的任务执行完毕
+awaitTermination(timeout, unit)：执行完shutdown 方法，执行该方法会等待所有线程都执行结束（返回true）或者超时（返回false）
+
+#### ScheduledThreadPoolExecutor
+
+
+### CompletableFuture
+带有Async就是异步执行的意思，就是不在当前线程，另起线程执行（可以接受一个Executor 执行）
+
+#### 创建任务
+CompletableFuture 静态方法：
+supplyAsync(Supplier, executor=ForkJoinPool.commonPool())
+runAsync(Runnable, executor=ForkJoinPool.commonPool())
+completedFuture(value)：直接返回结果，无计算
+
+#### 获取任务结果
+isDone()	判断是否已完成
+V get();	阻塞，如果任务异常（ExecutionException, InterruptedException）需要用户手动处理
+V get(long timeout,Timeout unit);	阻塞带超时
+T getNow(T defaultValue);	不阻塞，若任务未完成，则返回defaultValue
+T join();	阻塞，如果任务异常抛出uncheck 异常（包装成CompletionException异常 /CancellationException异常），不强制catch
+
+#### 回调函数
+每个函数都有对应的Async 方法，差别就是最后多一个executor=ForkJoinPool.commonPool() 参数
+##### 过程回调
+thenApply(Function)
+thenRun(Runnable)
+thenAccept(Consumer)
+
+#### 终端回调
+handle(BiFunction<T, ex>)	计算结果完成，或者抛出异常的时候调用，无论中间哪一步抛异常，都是立即调进该回调（因为有返回值，所以不会再调用exceptionally）该方法会新生成一个CompletableFuture
+whenComplete(BiConsumer<T, ex>)	计算结果完成，或者抛出异常的时候调用，无论中间哪一步抛异常，都是立即调进该回调（和exceptionally 谁在前，谁先调用）该方法并不会生成一个新的CompletableFuture，而是透传原CompletableFuture
+exceptionally(Function<Throwable, T>)	执行异常的兜底返回，无论中间哪一步抛异常，都是立即调进该回调，该方法无Async 方法
+
+#### 任务组合
+thenCombine(CompletionStage fb, BiFunction bf)	当前future 和fb 都执行完成后，将结果调用bf 后返回，bf 的第一个参数是当前future 的返回，第二个参数是fb 的返回
+thenAcceptBoth(CompletionStage, BiConsumer)
+runAfterBoth(CompletionStage, Runnable)
+
+applyToEither(CompletionStage fb, Function f)	当前future 和fb 哪个先执行完，将结果调用f 后返回
+acceptEither(CompletionStage fb, Consumer)
+runAfterEither(CompletionStage fb, Runnable)
+
+`thenCompose(Function<T, CompletionStage>)`	效果类似thenApply
+
+CompletableFuture静态方法：
+allOf(CompletableFuture...)	当所有子CompletableFuture 都完成，才认为该组合CompletableFuture 完成
+anyOf(CompletableFuture...)	当有一个子CompletableFuture 完成，就认为该组合CompletableFuture 完成
+
+## 十三. 工具
+### 随机数
 初始化一个随机数发生器Random rand = new Random(sed);其中sed是一个随机种子（int），也可以省去，将以当前时间作为随机种子。
 而后就可以使用该发生器，调用nextType(range)方法获得一个随机数，如nextInt(39)将得到0到38之间的任一整数，nextFloat()，nextLong()，nextDouble()等
 
 或者直接使用Math.random()静态方法，产生[0,1)之间的double随机数
 
-
-## 十三. 系统时间
-System.currentTimeMillis()，以毫秒为单位，返回当前时间（从1970年1月1日0时起的毫米数，有可能不精确，取决于操作系统的时间精度），返回类型为long
-它和Calendar.getInstance().getTimeInMillis();得到的结果是相同的。需要import java.util.Calendar;
+### 系统时间
+System.currentTimeMillis()，以毫秒为单位，返回当前时间戳（从1970年1月1日0时起的毫米数，有可能不精确，取决于操作系统的时间精度），返回类型为long
+它和new Date().getTime(); 和 Calendar.getInstance().getTimeInMillis();得到的结果是相同的。（Calendar 的方式最慢，因为要处理时区问题）
 
 System.nanoTime()，以纳秒为单位，返回一个时间差值，其基准时间是一个任意的但固定的值，返回的就是当前到这个基准时间的纳秒差。这个基准时间是由JVM所定的，所以不同JVM上的基准时间一般不同。但同样不能保证绝对精确。返回类型为long
