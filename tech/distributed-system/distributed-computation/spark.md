@@ -46,3 +46,7 @@ rdd = sc.textFile(...)
 rdd.first()		// Action，会返回RDD的第一个元素
 ```
 
+[Spark知识体系完整解读](http://mt.sohu.com/20160522/n450849016.shtml)
+[与 Hadoop 对比，如何看待 Spark 技术？](http://www.zhihu.com/question/26568496)
+[Spark入门（Python版）](http://blog.jobbole.com/86232/)
+[从Hadoop到Spark的架构实践](http://www.csdn.net/article/2015-06-08/2824889)

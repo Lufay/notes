@@ -57,7 +57,9 @@ inoremap ) <c-r>=ClosePair(')')<CR>
 inoremap ] <c-r>=ClosePair(']')<CR>
 "inoremap } <c-r>=CloseBracket()<CR>
 "inoremap " <c-r>=QuoteDelim('"')<CR>
+"au filetype vim iunmap "
 "inoremap ' <c-r>=QuoteDelim("'")<CR>
+au filetype basic iunmap '
 
 function ClosePair(char)
 	if getline('.')[col('.')-1] == a:char
@@ -89,6 +91,15 @@ function QuoteDelim(char)
 		return a:char.a:char."\<Esc>i"
 	endif
 endf
+
+"return OS type, eg: windows, linux, mac ...
+function! MySys()
+	if has("win16") || has("win32") || has("win64") || has("win95")
+		return "windows"
+	elseif has("unix")
+		return "linux"
+	endif
+endfunction
 
 " 映射全选+复制 ctrl+a
 map <C-A> ggVGY
@@ -127,6 +138,7 @@ func! Rungdb()
     exec "!gdb ./%<"
 endfunc
 
+autocmd FileType python nnoremap <F7> :!python %<CR>
 
 
 "新建.c,.h,.sh,.java文件，自动插入文件头
@@ -201,6 +213,7 @@ nnoremap <space> @=((foldclosed(line('.')) < 0) ? 'zc' : 'zo')<CR>
 "hi StatusLineNC guifg=Gray guibg=White
 
 " ====================custom highlight===================================
+" autocmd for run some cmds(cmds can be separated by |) when cond is meet(cond can be a pattern separated by ,)
 " BufNewFile for edit a non-existed file
 " BufRead for read a existed file
 "au BufRead,BufNewFile *.idl hi service guifg=white guibg=red ctermfg=yellow ctermbg=black
