@@ -129,6 +129,9 @@ git log
 适用--oneline 等价于--pretty=oneline --abbrev-commit；
 使用--pretty=oneline参数，将一次提交都显示在一行；
 使用--abbrev-commit 仅显示 SHA-1 的前几个字符，而非所有的 40 个字符；
+使用--stat 显示每次更新的文件修改统计信息；
+使用--name-only 仅在提交信息后显示已修改的文件清单；
+使用--name-status 显示新增、修改、删除的文件清单；
 
 ```
 git reflog
@@ -207,6 +210,7 @@ git checkout -- $file
 git reset HEAD $paths
 ```
 把暂存区指定路径下的文件的修改撤销掉（相当于git add 的逆操作）
+
 ```
 git reset [--mode] [<commit>]
 ```

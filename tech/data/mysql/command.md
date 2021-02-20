@@ -51,9 +51,10 @@ WHERE <条件表达式>
 [ORDER BY <字段1 [desc/asc]，字段2 [desc/asc]，...>]
 [LIMIT [offset, ]row_count]
 ```
-+ DISTINCT 可以用于去重
++ DISTINCT 可以用于去重（必须是后面的字段全相同才是重复）
 + <表名>可以是一条嵌套的SELECT 语句（可以用小括号括住，然后用AS 命名这个嵌套表）
 + `ON a.id = b.id and a.name = b.name`可以被简写为USING(id, name)
++ 如果同时使用GROUP BY 和ORDER BY 的话，因为逻辑是先分组后排序，所以只能按分组字段或聚合字段进行排序，而不能组内排序
 + LIMIT有两种语法：
 `LIMIT row_count` 相当于`LIMIT 0 row_count`
 `LIMIT offset, row_count`

@@ -81,6 +81,7 @@ boolean不参与任何隐式转换
 
 ### 3. 枚举
 enum类同class（证据是编译源文件后也会有一个.class文件），也是创建一种类型，尽管只需声明其常量，但更多的工作编译器完成，如toString方法、ordinal方法、values静态方法。但其特别之处就在于可以用于switch语句（case中不必使用枚举名引用）。
+枚举有着严格的实例化控制（不能克隆、反序列化、反射构造，有限实例化，只有枚举内定义的枚举常量），可以直接使用`==` 进行等值比较，equals 方法的实现也是直接使用`==`（并且是final 方法）。而且最好使用`==`，因为可以有更严格的编译期检查，也不会因为枚举变量为null 而抛空指针异常。
 
 ### 4. 字符串
 #### 4.1 构造String
@@ -156,8 +157,16 @@ Java的命令行参数args并不包括java命令和类名，即从真正的参�
 ## 六. 方法函数
 支持重载
 不支持参数默认值
-支持可变参数：可变的参数必须是最后一个参数
-### 1. 函数查找
+
+### 1. 可变参数
+可变参数必须是函数最后一个参数，其本质是一个数组
+```
+void println(Object...args) {
+	Arrays.stream(args).forEach(System.out::println);
+}
+```
+
+### 2. 函数查找
 对于一次函数调用按下面流程查找匹配的实现，如果找到一个就使用，如果找到多个
 1. 优先匹配固定个数的函数
 	1. 根据形参的类型，先去找有没有能够精确匹配的函数
@@ -232,7 +241,308 @@ Java支持继承重载，即派生类中重载基类的方法。注意，这里�
 
 ## 十一. I/O
 标准输出System.out，错误输出System.err
+### File
+面向流的老IO 接口（阻塞式）
+java.io.File，可以表示一个文件或目录
+可以进行文件或目录的创建、删除、属性修改
+```
+File file=new File(path)
+```
 
+支持递归创建目录（mkdirs），但不支持删除非空目录
+
+该类下有几个环境相关的常量：
+separatorChar：路径分隔符
+pathSeparatorChar：PATH 环境变量分隔符
+
+### Stream
++ 字节流
+InputStream、OutputStream
++ 字符流
+Reader、Writer
+
+#### FileInputStream / FileOutputStream
+```
+InputStream fis = new FileInputStream(file)
+fis.close()
+OutputStream fos = new FileOutputStream(file)
+fos.close()
+```
+
+#### ObjectInputStream / ObjectOutputStream
+```
+ObjectInputStream ois = new ObjectInputStream(fis)
+ois.close()
+ObjectOutputStream oos = new ObjectOutputStream(fos)
+oos.close()
+```
+可用于对象的序列化和反序列化
+
+#### Serializable
+标识接口，告知JVM 该类可使用ObjectInputStream / ObjectOutputStream 进行序列化和反序列化
+建议类定义一个用于序列化版本控制的常量，用于在反序列化时进行对比，若一致说明无变更，可以完成反序列化
+```
+private static final long serialVersionUID = 1L;
+```
+若未声明该值，则JVM 会根据类的各个方面自动生成一个值，就会变得很不稳定，反序列化就可能抛出InvalidClassException
+
+使用transient关键字修饰的的变量，在序列化对象的过程中，该属性不会被序列化。
+
+##### Externalizable
+继承Serializable
+类可以控制序列化的细节
+
+#### Reader / Writer
+```
+FileReader fr = new FileReader(file)
+InputStreamReader isr = new InputStreamReader(fis, "UTF-8")
+BufferedReader br = new BufferedReader(fr)	// 或用isr 做参数
+br.close()
+fr.close()
+
+FileWriter fw = new FileWriter(filePath, bAppend=false)
+OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8")
+BufferedWriter bw = new BufferedWriter(fw)	// 或用osw 做参数
+PrintWriter pw = new PrintWriter(fw)
+bw.close()
+fw.close()
+```
+
+### RandomAccessFile
+支持seek(pos) 和skipBytes(n) 可以随机定位在文件的位置（可以直接定位到length() 的位置去追加）
+getFilePointer() 返回当前的文件指针位置（初始为0）
+直接集成了read 和 write 系列方法，需要close() 关闭
+getChannel() 返回FileChannel 对象
+
+new RandomAccessFile(filePath, mode)
+mode 支持
+r：只读，使用write 系列方法都会导致IOException异常
+rw：读写，若文件不存在，则创建之
+rwd：读写，每次更新都同步到存储设备（仅限内容更新）
+rws：读写，每次更新都同步到存储设备（包括内容和元数据更新）
+
+### Path / Paths / Files
+面向缓冲的新的IO 接口（非阻塞式）
+```
+Path path = Paths.get("a", "b", "c");
+```
+可以和File 相互转换
+
+```graphviz
+graph {
+	node [style=filled]
+
+	{
+		node [shape=box, fillcolor=darkorchid]
+		Thread1 Thread2
+	}
+	{
+		node [shape=hexagon, fillcolor=brown3]
+		Selector1 Selector2
+	}
+	node [shape=box, style="rounded,filled", fillcolor=orange]
+	{
+		node [fillcolor=green]
+		Buffer1 Buffer2 Buffer3 Buffer4
+	}
+
+	Thread1 -- Selector1
+	Thread2 -- Selector2
+	Selector1 -- Channel1
+	Selector1 -- Channel2
+	Selector1 -- Channel3
+	Selector2 -- Channel2
+	Selector2 -- Channel3
+	Channel1 -- Buffer1
+	Channel2 -- Buffer2
+	Channel2 -- Buffer3
+	Channel3 -- Buffer4
+}
+```
+
+#### Buffers
++ ByteBuffer
++ CharBuffer
++ ShortBuffer
++ IntBuffer
++ LongBuffer
++ FloatBuffer
++ DoubleBuffer
+
+三个概念
+capacity：容量
+position：当前的读写位置，初始为0，最大为capacity-1
+limit：最大的读写位置，写模式=capacity，读模式=flip 时的position
+
+ByteBuffer buf = CharBuffer.allocate(n)：创建n 个char 空间的buffer
+capacity()：容量
+limit()
+position(pos)：设定position 位置
+mark()：标记position 当前位置
+reset()：恢复position 到mark 的位置
+remaining()：返回limit - position
+hasRemaining()：返回position < limit，是否还有未读内容
+flip()：写模式切换到读模式
+clear()：清空缓存（忽略未读数据，进入写模式）
+compact()：清除已读数据（保留未读数据，进入写模式）
+rewind()：重头读（把position设为0，mark设为-1，不改变limit的值）
+put(xxx)：直接写入buf
+get()：直接从buf 中读取
+
+#### Channels
+读写双向的，完成后需要close()
++ FileChannel：文件读写
+通过InputStream，OutputStream 或RandomAccessFile 获取
+transferFrom() 可以从其他channel 中获取数据
+transferTo() 可以把数据传给其他channel
++ DatagramChannel：UDP数据读写
+通过DatagramChannel.open() 方法获取
+bind(new InetSocketAddress("127.0.0.1", 3333))：绑定端口
+receive(buf)：接受消息到buf
+send(buf, new InetSocketAddress("127.0.0.1", 3333))：发送消息到指定端口，返回发送的字节数
++ SocketChannel：TCP数据读写（client侧）
+通过SocketChannel.open() 方法获取
+connect(new InetSocketAddress("127.0.0.1", 3333))：连接服务器
++ ServerSocketChannel：TCP数据读写（server侧）
+通过ServerSocketChannel.open() 方法获取
+socket().bind(new InetSocketAddress("127.0.0.1", 3333))：绑定端口
+accept()：监听连接，返回一个SocketChannel
+
+从buf读取写入Channel
+int bytesWritten = channel.write(buf);
+从Channel读取写入buf
+int bytesRead = channel.read(buf);
+
+##### Scatter / Gather
++ Scatter: 从一个Channel读取的信息分散到N个缓冲区中(Buufer).
+channel.read(bufArr)：一个buf 写满，就写下一个
++ Gather: 将N个Buffer里面内容按照顺序发送到一个Channel.
+channel.write(bufArr)：按序放入channel 中
+
+#### Selectors
+单线程可以监视多个通道中的数据
+注册到Selector 上的Channel 必须是非阻塞的，即需要继承SelectableChannel，所有FileChannel 不行
+```
+Selector selector = Selector.open();
+socketChannel.configureBlocking(false);         // 设置非阻塞模式
+SelectionKey key = socketChannel.register(selector, SelectionKey.OP_CONNECT | SelectionKey.OP_READ);
+selector.select()		// 阻塞，直到有一个channel 在你注册的事件上就绪了，返回值是本次有几个通道已就绪
+		select(long timeout)
+		selectNow()		// 非阻塞
+selector.selectedKeys() // 获取已就绪的key 的集合
+selector.close()		// 使得任何一个在select() 中阻塞的线程都被wakeup()
+```
+register 第二个参数标识监听的事件，还可以指定第三参数attachment（当然也可以后续在进行附加）
+返回的SelectionKey 标识注册关系，可以获取注册时的信息。还有一个方法readyOps() 可以获取已经准备就绪的事件集合（当然，也可以用is 系列方法分别查询），可以使用cancel() 方法取消，被取消的isValid() == false
+
+selector.keys() 返回该选择器上注册的所有SelectionKey
+selector.wakeup() 使正在阻塞的select() 方法或下一次执行的select() 方法立即返回
+
+
+### HTTP
+常用的包是org.apache.httpcomponents
+#### request
+HttpGet()
+HttpGet(String url)
+HttpGet(URI)
+
+HttpPost()
+HttpPost(String url)
+HttpPost(URI)
+
+方法：
+setHeader(name, val)
+abort()
+
+##### 请求参数
+对于GET：
+可以使用setParams(HetpParams params)方法来添加请求参数
+对于POST：
+也可以使用setParams(HetpParams params)方法来添加请求参数
+还可以使用setEntity
+```
+List params = paramMap.entrySet().parallelStream().map((entry) ->
+			new BasicNameValuePair(entry.getKey(), entry.getValue())
+	).collect(Collectors.toList());
+request.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
+
+StringEntity stringEntity = new StringEntity(json, "UTF-8");// 解决中文乱码问题
+stringEntity.setContentEncoding("UTF-8");
+stringEntity.setContentType("application/json");
+request.setEntity(stringEntity);
+```
+
+##### 请求配置
+```
+RequestConfig requestConfig = RequestConfig.custom()
+	.setConnectionRequestTimeout(1000)	// 从连接池获取连接的超时时间，单位毫秒
+	.setConnectTimeout(1000)			// 建立连接时间（三次握手），必须设置，以防连接被阻塞
+	.setSocketTimeout(2000)				// 响应过程中数据包之间间隔的最大时间
+	.build();
+request.setConfig(requestConfig);
+```
+此外构造httpClient 时，也可以使用setDefaultRequestConfig() 进行设置
+
+#### response
+HttpResponse
+CloseableHttpResponse
+方法：
+getStatusLine() 可以获取StatusLine 对象，该对象可以通过getStatusCode 获取http 结果状态码，可以通过getReasonPhrase() 获取结果错误信息
+getAllHeaders() 和getHeaders(name) 可以获取响应头
+getEntity() 获取结果实体，可以通过getContent() 方法获取结果流（而后使用IOUtils.toString() 获取String），也可以通过EntityUtils.toString(entity) 将其转化为一个String
+close()
+
+#### httpClient
+HttpClient
+CloseableHttpClient
+```
+HttpClient httpClient = HttpClients.custom()
+	.setXXX()
+	.build();
+```
+其中setXXX 包括上面提到的setDefaultRequestConfig，还有setConnectionManager(), setKeepAliveStrategy(), setSSLSocketFactory()（对于https）
+
+方法：
+execute(request)
+execute(request, httpContext)
+execute(request, responseHandler)
+close()
+其中
+前两个返回的是HttpResponse
+第三个中的responseHandler 可以是一个lambda 表达式，用于对HttpResponse 进行后置处理，将其转换为一个指定的类型返回
+
+##### ConnectionManager
+PoolingHttpClientConnectionManager
+方法：
+setMaxTotal
+setDefaultMaxPerRoute
+
+##### KeepAliveStrategy
+可以使用实现ConnectionKeepAliveStrategy 接口的匿名类，也可以使用lambda 表达式
+例如：
+```
+(HttpResponse response, HttpContext context) -> {
+	BasicHeaderElementIterator it = new BasicHeaderElementIterator(response.headerIterator("Keep-Alive"));
+
+	String param;
+	String value;
+	do {
+		if (!it.hasNext()) {
+			return 120000L;
+		}
+
+		HeaderElement he = it.nextElement();
+		param = he.getName();
+		value = he.getValue();
+	} while(value == null || !param.equalsIgnoreCase("timeout"));
+
+	try {
+		return Long.parseLong(value) * 1000L;
+	} catch (NumberFormatException var8) {
+		return 120000L;
+	}
+}
+```
 
 ## 十二. 随机数
 初始化一个随机数发生器Random rand = new Random(sed);其中sed是一个随机种子（int），也可以省去，将以当前时间作为随机种子。

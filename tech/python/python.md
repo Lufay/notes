@@ -1783,7 +1783,7 @@ func(*tuple_args, **dict_args)
 实际返回的是元组，只不过语法上可以不需要括号（同样，在接受多值返回时，也可以不需要括号）
 
 ### 2. 函数对象
-函数定义就声明了一个函数对象，函数名就是这个函数对象的引用，可以赋给其他变量或作为参数传递
+函数定义就声明了一个函数对象，函数名就是这个函数对象的引用，可以赋给其他变量或作为参数传递，也可以del 掉
 
 支持函数嵌套定义，因为函数是对象，内部定义的函数相当于一个在外部函数的作用域内函数对象实例
 函数嵌套定义的作用是内部函数可以访问外部函数作用域内的变量，从而形成闭包
@@ -1812,16 +1812,31 @@ fs = map(lambda i: lambda n: i+n, range(10))
 这里，外层的lambda 表达式形成了一个新的函数上下文，内部的lambda 就把它的i 绑定到这个自由变量上，因此，`fs[3](4)`的结果就是期望的7
 
 ### 3. 装饰器
-也是一种函数，如果装饰器没有参数，那么其参数是被装饰的函数(对象)，返回被装饰后的函数(对象)；如果装饰器有参数，则通过参数调用，返回一个无参数的装饰器
-即：
+装饰器是一种函数（也可以是类似于函数的可调用对象，比如一个类实现`__call__` 方法）
++ 无参装饰器，其参数是被装饰的函数(对象)，返回被装饰后的函数(对象)；
++ 有参装饰器，其参数是装饰器参数，返回一个无参数的装饰器
+
+通过装饰器，可以实现AOP编程
+
+装饰器可以叠加，即：
+```
 @deco1(deco_arg)
 @deco2
 def func():
     pass
-相当于func = deco1(deco_arg)(deco2(func))
+# 相当于
+func = deco1(deco_arg)(deco2(func))
+```
 装饰器通常使用闭包实现，即在装饰器函数内定义一个函数，作为替换函数，该函数会调用被装饰函数，从而完成装饰，最后装饰器返回该替换函数。
-
-通过装饰器，可以实现AOP编程
+由于装饰器返回的了装饰后的函数对象，所以装饰后，原函数的函数属性将被覆盖，如果想要原函数的函数属性（函数名、docstring、参数列表），可以使用`functools.wraps` 装饰器，该装饰器是个有参装饰器，参数是被装饰的函数对象，如：
+```
+def deco2(func):
+	@wraps(func)
+	def wrapped_function(*args, **kwargs):
+		print func.__name__
+		retrun func(*args, **kwargs)
+	return wrapped_function
+```
 
 ### 4. 匿名函数lambda
 ```
@@ -2751,8 +2766,19 @@ threading.BoundedSemaphore
 ### multiprocessing 模块
 
 ## 网络编程
+HTTP协议中，定义了八种方法来操作指定的资源：
++ GET：向指定的资源发出“显示”请求
++ POST：向指定资源提交数据，请求服务器进行处理
++ PUT：向指定的资源上传最新内容
++ DELETE：请求服务器删除所标识的资源
++ OPTIONS：使服务器传回该资源所支持的所有HTTP请求方法，可以测试服务器功能是否正常运作
++ HEAD：向服务器发出指定资源的请求，只不过服务器将不传回资源的本文部分
++ CONNECT：通常用于SSL加密服务器的链接
++ TRACE：显示服务器收到的请求，用于测试
+
 ### socket 模块
 socket        网络文件访问
+
 ### urllib 和urllib2 模块
 urllib        通过URL建立到指定web服务器的网络连接
 
@@ -2821,10 +2847,93 @@ handler 基类
 当你获取一个URL 你使用的是一个opener（一个urllib2.OpenerDirector的实例），而该opener 可以使用它管理的Handler 针对特定的协议和请求进行处理。
 可以通过使用build_opener() 函数创建一个新的OpenerDirector实例，而后直接调用其open() 方法打开一个URL（当然也可以用install_opener() 函数安装后用urlopen 进行打开）
 
-
 ### requests 模块
-<http://requests.readthedocs.io/en/master/>
-<https://zhuanlan.zhihu.com/p/21976757>
+#### 安装
+```
+pip install requests
+```
+
+#### 模块方法
+`get(url, params=None, **kwargs)`
+params 是GET 的请求参数，即网址上`?` 后面用`&`分隔的部分，这里可以指定一个字典（其value 可以是字符串和字符串列表）
+kwargs 包括：
++ headers：可以指定一个字典（value 必须是字符串）
++ cookies：可以指定一个字典或RequestsCookieJar 对象
++ timeout: 建立连接的超时时间，没有默认值，建议必选
++ `allow_redirects`: 是否允许重定向，默认为True
++ auth: 元组('user', 'pass')，认证信息的优先级：auth > .netrc > headers
++ verify: 验证 SSL 证书，如果忽略对 SSL 证书的验证，可以设置为False（默认为True），或者可以指定`CA_BUNDLE` 文件的路径
++ cert: 客户端证书，可以是一个字符串（包含包含密钥和证书的文件名），也可以是一个二元组（证书文件路径，秘钥文件路径）（证书私钥必须是解密状态）
++ stream: 默认响应会立即下载。若为True，则返回的Response 仅下载响应头，响应体延迟到主动获取时下载。由于连接需读取完所有数据才会自动关闭，所以该模式需手动调用 Response.close() 才能提前关闭，或者使用with-as 语句中。
+返回一个Response 对象
+
+
+post(url, data = {'key':'value'})
++ data：可以是字符串（直接发出）、（提交表单）字典或二元组序列（当一个key 下有多个值使用这种）、文件对象（流式上传）、生成器或迭代器（分块传输）
++ json: 可以自动将参数使用json.dumps 进行编码
++ files: 一个字典key 为'file'，value 为一个文件对象（最好用二进制模式打开）、二元组（文件名, 字符串）、四元组（文件名, 文件对象, 文件类型, 请求头）；或者一个二元组列表，二元组为(表单name, 文件信息)，其中文件信息为三元组（文件名、文件对象、文件类型）
+大文件requests 不支持，requests-toolbelt 是支持的
+
+put(url, data = {'key':'value'})
+
+delete(url)
+
+head(url)
+
+options(url)
+
+
+#### 类
+##### Request
+`Request(method, url, **kwargs)`: kwargs 类似上面get 方法
+###### 方法
+prepare(): 返回一个PreparedRequest 对象
+
+##### models.Response
+Requests 会自动为你解码 gzip 和 deflate 传输编码的响应数据。
+###### 字段
+encoding: 可以设置text 的编码方式
+content: 响应内容（字节串）
+text: 响应内容（Unicode字符串），若未设置encoding 则使用`chardet` 根据HTTP headers 猜测编码方式
+raw: 返回一个urllib3.response.HTTPResponse 对象（请求方法必须stream=True）
+`status_code`: 响应状态码，内置了一个成功的状态码为requests.codes.ok
+ok: `status_code` < 400 为True，否则为False
+headers: 服务器响应头，一个字典
+cookies: RequestsCookieJar 类型，行为类似字典
+history: Response 对象的列表，按从最老到最近的请求进行排序，可以追踪重定向
+request: 获得请求对象
+
+###### 方法
+json(): 将响应内容用json 进行loads
+`raise_for_status()`: 若`status_code`错误，抛一个HTTPError 异常
+`iter_content(chunk_size=1, decode_unicode=False)`: 返回一个generator，可以迭代文本流；若`chunk_size=None`，则可以进行分块迭代
+`iter_lines`: 返回一个generator，可以迭代行
+
+##### cookies.RequestsCookieJar
+###### 方法
+set(key, val, domain, path): 后两个参数可以指定域名和路径使用
+
+##### Session
+在同一个 Session 实例发出的所有请求之间保持 cookie，使用urllib3 的连接池功能，如果你向同一主机发送多个请求，底层的 TCP 连接将会被重用（会话持久链接的保持），从而带来显著的性能提升
+给对象设置的字段属性，都会在方法请求时，与请求参数进行合并（如果想要滤除会话中的字段属性，只需要将参数的对应字段设置为None），但请求参数不会被合并到会话属性中
+可以使用`with requests.Session() as s` 打开，这样可以自动退出会话
+###### 字段
+auth: 二元组
+headers: 字典
+cookies
+
+###### 方法
+get 等方法
+`prepare_request(req)`: 将Request 对象准备为PreparedRequest 对象（带有会话特性的）
+`send(PreparedRequest, **kwargs)`
+kwargs 包括：
++ stream
++ timeout
++ verify
++ proxies
++ cert
+
+
 
 ## 结构化数据处理
 ### csv 模块

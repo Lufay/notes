@@ -198,7 +198,8 @@ shell命令也要用引号
 
 ##### 输入
 getline var
-该输入将从处理文件中读入下一行，并影响NR、FNR等内置变量；如果var缺省，则写入$0，并修改NF
+输入是从处理文件中读入下一行，并影响NR、FNR等内置变量；如果var缺省，则写入$0，并修改NF
+返回1 表示成功，0 表示文件结束，-1 表示遇到错误
 
 ###### 重定向
 getline var < "file"
@@ -301,7 +302,7 @@ asorti(srcarr, dstarr)
 
 close(name)
 关闭打开的文件或管道，name是管道命令字符串，或打开文件的文件名字符串。成功关闭返回0，否则非0.
-可以刷新缓冲。
+可以刷新缓冲（刷新缓冲还可以用fflush(name)）。
 
 system(strCmd)
 以shell命令的字符串作为参数，strCmd可以将awk变量和字符串用空格拼成一个shell命令，例如：
