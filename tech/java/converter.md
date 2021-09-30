@@ -112,6 +112,7 @@ mapperFactory.classMap( Source.class, Destination.class )
 通过编译时注解处理器来实现的。其识别Mapper 接口，自动生成实现类，并将同名字段自动进行转换，并通过Mappers.getMapper 来获得这个自动生成的实现类
 其支持单个和集合对象转换、嵌套对象、多个对象转一个、自定义转换
 
+#### 使用方式
 先声明一个mapper 的interface
 ```
 @Mapper
@@ -120,12 +121,46 @@ public interface TeacherMapper {
 
     TeacherEntity dataToEntity(TeacherDO req);
     TeacherDO entityToData(TeacherEntity req);
+
+	// 不同名字段手动指定
+	@Mapping(source = "numberOfSeats", target = "seatCount")
+	CarDto carToCarDto(Car car);
+
+	// 指定多个字段（role 为user 成员对象）
+	@Mappings({
+            @Mapping(source = "id", target = "userId"),
+            @Mapping(source = "username", target = "name"),
+            @Mapping(source = "role.roleName", target = "roleName")
+    })
+    UserRoleDto toUserRoleDto(User user);
+
+	// 多转一，用参数名指定
+	@Mappings({
+            @Mapping(source = "vip.id", target = "userId"),
+            @Mapping(source = "vip.username", target = "name"),
+            @Mapping(source = "userRole.roleName", target = "roleName")
+    })
+    UserRoleDto toUserRoleDto(User vip, Role userRole);
+
+	// 直接更新参数
+	@Mappings({
+            @Mapping(source = "userId", target = "id"),
+            @Mapping(source = "name", target = "username"),
+            @Mapping(source = "roleName", target = "role.roleName")
+    })
+    void updateDto(UserRoleDto userRoleDto, @MappingTarget User user);
 }
 ```
 进行转换
 ```
 TeacherEntity entity = TeacherMapper.MAPPER.dataToEntity(do);
 ```
+
+##### 使用Spring容器管理
+@Mapper(componentModel = “spring”)
+
+然后就可以直接使用@Autowired 注入一个mapper 的实例
+
 
 注意：
 如果在maven-compiler-plugin工具中显式指定了annotationProcessorPaths(注解处理器扫描路径)，此时如果又使用了Lombok 等注解处理器原理的工具，就需要将其注解处理器路径指定进去，否则就会导致这些工具失效。

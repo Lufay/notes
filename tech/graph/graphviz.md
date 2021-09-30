@@ -51,8 +51,14 @@ digraph abc{
 节点不必声明，除非需要单独定义其样式
 行末分号非必须
 
+### 节点的排序逻辑
+默认以有向边的顺序，按照rankdir 进行排序
+如上图，从上到下，a、b、d 每一级占一层
+c 比 d 高一级，本应和 b 同一层，但有了rank=same，就把 a、c 拉到同一层
+如果给 b -> d 边加上[constraint=false] 属性，则取消该边的定级能力，则b、d 将属于同一层
+
 ### 子图
-子图的名称只有以cluster开头，才能显示出来
+子图的名称只有以cluster开头，才显示边框
 ```
 subgraph cluster_cd{
 	label="c and d";
@@ -92,7 +98,7 @@ label：边上的文案（另有headlabel/taillabel，文案位置不同）
 fontname
 fontsize
 color
-style：solid 实线、dashed 虚线、
+style：solid 实线、dashed 虚线、invis 透明
 color
 weight：权重，越大越被视为主线
 arrowhead：none（无箭头）、empty（空心箭头）、默认实心箭头

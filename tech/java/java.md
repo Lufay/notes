@@ -15,7 +15,7 @@
 ## 二. 数据类型
 ### 1. 基本类型
 括号中表示存储大小——字节数
-这些基本类型无法像类、对象一样调用成员函数，因为它就是一个值（作为参数传递时也是值传递。注意：引用传递的虽然是对象本身，但其引用指向的变化不会影响到调用方）。不过，每种基本类型都具有与之对应的包装器（wrapper）类型（Boolean、Character、Byte、Short、Integer、Long、Float、Double、Void）。只需在需要时，装箱使用即可。
+这些基本类型无法像类、对象一样调用成员函数，因为它就是一个值（作为参数传递时也是值传递。注意：引用传递的虽然是对象本身，但其引用指向的变化不会影响到调用方）。不过，每种基本类型都具有与之对应的包装器（wrapper）类型（Boolean、Character、Byte、Short、Integer、Long、Float、Double、Void）。只需在需要时，装箱使用即可（赋值时自动装箱拆箱）。
 #### 1.1 整数
 byte(1)、short(2)、int(4)、long(8)
 均表示有符号数，Java不存在无符号数
@@ -79,8 +79,22 @@ boolean不参与任何隐式转换
 对于Character、Short、Integer、Long自动装箱后，如果其值在Byte的表示范围内则同上法；否则，将在堆上重新为该值创建对象，引用指向堆对象
 对于Float、Double自动装箱后，都会重新分配空间，引用指向该对象。
 
+#### Objects 工具类
+equals: 可以不用考虑null
+deepEquals: 调用Arrays.deepEquals0
+hashCode
+hash: 调用Arrays.hashCode
+toString: 支持nullDefault
+compare
+isNull
+nonNull
+
 ### 3. 枚举
-enum类同class（证据是编译源文件后也会有一个.class文件），也是创建一种类型，尽管只需声明其常量，但更多的工作编译器完成，如toString方法、ordinal方法、values静态方法。但其特别之处就在于可以用于switch语句（case中不必使用枚举名引用）。
+#### 本质
+enum类同class（证据是编译源文件后也会有一个.class文件），也是创建一种类型，尽管只需声明其常量，但更多的工作编译器完成，如toString()方法、name()方法、ordinal()方法、values()静态方法、valueOf(name)静态方法。但其特别之处就在于可以用于switch语句（case中不必使用枚举名引用）。
+枚举内部也可以定义成员（变量和方法），当有构造器定义是，声明的常量需要调用这些构造器进行初始化。
+values() 返回一个数组，可以使用ordinal() 返回的值作为索引获取到对应的枚举。
+
 枚举有着严格的实例化控制（不能克隆、反序列化、反射构造，有限实例化，只有枚举内定义的枚举常量），可以直接使用`==` 进行等值比较，equals 方法的实现也是直接使用`==`（并且是final 方法）。而且最好使用`==`，因为可以有更严格的编译期检查，也不会因为枚举变量为null 而抛空指针异常。
 
 ### 4. 字符串
@@ -95,12 +109,17 @@ String str = String()
 #### 格式化
 String.format(format, args...)方法
 %d是包括了int,long,byte等等类型了
+%02d: 长度为2，不足使用0 填充的整数
+%.2f: 小数点后保留2位的浮点数
 
 #### 4.2 String的常用方法
-首先，说明的是，使用引号的字符串常量和基本类型常量不同，它可以直接调用这些String类的方法："".fn()，而无需用new String("...").fn()这种复杂形式
-String的intern()方法，调用该方法后，Java将到常量池中找和该字符串有相同内容的存储对象，如果找到，就返回在常量池中找到的对象引用；如果找不到，就在常量池中添加该字符串对象，返回其引用。
-字符串的正则分割：使用split方法，其第一个参数是分割的正则String（如果是空串””，则等价于toCharArray()，只不过得到的是String[]，虽然每个String都是单字符，而toCharArray()得到的是char[]），第二个参数是分割后String[]数组的最大容量，即如果第二个参数为n，则只会对前n-1次匹配进行分割。当然第二个参数可省，效果是对串进行尽可能多次的匹配。如果第二个参数小于等于0，其效果和省略第二个参数相同
+首先，说明的是，使用引号的字符串常量本身就是一个String对象，可以直接调用这些String类的方法："".fn()，而无需用new String("...").fn()这种复杂形式
 虽然重载了+和+=操作符，但并未重载==操作符，因此，对两个字符串进行比较的时候一定要用equals或equalsIgnoreCase方法（不区分大小写），同理，进行比较时也要用compareTo方法或compareToIgnoreCase方法
+
++ split(regex, limit=0): 字符串的正则分割，如果regex是空串""，则等价于toCharArray()，只不过得到的是String[]，虽然每个String都是单字符，而toCharArray()得到的是char[]（中文也算单个字符），第二个参数是分割后String[]数组的最大容量，即如果第二个参数为n，则只会对前n-1次匹配进行分割。当然第二个参数可省，效果是对串进行尽可能多次的匹配。如果第二个参数小于等于0，其效果和省略第二个参数相同
++ replace: 支持单字符、字符串的替换
++ replaceFirst/replaceAll 支持正则替换
++ intern(): 调用该方法后，Java将到常量池中找和该字符串有相同内容的存储对象，如果找到，就返回在常量池中找到的对象引用；如果找不到，就在常量池中添加该字符串对象，返回其引用。
 
 #### 4.3 StringBuffer类和StringBuilder类
 String是一种不变（immutable）类（对于封装器类型也是），如果字符串频繁变化，将导致产生很多废弃对象，此时，应当采用StringBuffer类。不过该类型是一个线程安全的类，因此从效率上会打折扣，如果你的程序是单线程的，或者你决定自己负责线程安全，就应该使用更有效的StringBuilder类。它们可以预指定缓冲长度，用append和insert方法加载字符串，当在需要时，用toString方法转换为String
@@ -125,9 +144,10 @@ toString()：数组转换为String（相当于对将数组每个成员转换为S
 equal()：相同容量，且元素对应相等才算相等
 sort()：排序
 binarySearch()：二分查找元素（基于数组是有序的）
-asList()：以一个对象数组，或者可变个同一类型的对象作为参数，转换为List<T>的容器类型返回。（该容器可以调用toArray()方法变回数组，不过该返回的List<T>是一个数组实现的，无法改变其大小，因此该返回对象不支持进一步的add和remove，不过，可以通过该对象作为其他可变容器构造器的输入）（注意：如果是个数组，必须是对象数组，如果是基本类型的数组，则将视为可变参数的一个，即：就会将这个数组整体作为List的一个成员。这是因为容器全是基于泛型实现的，而一个泛型xxx<T>就是一个xxx<Object>类型，不同于C++的每种T就是一种类型，因此基本类型不继承Object，而数组对象则继承自Object，因此会有该效果）
+asList(T...)：返回 List<T>，由于容器不支持基本类型，所以如果入参是基本类型，会被自动装箱。（该容器可以调用toArray()方法变回数组，不过该返回的List<T>是一个数组实现的，无法改变其大小，因此该返回对象不支持进一步的add和remove，不过，可以通过该对象作为其他可变容器构造器的输入）基本类型可以使用guava类库的Ints/Doubles 的对应方法。
 
 ### 6. 容器
+容器全是基于泛型实现的，对于Java而言一个泛型xxx<T>就是一个xxx<Object>类型，基本类型不继承Object，而基本类型的数组是继承Object 的。
 根接口Collection
 继承树
 ```mermaid
@@ -218,34 +238,39 @@ classDiagram
 非线程安全
 支持随机访问，但在中间增删元素开销大
 
-##### linkedList
+##### LinkedList
 双向链表，可包含null
 非线程安全
 
 #### Set
 最多有一个null
 ##### HashSet
-根据hashCode 决定存储位置
+根据hashCode 决定存储位置（hash 分桶）
 非线程安全
-如果要把一个对象放入HashSet中，重写该对象对应类的equals方法，也应该重写其hashCode()方法。
+HashSet 去重是通过hashCode()方法 确定分桶，再使用equals方法和桶内元素比较以明确是否包含。
+*注意：重写hashCode() 的话一定不要依赖对象的可变属性，因为容器不会因为成员的hashCode 的变化而自动rehash；因此一旦对象属性发生变化，hashCode 就随之变化，那么在容器中的对象也会因为hashCode 的变化而找不到*
 
 ##### LinkedHashSet
 hashCode值来决定元素的存储位置，同时使用链表维护元素的次序，可以按添加顺序访问，稍微增加了插入的成本
 
 ##### TreeSet
-可以确保集合元素处于排序状态
-采用红黑树算法实现，不允许重复，不允许null值，默认按照升序排序
+可以确保集合元素处于排序状态（默认自然升序排序，也可以给构造函数传一个Comparator 进行排序）
+通过TreeMap 实现，不允许重复，不允许null值
+非线程安全
 
 #### Map
-批量删除key:
-map.keySet().removeAll()
++ putAll(map)：批量添加
++ remove(key): 单条删除。批量删除可以：map.keySet().removeAll()
 
 ##### HashMap
 哈希表实现，使用链表解决冲突，默认的负载因子是0.75，当超载后自动扩充2 倍后，进行rehash
 非线程安全
 
+##### LinkedHashMap
+
 ##### TreeMap
-通过红黑树实现，可以实现null键和值，根据其键的自然顺序进行排序，或者根据创建映射时提供的 Comparator 进行排序
+默认按其键的自然顺序进行升序排序，也可以给构造函数传一个Comparator 进行排序
+通过红黑树算法实现，可以实现null键和值
 非线程安全
 
 #### 同步容器
@@ -377,23 +402,58 @@ Collectors.toUnmodifiableSet()
 Collectors.toUnmodifiableMap
 
 #### Stream 函数
-```
-filter(Predicate)
-```
-相当于一个where 条件，过滤掉返回false 的元素
+一条Stream 流只能被结尾操作消费一次，不允许多次消费
 
-collect 的Collector：
-Collectors.groupingBy(classifier, downstream)
+##### 数据源
+Collection 的stream 和parallelStream 方法
+Arrays.stream(array, start, end)：后两个参数可省
+Stream.of(T...) 和Stream.empty()
+IntStream.range 和rangeClosed
+
+##### 中间操作（intermediate operation）
++ map(mapper): 可以是类的无参方法，也可以是单参数的静态方法，有一个特殊的是Function.identity() 表示原样返回
++ flatMap(mapper): 这个mapper 的返回值是一个stream，通过拼接这些stream，来实现将二级集合拍平
++ filter(Predicate): 相当于一个where 条件，过滤掉返回false 的元素
++ distinct(): 使用 hashCode() 和 eqauls() 方法来区分不同的元素，来进行去重
++ sorted(comparator): comparator 可以缺省，则使用对象的自然顺序排序（对象需要实现Comparable 接口），如果使用unordered Stream，那么顺序会被破坏。comparator 可以是Comparator.comparing(mapper, comparatorU)，通过mapper，可以将比较对象转换为类型U，而后按U 的comparatorU 进行比较（当然也可以缺省）
+
+
+##### 结尾操作（terminal operation）
+###### collect 的Collectors
+toArray(String[]::new)
+
+toCollection(collectionFactory)
+collectionFactory 是一个Supplier 返回一个Collection 的实例，常用于toList、toSet 方法返回的不能保证mutability, serializability, or thread-safety时，可以自己指定具体的实例类
+
+groupingBy(classifier, downstream)
 第一个参数表示如何从元素中获取到key，也就是分组的key
-第二个参数，缺省表示value 为当前元素，否则
-返回一个`Map<key, List<value>>`
+第二个参数，缺省时为toList()，否则使用downstream 进行收集
+返回一个`Map<key, X>`
 
-Collectors.toMap(keyMapper, valueMapper, mergeFunction)
+toMap(keyMapper, valueMapper, mergeFunction)
 第一个参数表示如何从元素中获取到key
-第二个参数表示如何从元素中获取到value
+第二个参数表示如何从元素中获取到value，不允许为null，否则会抛NPE
 第三个参数可省，表示当key 冲突时，如何选取合并为一个value（若缺省冲突则抛异常）
 
+collectingAndThen(downstream, finisher)
+先用downstream 进行收集（这个类似collect方法），在用finisher 进行一个集合转换（入参是collect 收集完成的集合）
 
+mapping(mapper, downstream)
+先用mapper 将集合中每个元素进行map，然后用downstream 将这些元素收集
+
+partitioningBy	分组
+
+reducing	用于内部reduce
+
+counting	计数
+summingX	求和
+averagingX	求平均
+minBy
+maxBy
+summarizingX
+joining		字段串连接
+
+###### 其他归集函数
 ```
 reduce(U init, F<U, T> accumulator, O<U> combiner)
 ```
@@ -412,6 +472,26 @@ reduce(new List, (list, u) -> {
 })
 ```
 *注意JSONArray 内部保存list 的引用，new JSONArray(list) 是引用的转移，而不是拷贝，所以必须使用clone()*
+
+```
+findFirst()
+findAny()
+```
+返回一个Optional 对象，Optional 其实是个个数为[0,1] 的Stream（支持map/flatMap/filter），此外还可以：
+get(): 获取对象，或者抛NoSuchElementException
+isPresent(): 判断个数为0 还是1
+orElse(x)：相当于getOrDefault。若不存在则返回默认值
+orElseGet(Supplier)：默认值延迟获取
+or(Supplier): 默认值延时获取，并且返回Optional
+orElseThrow(Supplier): Supplier 返回一个异常对象，即修改抛出的异常对象
+ifPresent(Consumer): 若存在则执行
+ifPresentOrElse(Consumer, Runnable): 若有值则执行Consumer，否则执行Runnable
+stream(): 转为一个真正的Stream
+
+创建Optional（不是 Serializable, 不应该用作类的字段）：
+Optional.empty(): 创建空对象
+Optional.of(obj)：仅在明确obj != null 时使用，否则直接抛NPE
+Optional.ofNullable(obj)
 
 ## 七. 访问控制
 让使用者无法触及他们不应触及的部分，而不可见就减少了不必要的干扰
@@ -456,11 +536,37 @@ protected void dispose()：这个函数名是可以自己定义的，因此其�
 
 使用dispose函数的位置，一般当决定不再使用该对象的时候，调用该函数，但由于异常的存在，有可能使程序流程跳过该函数，因此，为了确保对象占有的非内存资源一定得到释放，需要在构造该对象后使用try块，并将该函数放入finally子句中。
 
+### 接口
+#### Serializable
+标识接口，告知JVM 该类可使用ObjectInputStream / ObjectOutputStream 进行序列化和反序列化
+需要类具有无参构造函数
+该接口会随继承关系传递
+建议类定义一个用于序列化版本控制的常量，用于在反序列化时进行对比，若一致说明无变更，可以完成反序列化
+```
+private static final long serialVersionUID = 1L;
+```
+若未声明该值，则JVM 会根据类的各个方面自动生成一个值，这样就会由于编译器实现不同导致serialVersionUID不一致，从而反序列化就可能抛出InvalidClassException
+
+使用transient关键字修饰的的变量，在序列化对象的过程中，该属性不会被序列化。
+
+##### Externalizable
+继承Serializable
+类可以控制序列化的细节
+
+#### Cloneable
+Object 有一个protected 方法clone() 想要重写该方法必须实现Cloneable 接口，否则将抛CloneNotSupportedException 异常
+clone() 方法可以重写为public 的，只需针对类中的可变类型进行自定义复制即可
+
+
 
 ## 九. 继承相关
+### 成员覆盖
 派生类可以定义一个和基类同名同类型的成员，如果基类该成员可见，该成员将覆盖基类该成员，除非使用super索引。
 对于基类的静态成员，派生类会和基类共享该静态成员。也就是说，该字段在基类和它的所有派生类们共享同一份。同样，派生类也可以定义一个同名同类型静态成员覆盖基类该成员，此时，就是两个变量，而非一个。
-Java支持继承重载，即派生类中重载基类的方法。注意，这里是重载，而非重写，重载意味着具有不同的方法标识（方法名和参数表），而重写则是具有相同的方法标识和返回类型。如果想要明确使用重写，而非重载（就像C++一样）可以使用@Override注解，这样，重载就会报错。
+
+### 方法重载
+继承后的方法，既支持重写，也支持重载
+重载是指具有不同的方法标识（方法名和参数表），而重写则是具有相同的方法标识和返回类型。如果想要明确使用重写，而非重载（就像C++一样）可以使用@Override注解，这样，重载就会报错。
 
 
 ## 十. 运行时的类型信息
@@ -479,7 +585,7 @@ Java支持继承重载，即派生类中重载基类的方法。注意，这里�
 
 ## 十一. I/O
 标准输出System.out，错误输出System.err
-### File
+### 1. File
 面向流的老IO 接口（阻塞式）
 java.io.File，可以表示一个文件或目录
 可以进行文件或目录的创建、删除、属性修改
@@ -487,13 +593,24 @@ java.io.File，可以表示一个文件或目录
 File file=new File(path)
 ```
 
-支持递归创建目录（mkdirs），但不支持删除非空目录
-
 该类下有几个环境相关的常量：
 separatorChar：路径分隔符
 pathSeparatorChar：PATH 环境变量分隔符
 
-### Stream
+#### 方法
+##### 判断
+exists()
+isDirectory()
+
+##### 操作
+createNewFile()
+mkdir()
+支持递归创建目录（mkdirs），但不支持删除非空目录
+
+##### 查询/获取
+getParentFile()
+
+### 2. Stream
 + 字节流
 InputStream、OutputStream
 + 字符流
@@ -503,9 +620,10 @@ Reader、Writer
 ```
 InputStream fis = new FileInputStream(file)
 fis.close()
-OutputStream fos = new FileOutputStream(file)
+OutputStream fos = new FileOutputStream(file)	// 第二个参数是bAppend
 fos.close()
 ```
+可以读写byte[]
 
 #### ObjectInputStream / ObjectOutputStream
 ```
@@ -516,37 +634,48 @@ oos.close()
 ```
 可用于对象的序列化和反序列化
 
-#### Serializable
-标识接口，告知JVM 该类可使用ObjectInputStream / ObjectOutputStream 进行序列化和反序列化
-建议类定义一个用于序列化版本控制的常量，用于在反序列化时进行对比，若一致说明无变更，可以完成反序列化
-```
-private static final long serialVersionUID = 1L;
-```
-若未声明该值，则JVM 会根据类的各个方面自动生成一个值，就会变得很不稳定，反序列化就可能抛出InvalidClassException
-
-使用transient关键字修饰的的变量，在序列化对象的过程中，该属性不会被序列化。
-
-##### Externalizable
-继承Serializable
-类可以控制序列化的细节
-
 #### Reader / Writer
 ```
 FileReader fr = new FileReader(file)
-InputStreamReader isr = new InputStreamReader(fis, "UTF-8")
-BufferedReader br = new BufferedReader(fr)	// 或用isr 做参数
-br.close()
+while ((num = fr.read()) != -1)
 fr.close()
 
+InputStreamReader isr = new InputStreamReader(fis, "UTF-8")
+
+BufferedReader br = new BufferedReader(reader)
+br.lines()	// 返回一个stream
+while ((line = br.readLine()) != null)	// 老式遍历行
+br.close()
+
+
+// 文件Writer
 FileWriter fw = new FileWriter(filePath, bAppend=false)
-OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8")
-BufferedWriter bw = new BufferedWriter(fw)	// 或用osw 做参数
-PrintWriter pw = new PrintWriter(fw)
-bw.close()
 fw.close()
+
+// 流Writer
+OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8")
+
+// 块缓存装饰，第二个可省参数定义块大小，默认8k
+BufferedWriter bw = new BufferedWriter(writer)
+bw.close()
+
+// 行缓存装饰，支持自动刷新，入参可以是OutputStream、Writer、File、fileName（在BufferedWriter 之上包装）
+PrintWriter pw = new PrintWriter(xxx)
+```
+有write 和append 方法都可以写字符串，append 对于null 会写一个"null"，并返回this，其他就调用write（null 会抛异常）
+
+### try-with-resources
+无需在finally 中进行close()，资源必须使用Closeable 或AutoCloseable接口
+```
+try (FileReader reader = new FileReader(file)) {	// 可以使用分号写多个资源
+	// xxx
+} catch (Exception e) {
+	e.printStackTrace();
+}
 ```
 
-### RandomAccessFile
+### 3. RandomAccessFile
+length(): 文件长度，字节数
 支持seek(pos) 和skipBytes(n) 可以随机定位在文件的位置（可以直接定位到length() 的位置去追加）
 getFilePointer() 返回当前的文件指针位置（初始为0）
 直接集成了read 和 write 系列方法，需要close() 关闭
@@ -559,7 +688,7 @@ rw：读写，若文件不存在，则创建之
 rwd：读写，每次更新都同步到存储设备（仅限内容更新）
 rws：读写，每次更新都同步到存储设备（包括内容和元数据更新）
 
-### Path / Paths / Files
+### 4. Path / Paths / Files
 面向缓冲的新的IO 接口（非阻塞式）
 ```
 Path path = Paths.get("a", "b", "c");
@@ -677,7 +806,7 @@ selector.keys() 返回该选择器上注册的所有SelectionKey
 selector.wakeup() 使正在阻塞的select() 方法或下一次执行的select() 方法立即返回
 
 
-### HTTP
+### 5. HTTP
 常用的包是org.apache.httpcomponents
 #### request
 HttpGet()
@@ -790,7 +919,7 @@ Consumer:accept：终端函数（有参无返）
 Callable:call：无参有返（和Supplier 的差别在于Supplier 关注的是生成数据，应该是幂等的；而Callable 关注是完成任务，返回一个简单的任务结果，是非幂等的）
 Runnable:run：无参无返
 
-### 多线程
+### 1. 多线程
 + 继承Thread类重写run方法
 + 实现Runnable接口重写run方法，然后用该实现的实例初始化Thread
 然后都可以调用Thread 类的start() 方法去启动线程
@@ -804,15 +933,14 @@ isInterrupted()：当前线程的中断标识是否被置位
 interrupt()：线程的中断状态将会被设置为true
 
 
-
-### 线程同步
+### 2. 线程同步
 #### synchronized
 获得锁才能进入对应的代码块，同一时间只能有一个线程访问代码块
 1. 标记实例方法：锁挂在实例对象上，同一个实例的多个实例方法共享同一把锁
 2. 标记静态方法：锁挂在类对象上
 3. 标记代码块：锁挂在synchronized(obj) 的obj 对象上
 
-### ThreadPoolExecutor
+### 3. ThreadPoolExecutor
 继承链 -> AbstractExecutorService -> ExecutorService -> Executor
 ```
 ThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue,
@@ -841,14 +969,14 @@ ThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, Ti
 如果当前线程池中的线程数目达到maximumPoolSize，则会采取任务拒绝策略进行处理；
 largestPoolSize：仅用于记录线程池中曾经有过的最大线程数目
 
+#### 构造线程池
 不提倡直接new，而是使用Executors类的几个静态函数进行创建：
 newCachedThreadPool()：corePoolSize=0，maximumPoolSize=Integer.MAX_VALUE，keepAliveTime=60s，SynchronousQueue
 newSingleThreadExecutor()：corePoolSize=maximumPoolSize=1，LinkedBlockingQueue，返回的是DelegatedExecutorService（继承AbstractExecutorService），目的是为了屏蔽ThreadPoolExecutor 这个类动态修改线程池配置的一些方法
 newFixedThreadPool(size)：corePoolSize=maximumPoolSize=size，LinkedBlockingQueue
 newScheduledThreadPool(coreSize)：corePoolSize=coreSize，maximumPoolSize=Integer.MAX_VALUE，keepAliveTime=0，workQueue=DelayedWorkQueue返回ScheduledThreadPoolExecutor 实例，可定期或者延时执行任务
 
-
-#### 重要方法
+#### 线程池的重要方法
 execute(Runnable)：异步执行一个无参无返回的函数
 submit(Callable<T>)：异步执行，该方法返回一个Future<T>，用以获取执行结果
 invokeAll(Collection<? extends Callable<T>>, timeout, unit)：同步执行一组函数，直到全部执行完成或超时，后两个参数可省。若超时，future.isCancelled()==true，若再调用future.get() 会抛出CancellationException 异常
@@ -856,6 +984,11 @@ invokeAny(Collection<? extends Callable<T>>, timeout, unit)：同步执行一组
 
 shutdown()/shutdownNow()：关闭线程池，区别是前者允许正常执行的任务继续执行完，后者正在执行的任务也会被停止（通过调用Thread.interrupt()方法来实现，如果线程中没有sleep 、wait、Condition、定时锁等应用, 该方法是无法中断当前的线程的）所以该方法不一定就能立即退出，也要等到所有正在执行的任务执行完毕
 awaitTermination(timeout, unit)：执行完shutdown 方法，执行该方法会等待所有线程都执行结束（返回true）或者超时（返回false）
+
+##### Future 的方法
+get(timeout, unit): 阻塞并获取结果，参数表示阻塞等待的超时时间，可省
+cancel(b): 参数是一个boolean，若为true，则可以打断执行中的任务；若为false，则只能阻止尚未启动的任务（排队中）
+isCancelled(): 判断任务是否超时或取消
 
 #### ScheduledThreadPoolExecutor
 
@@ -915,3 +1048,92 @@ System.currentTimeMillis()，以毫秒为单位，返回当前时间戳（从197
 它和new Date().getTime(); 和 Calendar.getInstance().getTimeInMillis();得到的结果是相同的。（Calendar 的方式最慢，因为要处理时区问题）
 
 System.nanoTime()，以纳秒为单位，返回一个时间差值，其基准时间是一个任意的但固定的值，返回的就是当前到这个基准时间的纳秒差。这个基准时间是由JVM所定的，所以不同JVM上的基准时间一般不同。但同样不能保证绝对精确。返回类型为long
+
+## 十四. 调用其他语言
+### Groovy
+<http://docs.groovy-lang.org/>
+全包：
+```
+<dependency>
+    <groupId>org.codehaus.groovy</groupId>
+    <artifactId>groovy-all</artifactId>
+    <version>2.5.6</version>
+    <type>pom</type>
+</dependency>
+```
+
+#### 1. 使用GroovyShell
+```
+GroovyShell groovyShell = new GroovyShell();
+groovyShell.evaluate(String scriptText)
+groovyShell.evaluate(File file)
+groovyShell.evaluate(Reader in)
+```
+evaluate 是直接执行groovy 脚本代码，支持多种代码输入
+对于1、3 两种方法都可以指定一个fileName 用于缓存脚本（当前的实现未启用缓存），若未提供，则使用ScriptX.groovy，X 是计数序号
+本质上是生成Script 而后调用run()
+
+##### 脚本复用
+```
+Script script = groovyShell.parse(String scriptText)
+Script script = groovyShell.parse(File file)
+Script script = groovyShell.parse(Reader in)
+```
+groovyShell 内置了一个GroovyClassLoader，内部是通过这个loader的parseClass 方法解析出Class，而后在调用InvokerHelper.createScript 生成
+由于当前实现未启用缓存，为避免每次执行重复生成Script 对象，导致频繁gc，所以最好把script 缓存起来
+
+##### 环境变量
+```
+groovyShell.setProperty(String property, Object newValue)	// 设置变量为bean.property 或者bean['property']
+groovyShell.setVariable(String name, Object value)
+
+groovyShell.getProperty(String property)
+groovyShell.getVariable(String name)
+```
+
+变量复用
+```
+Binding binding = new Binding();
+binding.setProperty
+binding.setVariable
+
+GroovyShell groovyShell = new GroovyShell(binding);
+```
+
+##### 工具
+InvokerHelper.invokeMethod
+
+#### 2. 使用GroovyClassLoader
+```
+CompilerConfiguration config = new CompilerConfiguration();
+config.setSourceEncoding("UTF-8");
+// 设置该GroovyClassLoader的父ClassLoader为当前线程的加载器(默认)
+groovyClassLoader = new GroovyClassLoader(Thread.currentThread().getContextClassLoader(), config);
+
+Class<?> groovyClass = groovyClassLoader.parseClass(file);			// 这个版本启用缓存了
+										.parseClass(scriptText);	// 这个方法也可以提供一个fileName 参数用于缓存（当前实现未启用缓存），若未提供，则使用script{Timestamp}{scriptText.hashCode()}.groovy
+GroovyObject groovyObject = (GroovyObject) groovyClass.newInstance();
+Object methodResult = groovyObject.invokeMethod("sayHello", new Object[] {});
+```
+GroovyClassLoader与Java中的加载器一样，同一个类名的类只能加载一次（classCache，key 是类名），如果想再次加载，必须调用GroovyClassLoader的clearCache()方法移除所有已经加载的Groovy Class
+除了上面的classCache，内部还有一个sourceCache，key 是脚本的文件名
+
+*注意*
+由于Class回收的条件是：
+1. 所有实例都已GC；
+2. 类对象（Class）不再被引用
+3. 加载该类的ClassLoader 已被GC
+所以每次parseClass 都会生成一个Class 并且无法被回收，当不断循环调用导致PERM 占满，就会不断触发fullGC
+
+#### 3. 使用GroovyScriptEngine
+运行时加载脚本，并监听脚本变化，当脚本发生变化时重新加载
+```
+// 设置script根路径，可以设置多个，new String[] {}
+GroovyScriptEngine engine = new GroovyScriptEngine(paths);
+// 或者ScriptEngine scriptEngine = scriptEngineFactory.getScriptEngine();
+// scriptEngine.eval(script);
+// (Invocable) scriptEngine.invokeFunction(function, objects)
+
+Object result = engine.run(file, binding);
+```
+内部缓存scriptCache，key 是脚本的路径

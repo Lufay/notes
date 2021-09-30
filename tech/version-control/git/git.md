@@ -27,7 +27,7 @@
 ```
 git init [--bare] [directory]
 ```
-把指定目录directory（默认为当前目录）变成git管理的仓库（当前目录下会多了一个.git目录，用于跟踪管理版本库）这个指定的目录directory的路径就是这个版本库的clone URL
+把指定目录directory（默认为当前目录，若该目录不存在会自动创建）变成git管理的仓库（当前目录下会多了一个.git目录，用于跟踪管理版本库）这个指定的目录directory的路径就是这个版本库的clone URL
 该目录就是一个工作区，.git目录是版本库，其中最重要的是stage（或叫index）的暂存区
 如果使用--bare选项，则没有工作区，即一个裸的版本库。
 
@@ -432,6 +432,9 @@ git submodule foreach [--recursive] <command>
 
 
 ### 配置git
+带--global 是修改全局配置，否则是修改当前仓库的配置
+当前仓库的配置文件位于仓库根目录的.git/config中
+当前用户的Git配置放在`$HOME/.gitconfig`中
 ```
 git config --global color.ui true
 ```
@@ -451,12 +454,11 @@ git config --global alias.br branch
 git config --global alias.unstage 'reset HEAD'
 git config --global alias.lg "log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
 ```
---global是全局参数，在该电脑上使用git这些别名都有效，如果不加，只对当前仓库起作用
-配置文件位于.git/config中
 要删除别名，直接吧对应的行删掉即可。
-当前用户的Git配置放在`$HOME/.gitconfig`
 
 ## 配置文件
+### .git/config
+
 ### .gitignore
 用于说明不需要版本控制的文件（Specifies intentionally untracked files to ignore）
 注意其英文表述，是忽略untracked的文件，也就是说一旦文件已经被tracked，那么就无法被忽略

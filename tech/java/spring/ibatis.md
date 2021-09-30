@@ -51,7 +51,7 @@ valueOf(String s)主要是用来当没有指定的值的时候, 指定默认值�
 <typeAlias alias="account" type="com.partner4java.demo.entity.Account" />
 ```
 给全限定名起别名
-iBATIS 有一些预定义的别名
+iBATIS 有一些预定义的别名（比如string/hashMap等）
 
 #### sql & include
 ```
@@ -78,6 +78,7 @@ parameterMap 的属性：
 + typeHandler: 想要指定类型处理器（而不是让iBATIS 根据javaType和jdbcType属性来选择类型处理器）
 
 ##### resultMap
+显式结果映射，
 ```
 <resultMap id="" class="">
 	<result property="" column="" javaType="" jdbcType="" nullValue=""/>
@@ -99,7 +100,11 @@ result 的属性：
 
 #### 映射语句
 ```
-<select id="" resultMap="">
+<!-- 单值：使用string 或java.lang.String -->
+<!-- 单值：使用long -->
+<select id="" resultMap="" parameterClass="string">
+	select ...
+	where name = #value#
 </select>
 
 <insert id="" parameterClass="java.util.List">
@@ -130,17 +135,41 @@ resultMap：指定mapper 的ID
 
 ##### iterate
 以一个集合或数组类型的特性作为其property属性值，通过遍历这个集合（数组）来从一组值中重复产生某种SQL小片段
-property: 集合or 数组
+property: 当parameterClass为对象或map 时，其中一个字段为list，使用其指定该字段名或key
 conjunction：连接每个迭代的片段的字符串
 open：加在每个迭代内容前；如果内容体为空，将不起作用
 close：加在每个迭代内容体后；如果内容体为空，将不起作用
 
+###### 实例
++ 数组：无需指定parameterClasss 和property
+```
+<iterate close=")" open="("  conjunction=",">
+	<![CDATA[
+		#[]#
+	]]>
+</iterate>
+```
++ List类型: parameterClass="java.util.List", 无需指定property
+```
+<iterate open="(" close=")" conjunction=",">
+	#wid[]#
+</iterate>
+```
+字符串数组见上，对象数组可以使用objs[].field
++ map 中一个value 为list: parameterClass="map", property=这个list value的key
+```
+<iterate open="(" close=")" conjunction="," property="q.codeSet">
+	#q.codeSet[]#
+</iterate>
+```
 
 ##### 动态SQL
 `<dynamic>`: 不能嵌套
 prepend：加在内容体前（若有open 则在open 之前）；如果内容体为空，将不起作用
 open：加在内容体前；如果内容体为空，将不起作用
 close：加在内容体后；如果内容体为空，将不起作用
+
+当使用prepend 且其中的内容不为空时，将自动忽略其下第一个标签的prepend
 
 ###### 一元标签
 如果参数对象的状态结果为真，那么结果SQL中就会包含其内容体
@@ -272,4 +301,6 @@ Spring 提供了SqlMapClientDaoSupport 的抽象类，用以DAO 实现的继承�
 ```
 
 ## 其他
-SQL中经常有与xml规范相冲突的字符对xml映射文件的合法性造成影响。`<![CDATA[ sql-statement ]]` 标记来避免冲突，但是在sql-statement 中有动态语句的时候，会导致系统无法识别动态判断部分，所以要缩小范围。
+SQL中经常有与xml规范相冲突的字符对xml映射文件的合法性造成影响（比如大于号>、小于号<，虽然可以直接写为`&gt;`/`&lt;`）。
+使用`<![CDATA[ sql-statement ]]` 标记来避免冲突，但是在sql-statement 中有动态语句的时候，会导致系统无法识别动态判断部分，所以要缩小范围。
+

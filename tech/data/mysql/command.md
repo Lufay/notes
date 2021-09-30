@@ -61,6 +61,8 @@ WHERE <条件表达式>
 `LIMIT offset, row_count`
 offset 表示从第offset条记录之后开始取（第一条是偏移是0），`row_count` 表示只取回`row_count`行记录（如果想要剩下所有，取-1）
 也可以使用OFFSET 关键字单独设置offset
++ 随机选取使用`ORDER BY rand() LIMIT n`可以随机选取n 个
++ 按指定顺序排序 `ORDER BY instr(',3,5,1,' , ','+ltrim(id)+',')`
 + 多条SELECT 语句可以使用UNION 或UNION ALL 取并集（要求同列同类型），区别是前者会去重，后者不会
 	- MySQL 不支持INTERSECT 和MINUS
 	INTERSECT 的替代方案是join using，或者用union all 之后统计重复度为2的
@@ -127,6 +129,12 @@ delimiiter ;
 
 <http://www.cnblogs.com/lyhabc/p/3822267.html>
 
+### 函数
+#### 字符串函数
+`instr`: 类似string.find，不区分大小写，找得到返回位序，找不到返回0
+
+#### 分组函数
+`GROUP_CONCAT`: 分组连接
 
 ## mysqldump 导出
 注意：导出时，最好一个表一个表的导出，因为会有空间限制。
