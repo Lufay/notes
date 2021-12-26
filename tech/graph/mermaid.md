@@ -3,7 +3,7 @@
 <https://mermaid-js.github.io/mermaid-live-editor>
 
 ## 流程图
-```
+```mermaid
 graph TD
     A[Start] --> B{Is it?};
     B -->|Yes| C[OK];
@@ -64,7 +64,7 @@ end
 ## 甘特图
 
 ## 类图
-```
+```mermaid
 %% Comments，单行注释
 classDiagram
       Animal <|-- Duck
@@ -117,7 +117,7 @@ classDiagram
 `$` Static e.g.: `staticMethod()$`
 
 ### 关系
-```
+```mermaid
 classDiagram
 Animal <|-- Fish	:	继承（实线三角）is-a 关系
 Flying <|.. Bird	:	实现（虚线三角）can-do 关系

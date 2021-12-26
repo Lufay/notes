@@ -1,21 +1,24 @@
 # Java
+
 第8页
 
 ## 一. 纯粹面向对象的设计
-1. 一切皆对象
+
+1. 一切皆对象  
 **基础**，使得人可以从问题域中抽象出更易理解的实体，而非纠缠于细节的操作流，从而建立了问题域到解空间的更为直接的映射关系
-2. 程序是对象之间通信的过程
+2. 程序是对象之间通信的过程  
 **方法论**，如何使用对象进行编程，使得面向对象变为可行的
-3. 对象由更为简单的对象构成
+3. 对象由更为简单的对象构成  
 **抽象层次**，面向对象可以使用现有抽象（对象）来构建新的抽象，从而解决问题，这是面向对象更有效降低问题复杂度的根据
-4. 对象皆有其所属类型，同类对象有相同接口和相近的特性，但会根据自身状态的不同具有不同的行为
+4. 对象皆有其所属类型，同类对象有相同接口和相近的特性，但会根据自身状态的不同具有不同的行为  
 对象如何组织，更进一步产生**继承**构建对象体系，和**多态**拉近自然语言语义和程序语言语义的差距。（接口表现了对象所能提供的服务，而特性是一类对象用于区别于其他对象的特征，这两点都是对外的表现，而在内部则可以具有着不同的实现，外部无法获知也不必关心，这就是**封装**，封装很好地控制了隔离了影响，即保证了在接口不变的情况下，实现可以任意改写而不会影响其他系统）
 
-
 ## 二. 数据类型
+
 ### 1. 基本类型
 括号中表示存储大小——字节数
 这些基本类型无法像类、对象一样调用成员函数，因为它就是一个值（作为参数传递时也是值传递。注意：引用传递的虽然是对象本身，但其引用指向的变化不会影响到调用方）。不过，每种基本类型都具有与之对应的包装器（wrapper）类型（Boolean、Character、Byte、Short、Integer、Long、Float、Double、Void）。只需在需要时，装箱使用即可（赋值时自动装箱拆箱）。
+
 #### 1.1 整数
 byte(1)、short(2)、int(4)、long(8)
 均表示有符号数，Java不存在无符号数
@@ -327,23 +330,23 @@ nextSetBit(fromIndex)：返回从fromIndex（含）开始的clearBit 的位置�
 previousClearBit(fromIndex)
 previousSetBit(fromIndex)
 
-
 ## 三. 运算
+
 `==`运算符，如果两个操作数中有对象，则比较的是对象的引用，即是否指向同一对象实体，除非该类型重载了Object类型的equals函数
 
 逻辑运算符的操作数必须是boolean类型，如上所说，不再能使用整形数表示布尔值了
 逻辑运算不同于位逻辑在于，它可以短路求值
 
-
 ## 四. 控制
+
 ### 1. foreach结构
 ### 2. 带标签的break和continue
 对没有goto的弥补：可以在循环前加上标签（和goto的标签类似），而后在循环内，就可以使用break和continue后面跟标签名了。
 break 标签——表示退出标签所指定的循环（可以大退很多层循环）
 continue 标签——表示退出到标签位置继续循环（执行该循环的递增，而跳过内部的递增）
 
-
 ## 五. 执行相关
+
 ### 1. 命令行下执行定义包中的类
 首先，要将一个类作为执行入口，需要找到这个类的“.class”文件，且该类必须有一个可访问的main静态方法。查找类的方法如下：
 Java会按在系统定义的CLASSPATH环境变量，找到包所在的根目录（如果没有定义CLASSPATH环境变量，则默认是到“.”即当前目录下去找类文件。如果定义了就不会有这个默认了，必须显示写上“.”，也可以按自己习惯的工作目录进行添加，用分号分隔）
@@ -353,7 +356,6 @@ Java会按在系统定义的CLASSPATH环境变量，找到包所在的根目录�
 ### 2. Java的命令行参数
 Java的命令行参数args并不包括java命令和类名，即从真正的参数起，下标记0
 在myEclipse下的设置：在项目或包或文件的Properties对话框中的Run/Debug Setting中的右侧，找到对应文件，打开后，就可以编辑其Argument选项卡了
-
 
 ## 六. 方法函数
 支持重载
@@ -416,7 +418,6 @@ IntStream.range 和rangeClosed
 + filter(Predicate): 相当于一个where 条件，过滤掉返回false 的元素
 + distinct(): 使用 hashCode() 和 eqauls() 方法来区分不同的元素，来进行去重
 + sorted(comparator): comparator 可以缺省，则使用对象的自然顺序排序（对象需要实现Comparable 接口），如果使用unordered Stream，那么顺序会被破坏。comparator 可以是Comparator.comparing(mapper, comparatorU)，通过mapper，可以将比较对象转换为类型U，而后按U 的comparatorU 进行比较（当然也可以缺省）
-
 
 ##### 结尾操作（terminal operation）
 ###### collect 的Collectors
@@ -508,7 +509,6 @@ private最小，只在该类内部可见
 protected而后，由于其隐式有包权限，相当于比包权限多了其派生类的访问权
 public最大，全局可见
 
-
 ## 八. 类和对象
 一个文件中可以定义多个类，但最多只能有一个是public ，如果有public 类，则文件需以该类命名，否则可以使用任一类来命名，一般main 函数会放在public 这个类中
 ### 1. 对象的生灭
@@ -557,8 +557,6 @@ private static final long serialVersionUID = 1L;
 Object 有一个protected 方法clone() 想要重写该方法必须实现Cloneable 接口，否则将抛CloneNotSupportedException 异常
 clone() 方法可以重写为public 的，只需针对类中的可变类型进行自定义复制即可
 
-
-
 ## 九. 继承相关
 ### 成员覆盖
 派生类可以定义一个和基类同名同类型的成员，如果基类该成员可见，该成员将覆盖基类该成员，除非使用super索引。
@@ -567,7 +565,6 @@ clone() 方法可以重写为public 的，只需针对类中的可变类型进�
 ### 方法重载
 继承后的方法，既支持重写，也支持重载
 重载是指具有不同的方法标识（方法名和参数表），而重写则是具有相同的方法标识和返回类型。如果想要明确使用重写，而非重载（就像C++一样）可以使用@Override注解，这样，重载就会报错。
-
 
 ## 十. 运行时的类型信息
 调用.getClass()方法，该方法继承自Object类，且Java的内置类大都已重写，该方法返回的是对象的真实类型信息（并非引用的类型），这种数据结构是一种名为Class的类。
@@ -582,14 +579,35 @@ clone() 方法可以重写为public 的，只需针对类中的可变类型进�
 这个对象可以直接输出显示（隐式调用toString方法），但如果执行显示类名可以调用getSimpleName()方法，类型为String。
 当然该对象还有很多获取类其它信息的方法。举个例子，通常我们使用的是多态来动态绑定方法，即参数使用基类或接口类型。而通过反射，我们就可以将String作为参数来确定类型，并通过newInstance方法生成实例（当然，也可以通过检查其构造器方法，来使用Method类的invoke方法生成实例），在通过检查该类所具有的方法，使用Method类的invoke方法来调用（如果是private方法，可以先调用该Method对象的setAccessible(true)来取消对本方法的安全检查），也可以通过检查该类所具有的域，使用Field类的set方法去设置。从而获得了更大的灵活性，而不只是建立在继承层次上的动态性。
 
-
 ## 十一. I/O
-标准输出System.out，错误输出System.err
+
+标准输入System.in，标准输出System.out，错误输出System.err
+
+在Java5 之前
+```java
+BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
+String str=null;
+while((str=br.readLine())!=null)
+```
+
+在Java5 及以后使用Scanner
+```java
+Scanner sc=new Scanner(System.in);	// 可以是任意InputStream 对象，例如File
+while (sc.hasNext()) {				// 当遇到EOF 结束
+	String s = sc.next();			// 使用分隔符（默认是空白符）获取下一个用户输入，分隔符不会被读入
+}
+sc.close();
+```
+此外Scanner还有其他方法：
+useDelimiter 可以修改分隔符
+hasNextLine - nextLine，使用换行符作为分隔符，换行符不会被读入
+各种类型的hasNext - next，若类型不匹配则抛异常·
+
 ### 1. File
 面向流的老IO 接口（阻塞式）
 java.io.File，可以表示一个文件或目录
 可以进行文件或目录的创建、删除、属性修改
-```
+```java
 File file=new File(path)
 ```
 

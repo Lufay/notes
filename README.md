@@ -1,10 +1,11 @@
 # notes
+
 notes with markdown
 
 目录：
-1. tect
-技术
-1. essay
-笔记
-1. sgs
-三国杀
+
+1. book: 读书
+2. literature: 文学
+3. essay: 笔记
+4. tect: 技术
+5. sgs: 三国杀

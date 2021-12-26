@@ -9,7 +9,7 @@ iBATIS就是这样一个混合型的持久层解决方案，吸取了SQL、老�
 
 
 ## sqlMapConfig
-```
+```xml
 <properties resource="properties/database.properties"/>
 
 <settings cacheModelsEnabled="true" enhancementEnabled="true"
@@ -28,7 +28,7 @@ settings 属性：
 
 ### typeHandler
 用于做DB 类型和Java 类型的映射转换，这里是一个全局的设置
-```
+```xml
 <typeHandler javaType="java.lang.String" jdbcType="CLOB" callback="org.springframework.orm.ibatis.support.ClobStringTypeHandler"/>
 <typeHandler javaType="[B" jdbcType="BLOB" callback="org.springframework.orm.ibatis.support.BlobByteArrayTypeHandler"/>
 ```
@@ -47,14 +47,14 @@ valueOf(String s)主要是用来当没有指定的值的时候, 指定默认值�
 可以指定namespace 属性，可以限定下面的id 所属
 
 #### typeAlias
-```
+```xml
 <typeAlias alias="account" type="com.partner4java.demo.entity.Account" />
 ```
 给全限定名起别名
 iBATIS 有一些预定义的别名（比如string/hashMap等）
 
 #### sql & include
-```
+```xml
 <sql id="aaa">xxx</sql>
 <include refid="aaa" />
 ```
@@ -63,7 +63,7 @@ iBATIS 有一些预定义的别名（比如string/hashMap等）
 
 #### 定义mapper
 ##### parameterMap
-```
+```xml
 <parameterMap id="" class="">
 	<parameter property=""/>
 </parameterMap>
@@ -79,7 +79,7 @@ parameterMap 的属性：
 
 ##### resultMap
 显式结果映射，
-```
+```xml
 <resultMap id="" class="">
 	<result property="" column="" javaType="" jdbcType="" nullValue=""/>
 </resultMap>
@@ -99,7 +99,7 @@ result 的属性：
 + typeHandler：作用和全局的typeHandler 一样，这里仅作用于单列
 
 #### 映射语句
-```
+```xml
 <!-- 单值：使用string 或java.lang.String -->
 <!-- 单值：使用long -->
 <select id="" resultMap="" parameterClass="string">
@@ -110,7 +110,7 @@ result 的属性：
 <insert id="" parameterClass="java.util.List">
 	<!--selectKey keyProperty 为model中的主键的属性名，这里会将查出来的值放到该主键属性上 -->
 	<selectKey resultClass="long" keyProperty="rId">
-		select last_insert_id()
+		select last_insert_id() as rId
 	</selectKey>
 </insert>
 
@@ -142,7 +142,7 @@ close：加在每个迭代内容体后；如果内容体为空，将不起作用
 
 ###### 实例
 + 数组：无需指定parameterClasss 和property
-```
+```xml
 <iterate close=")" open="("  conjunction=",">
 	<![CDATA[
 		#[]#
@@ -150,14 +150,14 @@ close：加在每个迭代内容体后；如果内容体为空，将不起作用
 </iterate>
 ```
 + List类型: parameterClass="java.util.List", 无需指定property
-```
+```xml
 <iterate open="(" close=")" conjunction=",">
 	#wid[]#
 </iterate>
 ```
 字符串数组见上，对象数组可以使用objs[].field
 + map 中一个value 为list: parameterClass="map", property=这个list value的key
-```
+```xml
 <iterate open="(" close=")" conjunction="," property="q.codeSet">
 	#q.codeSet[]#
 </iterate>
@@ -208,7 +208,7 @@ removeFirstPrepend: 若为true，则其第一个子标签prepend值无效
 
 ## SqlMapClient
 iBATIS API的核心是SqlMapClient接口，用于执行全部的数据访问、事务操作
-```
+```java
 Reader reader = Resources.getResourceAsReader("sql-map-config.xml");
 SqlMapClient sqlMap = SqlMapClientBuilder.buildSqlMapClient(reader);
 ```
@@ -234,7 +234,7 @@ sqlMap 就可以调用接口方法：
 
 ### bean 配置
 通常不用代码去配置SqlMapClient，而直接配置bean
-```
+```xml
 <bean id="xxxDAO" class="com....IbatisXxxDAO" parent="baseSqlMapClientDAO" />
 
 <bean id="baseSqlMapClientDAO" abstract="true">
@@ -262,7 +262,7 @@ sqlMap 就可以调用接口方法：
 由于Oracle 9i 采用了非 JDBC 标准的 API 操作 LOB 数据，所以不能使用DefaultLobHandler，而应该使用org.springframework.jdbc.support.lob.OracleLobHandler，这个lobHandler还需要org.springframework.jdbc.support.nativejdbc.CommonsDbcpNativeJdbcExtractor 或SimpleNativeJdbcExtractor 这个bean（也需要使用lazy-init）作为nativeJdbcExtractor 的property（需要访问本地 JDBC 对象）
 
 ## cacheModel
-```
+```xml
 <cacheModel type="MEMORY" id="">
     <!-- flushOnExecute标签用于指定当某个映射语句被访问时，其存储结果将被清除。 -->
     <flushOnExecute statement="insert" />
@@ -293,7 +293,7 @@ Spring 提供了SqlMapClientDaoSupport 的抽象类，用以DAO 实现的继承�
 在Spring里，获得SqlMapClient的最佳方式是通过SqlMapClientFactoryBean，所以sqlMapClient bean 的class="org.springframework.orm.ibatis.SqlMapClientFactoryBean"，需要配置其dataSource 和configLocations（configLocation）用以指定一组sqlMapConfig 的配置xml 文件的相对路径（参考上面的bean 配置）
 
 ### 事务配置
-```
+```xml
 <bean id="transactionManager"
 	class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
 	<property name="dataSource" ref="dataSource"/>

@@ -1,7 +1,8 @@
 # Redis
 REmote DIctionary Server
 [TOC]
-Redis是一个使用ANSI C语言编写的、开源的Key-Value数据库，和Memcached类似，但它支持存储的value类型相对更多，包括字符串、哈希表、列表、集合、有序集合，位图，hyperloglogs等数据类型。
+Redis是一个使用ANSI C语言编写的、开源的Key-Value 内存数据库，和Memcached类似，但它支持存储的value类型相对更多，包括字符串、哈希表、列表、集合、有序集合，位图，hyperloglogs等数据类型。
+可以定期通过异步操作把数据flush 到硬盘
 [参考](http://www.redis.net.cn/)
 [中文文档](http://www.redis.cn/documentation.html)
 [命令参考](http://redisdoc.com/)
@@ -9,7 +10,7 @@ Redis是一个使用ANSI C语言编写的、开源的Key-Value数据库，和Me
 
 ## 特点
 全内存数据库，也支持持久化磁盘（重启reload）
-丰富的value 类型
+丰富的value 类型，单个value 的最大限制是 1GB
 可以将数据复制到任意数量的从服务器中（master-slave模式）
 所有操作都是原子的（其他用户总能得到最新更新值）
 一般都用来做缓存的，当然也可以作为消息队列（原生支持发布/订阅）
@@ -299,7 +300,7 @@ SCRIPT KILL：杀死当前正在运行的 Lua 脚本，当且仅当这个脚本�
 
 ## Python client
 安装redis 模块，该模块提供两个类Redis和StrictRedis用于实现Redis的命令，StrictRedis用于实现大部分官方的命令，并使用官方的语法和命令，Redis是StrictRedis的子类，用于向后兼容旧版本。
-```
+```python
 __init__(self, host='localhost', port=6379, db=0, password=None, socket_timeout=None, socket_connect_timeout=None, socket_keepalive=None, socket_keepalive_options=None, connection_pool=None, unix_socket_path=None, encoding='utf-8', encoding_errors='strict', charset=None, errors=None, decode_responses=False, retry_on_timeout=False, ssl=False, ssl_keyfile=None, ssl_certfile=None, ssl_cert_reqs=None, ssl_ca_certs=None, max_connections=None)
 ```
 该模块使用connection pool来管理对一个redis server的所有连接，避免每次建立、释放连接的开销。
@@ -313,7 +314,7 @@ __init__(self, host='localhost', port=6379, db=0, password=None, socket_timeout=
 redis在提供单个请求中缓冲多条服务器命令的基类的子类。它通过减少服务器-客户端之间反复的TCP数据库包，从而大大提高了执行批量命令的功能。
 
 ### 发布订阅(pub/sub)
-```
+```python
 r = Redis()
 
 # 订阅
@@ -330,4 +331,24 @@ for item in p.listen():         # 等待接收每个频道的信息
 r.publish('spub', 'message')
 ```
 
+## 集群方案
+### 官方提供的Redis Cluster工具
+Redis 集群不支持那些需要同时处理多个键的 Redis 命令， 因为执行这些命令需要在多个 Redis 节点之间移动数据， 并且在高负载的情况下， 这些命令将降低 Redis 集群的性能， 并导致不可预测的错误。
 
+Redis 集群通过分区（partition）来提供一定程度的可用性（availability）： 即使集群中有一部分节点失效或者无法进行通讯， 集群也可以继续处理命令请求。
+
+Redis 集群使用数据分片（sharding）而非一致性哈希（consistency hashing）来实现： 一个 Redis 集群包含 16384 个哈希槽（hash slot）， 数据库中的每个键都属于这 16384 个哈希槽的其中一个， 集群使用公式 CRC16(key) % 16384 来计算键 key 属于哪个槽
+
+
+
+### codis
+
+
+## 原理
+### 数据淘汰策略
+1. noeviction: 返回错误当内存限制达到，并且客户端尝试执行会让更多内存被使用的命令。
+2. allkeys-lru: 尝试回收最少使用的键（ LRU ） ， 使得新添加的数据有空间存放。
+3. volatile-lru: 尝试回收最少使用的键（ LRU ） ， 但仅限于在过期集合的键 , 使得新添加的数据有空间存放。
+4. allkeys-random: 回收随机的键使得新添加的数据有空间存放。
+5. volatile-random: 回收随机的键使得新添加的数据有空间存放，但仅限于在过期集合的键。
+6. volatile-ttl: 回收在过期集合的键，并且优先回收存活时间（ TTL ） 较短的键, 使得新添加的数据有空间存放。

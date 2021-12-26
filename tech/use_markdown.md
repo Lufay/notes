@@ -1,9 +1,9 @@
-<http://www.appinn.com/markdown/#p>
+<http://www.appinn.com/markdown/#p>  
 <https://segmentfault.com/markdown>
 
 段落
 前后要有一个以上的空行（包括只含空白符的行）
-段落内的换行如果确实需求，就要在行末使用2个及以上的空格（这样才能转换为<br />，否则不同的转换器实现不相同）
+段落内的换行如果确实需求，就要在行末使用2个及以上的空格（这样才能转换为`<br />`，否则不同的转换器实现不相同）
 
 标题
 类 Atx 形式
@@ -103,7 +103,8 @@ Alt text 是图片的替代地址，可省
 分隔 thead 和 tbody 的 - 每列至少三个
 
 目录：
-[TOC]
+[TOC]  
+支持的比较少，在VSCode 中可以用`Create Table of Contents` 进行目录的生成
 
 标签分类：
 Tags: Markdown
@@ -139,7 +140,3 @@ Mac: Mou, MacDown
 
 格式转换：
 使用Pandoc
-
-
-
-

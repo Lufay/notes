@@ -17,7 +17,7 @@ dot -Tpng first.dot -o first.png
 ```
 
 ## 无向图
-```
+```graphviz
 // 注释
 graph noabc {
 	a -- b;
@@ -26,7 +26,7 @@ graph noabc {
 noabc 名字可省
 
 ## 有向图
-```
+```graphviz
 digraph abc{
 	fontname = "Microsoft YaHei";
 	fontsize = 12;

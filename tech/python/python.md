@@ -1,4 +1,5 @@
 # Python
+
 [Python 2](https://docs.python.org/2/)
 [Python 3](https://docs.python.org/3/)
 [TOC]
@@ -10,6 +11,8 @@
 
 ### 2. 面向对象
 数据、行为、功能逻辑的封装
+Python 采用的是duck-typing（鸭子类型）的方式，即不依靠查找对象类型来确定其是否具有正确的接口，而是直接调用或使用其方法或属性。所以避免使用 type() 或 isinstance() 检测，而往往会采用 hasattr() 检测或是 EAFP 编程（假定对象满足指定的接口，而通过try-except 处理异常情况，与LBYL 风格先对，其是先检查是否满足条件在进行处理）
+针对hasattr() 检测比较笨拙的方式，ABC（abstract base class）引入了虚拟子类，即不需要显式继承，而能够被 isinstance() 和 issubclass() 所认可
 
 ### 3. 函数式编程
 函数式编程使用一系列的函数解决问题。函数仅接受输入并产生输出，不包含任何能影响产生输出的内部状态。任何情况下，使用相同的参数调用函数始终能产生同样的结果。
@@ -25,7 +28,6 @@
 封装控制结构的内置模板函数：为了控制边界效应，就要尽量避免使用变量，尤其是为了控制流而定义的变量，于是这些控制流就被内化为一些模板函数，比如filter。结果是代码更简洁，也更可读，代价仅仅是一些学习成本。
 闭包（closure）：函数可以定义于任何位置，而闭包就是绑定了函数定义所在域变量的函数。那么当离开函数定义的域之外使用这个函数对象时，就可以使用其绑定的变量；并且当执行到内部函数定义处，也就创建了不同的闭包，这样，即使是同一个函数，也绑定了不同的变量。（注：在python2.x中，绑定变量被看出创建了一个同名的局部变量将外部变量隐藏，因此实际上是无法修改绑定变量的值；而在python3.x中，引入了nonlocal关键字，使用该关键字修饰外部变量后，后面就绑定的是外部变量本身，于是也就可以修改外部变量了，也就是说不同闭包将会相互影响）
 支持不可变的数据结构：使用不可变的数据结构，可以确保边界效应。
-参考：<http://www.cnblogs.com/huxi/archive/2011/06/24/2089358.html>
 
 ### 4. 可重用性，易扩展性，可移植性，可读性，易维护
 易扩展性建立在无论要访问的模块是来自于标准库还是自定义的，其访问方式都是一致的
@@ -54,6 +56,9 @@ CPython 的一个局限就是每个 Python 函数调用都会产生一个 C 函�
 ### 8. 字节码
 类似Java，Python同样字节编译的，而后在解释执行。
 当源文件被解释器加载，或显式进行字节码编译时，会被编译为字节码，由于调用解释器的方式不同，源文件会被编译成.pyc或.pyo文件
+
+GIL（global interpreter lock）：CPython 解释器所采用的一种机制，它确保同一时刻只有一个线程在执行 Python bytecode。此机制通过设置对象模型（包括 dict 等重要内置类型）针对并发访问的隐式安全简化了 CPython 实现。给整个解释器加锁使得解释器多线程运行更方便，其代价则是牺牲了在多处理器上的并行性。
+不过，某些标准库或第三方库的扩展模块被设计为在执行计算密集型任务如压缩或哈希时释放 GIL。此外，在执行 I/O 操作时也总是会释放 GIL。
 
 ### 9. 与其他语言的比较
 Perl 最大的优势在于它的字符串模式匹配能力，其提供了一个十分强大的正则表达式匹配引擎。这使得 Perl 实际上成为了一种用于过滤、识别和抽取字符串文本的语言，而且它一直是开发 Web 服务器端 CGI(common gateway interface,通用网关接口)网络程序的最流行的语言。Python 的正则表达式引擎很大程度上是基于 Perl 的。
@@ -131,7 +136,7 @@ level 指定当前的层级
 该函数需要返回三个值：格式化字符串，一个表示是否可读的flag，一个表示是否发现递归包含的flag
 
 #### 1.2 输入
-```
+```python
 user_in = raw_input('Enter login name: ')
 ```
 `raw_input`这个函数的参数（可选的）是提示信息（系统不会补充换行符），而后等待用户输入，读取用户输入的一行后，返回输入的字符串（不包括最后的换行符）。
@@ -143,7 +148,7 @@ user_in = raw_input('Enter login name: ')
 只需要import sys，命令行参数就在sys.argv这个列表中
 
 ##### 1.3.1 解析工具getopt
-```
+```python
 import getopt
 getopt(args, shortopts, longopts=[]) -> opts, args
 ```
@@ -159,7 +164,7 @@ args 是一个字符串列表，其中是没有解析的剩余参数
 调用该函数，可能抛出getopt.GetoptError异常，因此上面的函数需要在try块中调用。
 
 ##### 1.3.2 解析工具optparse
-```
+```python
 import optparse
 parser = optparse.OptionParser()
 ```
@@ -266,33 +271,23 @@ ArgumentParser的方法：
 参考：<https://docs.python.org/2/library/argparse.html#module-argparse>
 
 #### 1.4 帮助
-+ help([obj])
-如果给出obj，则将给出其的帮助信息（文档字符串等），如果没有给出参数，则进入交互式帮助。
++ help([obj]): 如果给出obj，则将给出其的帮助信息（文档字符串等），如果没有给出参数，则进入交互式帮助。
++ type(obj): 返回obj 的类型对象（类型本身就是一个对象，可以通过该对象的__name__属性查看类型名）
++ `isinstance(x, class_type_tuple)`: `class_type_tuple`可以是一个类型或类，也可以是一个类型或类的元组（Python3.10，还可以是类型的union）。如果x是这些类型或其子类的实例，则返回True，否则返回False
++ `issubclass(class, class_type_tuple)`: 判断一个类型对象是否是另一个/组类型的子类（如果自身也算自身的子类）
++ dir([obj]): 如果给出obj（可以是模块，类，对象等），则返回obj 空间下的属性列表（包括继承的属性，但不包括定义在元类(metaclass)中的类属性）；未给出则返回当前域的可访问属性列表（相当于locals().keys()）
++ vars([obj]): 返回obj 空间下的属性字典（不包括继承的属性）。对一个自定义的类调用该函数，相当于访问该类的`__dict__`属性；未传obj 将返回当前域的可访问属性的字典（相当于locals()）
++ hash(obj): 返回一个对象的哈希值（整数），同值有相同哈希值，反之不一定。对于不可哈希的类型会抛TypeError异常
+对一个自定义的类调用该函数，则将调用该类的`__hash__(self)`这个方法，可以自己重定义该函数，返回一个整数值。
 
-    dir([obj])
-    如果给出obj，则返回obj可访问的属性列表；未给出则返回当前域的可访问属性列表。
-    obj可以是模块，类，对象等
+##### 环境信息：
+import sys
+sys.platform
+sys.version
 
-    type(obj)
-    返回obj 的类型（返回的类型本身就是一个对象，可以通过该对象的__name__属性查看类型名）
-    import types
-    types.IntType、…
-
-    isinstance(x, class_type_tuple)
-    class_type_tuple可以是一个类型或类，也可以是一个类型或类的元组。如果x是这些类型或其子类的实例，则返回True，否则返回False
-
-    hash(obj)
-    返回一个对象的哈希值（整数），同值有相同哈希值，反之不一定。对于不可哈希的类型会抛TypeError异常
-    对一个自定义的类调用该函数，则将调用该类的__hash__(self)这个方法，可以自己重定义该函数，返回一个整数值。
-
-    环境信息：
-    import sys
-    sys.platform
-    sys.version
-
-    退出程序：
-    sys.exit([status])
-    如果缺省status，则进程返回0。如果是整数，则进程返回该整数，如果是其他的，则打印该对象，进程返回1.
+退出程序：
+sys.exit([status])
+如果缺省status，则进程返回0。如果是整数，则进程返回该整数，如果是其他的，则打印该对象，进程返回1.
 
 #### 1.5 关于函数中进行IO的建议
 设计函数时，最好将其输入输出都作为参数和返回值，而将IO的工作放在函数之外，除非该函数的功能就是完成IO。这样做的好处是使该函数的重用性更好。
@@ -949,6 +944,7 @@ int("100", 5)   25 注：100为5进制表示（如果该表示非法则抛出Val
 其宽度取决于环境，比如32位环境（机器和编译器）宽度为32位，只不过当计算溢出后，结果会自动转变为long
 
 ##### 1.1.2 long
+Python3 移除该类型
 后缀l或L（也支持十进制、八进制、十六进制表示）
 
 构造函数
@@ -959,7 +955,7 @@ long("100", 5)      25L
 
 ##### 1.1.3 bool（布尔值）
 只有两个实例：True（数值1）、False（数值0）
-是整形的子类，但不能被继承
+是int的子类，但不能被继承
 
 构造函数：
 bool()          False
@@ -999,8 +995,19 @@ complex(1.2, 4.5)       (1.2+4.5j)
 conjugate()方法：返回共轭复数
 
 ##### 1.1.6 相关模块
++ numbers		[数字的抽象基类](https://docs.python.org/zh-cn/3/library/numbers.html)
 + math/cmath	标准C数学函数库，前者是常规运算，后者是复数运算
 + operator		函数形式调用操作符（不仅仅是数值运算可以，下面的容器运算也可以使用该模块）
+abs, pos(+), neg(-), add(+), sub(-), `mul(*)`, truediv(/), floordiv(//), mod(%), `pow(**)`
+inv(~), lshift(<<), rshift(>>), `and_(&)`, `or_(|)`, xor(^)
+matmul(@, 矩阵乘法)
+lt(<), le(<=), eq(==), ne(!=), ge(>=), gt(>)
+truth, `not_`, `is_`, `is_not`
+concat(+), contains(in), indexOf, countOf, getitem(索引/切片取值), setitem(索引/切片赋值), delitem(索引/切片删除)
+加上前缀i 表示对应的原地运算（比如+=），但仅对可变类型有效
+`attrgetter(*attrs)`: 返回一个函数对象，该函数接受一个对象，然后访问其多个属性，返回一个元组
+`itemgetter(*items)`: 返回一个函数对象, 该函数接受一个对象，然后访问其多个索引，返回一个元组
+`methodcaller(name, *args, **kwargs)`: 返回一个函数对象，该函数接受一个对象，然后调用其name 字符串指定的方法，参数通过后续参数指定
 + random		多种分布的伪随机数发生器
 该模块有很多直接可用的函数，但实际上这些函数都是Random这个类的方法，它们被关联到一个共享状态的实例上，当多线程需要随机数可以使用多个实例，并用jumpahead()方法确保生成不重叠的随机序列。
 这些函数以random()为基础：该函数以当前时间为随机数种子，返回`[0, 1)`中的一个随机浮点数
@@ -1266,7 +1273,7 @@ alist[1:3] = []：切片更新操作（等号右侧必须是一个可迭代对�
 注：若expression不含某个迭代变量，则相当于在该迭代变量变化中，取得的值都是相同的。
 
 ###### 生成器表达式
-由于列表解析意味着必须生成整个列表，也就意味着可能需要占用大量的内存，而实际使用的可能仅仅是遍历其元素，而不是真的需要整个列表。于是就有了更节省内存的生成器表达式，即为列表解析中去掉 [] ，只不过为避免语法错误，通常在外面加上一个括号 ()。
+由于列表解析意味着必须生成整个列表，也就意味着可能需要占用大量的内存，而实际使用的可能仅仅是遍历其元素，而不是真的需要整个列表。于是就有了更节省内存的生成器表达式，即为列表解析中的 [] 替换为 ()（当用作函数参数时可以省略）。
 生成器表达式每次仅仅产生（yield）一个元素，非常适合于迭代。只不过，生成器表达式返回的是一个生成器（generator），也是一种迭代器。
 
 ###### array 模块
@@ -1355,7 +1362,9 @@ dict.fromkeys(iterkey, value=None)函数：返回一个字典，字典的键来�
 一组无序可哈希的对象。
 集合有两种：
 可变集合set和不可变集合frozenset
-只能使用上面两种名字的构造函数进行构造，数据源（参数）可以来自可迭代对象
+其中：
+set([1,3,6]) 可以直接使用 {1,3,6} 构造（空集合只能用set()）
+frozenset只能使用frozenset(iterable) 进行构造
 
 ###### 集合推导
 类似于列表解析，只不过把`[]`换成`{}`
@@ -1411,7 +1420,7 @@ dict.fromkeys(iterkey, value=None)函数：返回一个字典，字典的键来�
 ##### namedtuple
 生成一个命名元组类，通过该类构造的元组，可以类似访问属性的方式访问成员（而不必用索引），而且其很轻量，不比普通元组占用更多内存。
 生成函数：
-```
+```python
 namedtuple(typename, field_names, verbose=False, rename=False)
 ```
 返回一个名为typename 的tuple的子类。（一般接受返回值的变量也命名为typename，因为typename 是类型名，但却并不是当前空间中有效的标识符，相当于返回了一个匿名类型，并起了一个别名为接受的返回值，而真实名字typename 并不能使用）
@@ -1419,8 +1428,8 @@ field_names 可以是一个字符串序列，或者是一个字符串（用空�
 verbose 如果是True，则在构造子类前打印其定义
 
 返回的这个类型，可以使用位置参数，也可以使用关键字参数进行构造；同时既可以当作tuple 操作，也可以当作一个对象操作（支持`.`和getattr函数）。
-此外还有一些新增的属性和方法：
-`_fields`：字符串元组
+此外还有一些新增的属性和方法：  
+`_fields`：字符串元组  
 `_make(iterable)`：类方法，使用一个可迭代对象生成一个对象
 `_asdict()`：对象方法，返回一个OrderedDict 对象
 `_replace(**kwargs)`：对象方法，修改部分成员，并返回一个新的对象
@@ -1433,21 +1442,21 @@ verbose 如果是True，则在构造子类前打印其定义
 deque([iterable[, maxlen]])
 ```
 使用可迭代对象从左而右地构造，如果maxlen 被指定且不是None，那么双端队列就被限定最大长度，当充满时，在一端插入会在另一端丢弃相应成员。
-支持属性和方法：
-maxlen：只读属性，如果未制定为None
-append(x)：右端插入
-appendleft(x)：左端插入
-extend(iterable)：右端插入多个
-extendleft(iterable)：左端插入多个
-pop()：右端弹出
-popleft()：左端弹出
-remove(value)：删除第一个值为x的元素，不存在则抛异常
-count(x)：返回,值为x的元素在队列中出现的次数
-reverse()：原地反转
-clear()：清空队列
+支持属性和方法：  
+maxlen：只读属性，如果未制定为None  
+append(x)：右端插入  
+appendleft(x)：左端插入  
+extend(iterable)：右端插入多个  
+extendleft(iterable)：左端插入多个  
+pop()：右端弹出  
+popleft()：左端弹出  
+remove(value)：删除第一个值为x的元素，不存在则抛异常  
+count(x)：返回,值为x的元素在队列中出现的次数  
+reverse()：原地反转  
+clear()：清空队列  
 rotate(n)：如果n为正，则队列循环右移n 个位置；n为负则向左
 
-支持容器通用操作，可迭代，可pickle，支持reversed，可使用copy模块进行拷贝
+支持容器通用操作，可迭代，可pickle，支持reversed，可使用copy模块进行拷贝  
 支持索引，但不支持切片（访问中间位置的元素具有线性复杂度，因此不适合随机访问）
 
 ##### defaultdict
@@ -1455,17 +1464,17 @@ rotate(n)：如果n为正，则队列循环右移n 个位置；n为负则向左
 ```
 defaultdict([default_factory[, …]])
 ```
-default_factory默认是None，可以是一个无参的函数，当字典索引key失败时，调用该函数返回一个默认值插入字典并返回。剩余参数将传给dict，进行构造
-该对象有一个同名属性，可以修改这个生成器
+default_factory默认是None，可以是一个无参的函数，当字典索引key失败时，调用该函数返回一个默认值插入字典并返回。剩余参数将传给dict，进行构造  
+该对象有一个同名属性，可以修改这个生成器  
 **注意：仅当索引key失败会触发生成器，如果使用get()等方法，则不会而保持其默认行为**
 
 ##### OrderedDict
-有序字典（按插入顺序）（dict的子类）
-**注意：对于使用关键字参数的构造器和update方法，其顺序将丢失，因为python使用dict 进行参数传递**
-更新值并不影响顺序
-和OrderedDict 进行等值比较顺序敏感，和其他Mapping 对象比较则顺序不敏感
-额外支持的方法：
-popitem(last=True)：默认弹出最后插入的kv二元组，last为False，则弹出最早插入的kv二元组
+有序字典（按插入顺序）（dict的子类）  
+**注意：对于使用关键字参数的构造器和update方法，其顺序将丢失，因为python使用dict 进行参数传递**  
+更新值并不影响顺序  
+和OrderedDict 进行等值比较顺序敏感，和其他Mapping 对象比较则顺序不敏感  
+额外支持的方法：  
+popitem(last=True)：默认弹出最后插入的kv二元组，last为False，则弹出最早插入的kv二元组  
 还支持reversed()函数进行逆序
 
 ##### Counter
@@ -1473,25 +1482,25 @@ popitem(last=True)：默认弹出最后插入的kv二元组，last为False，则
 ```
 Counter([iterable-or-mapping])
 ```
-可以从Mapping 对象构造，也可以给一个可迭代对象进行统计构造
-支持0 和负值
-该对象不强制要求key/val的类型，只要它们能满足操作条件即可
+可以从Mapping 对象构造，也可以给一个可迭代对象进行统计构造  
+支持0 和负值  
+该对象不强制要求key/val的类型，只要它们能满足操作条件即可  
 在使用索引key 访问计数时，如果key 不存在则返回0
 
-额外的方法：
-elements()：返回一个迭代器，对每个key 迭代对应计数次（顺序随机），计数不大于0则忽略
-most_common([n])：返回一个(key, count)二元组的列表，如果指定n且不为None，则返回count最大的n个，对于count相同的值则随机排序
+额外的方法：  
+elements()：返回一个迭代器，对每个key 迭代对应计数次（顺序随机），计数不大于0则忽略  
+most_common([n])：返回一个(key, count)二元组的列表，如果指定n且不为None，则返回count最大的n个，对于count相同的值则随机排序  
 subtract([iterable-or-mapping])：减去另一个计数，并更新自身
 
-有2个字典方法行为变化：
-fromkeys(iterable)：未实现
+有2个字典方法行为变化：  
+fromkeys(iterable)：未实现  
 update([iterable-or-mapping])：加上另一个计数，并更新自身
 
-该对象该支持一些运算符：
-c1 + c2：将每个计数对应相加
-c1 - c2：将每个计数对应相减
-c1 & c2：取每个计数的最小值
-c1 | c2：取每个计数的最大值
+该对象该支持一些运算符：  
+c1 + c2：将每个计数对应相加  
+c1 - c2：将每个计数对应相减  
+c1 & c2：取每个计数的最小值  
+c1 | c2：取每个计数的最大值  
 **注意：返回结果会丢弃那些不大于0 的计数值**
 
 ##### 1.2.7 heapq
@@ -1500,13 +1509,13 @@ c1 | c2：取每个计数的最大值
 ###### 模块函数
 heapify(x)：把一个list 转换成一个最小堆（原地，线性时间）
 heappush(heap, item)：给堆加入一个元素，并保持堆的特性
-heappop(heap)：弹出heap[0]，并保持堆的特性
+heappop(heap)：弹出heap[0]，并保持堆的特性  
 heappushpop(heap, item)：先push，后pop（更有效率）
 heapreplace(heap, item)：先pop，后push
 
-`merge(*iterables)`：把多个有序的输入合并为一个有序输出，返回一个迭代器（省内存）
-nlargest(n, iterable[, key])：返回迭代器中n 个最大的数组成的列表，key 可以提供一个获取比较key 的函数
-nsmallest(n, iterable[, key])：返回迭代器中n 个最小的数组成的列表，key 可以提供一个获取比较key 的函数
+`merge(*iterables)`：把多个有序的输入合并为一个有序输出，返回一个迭代器（省内存）  
+nlargest(n, iterable[, key])：返回迭代器中n 个最大的数组成的列表，key 可以提供一个获取比较key 的函数  
+nsmallest(n, iterable[, key])：返回迭代器中n 个最小的数组成的列表，key 可以提供一个获取比较key 的函数  
 *注：nlargest 和nsmallest 仅当n 较小时比较有效，如果较大，使用sorted() 更有效，如果n == 1，则使用min 和max 更有效*
 
 ### 2. 其他内建类型
@@ -1516,12 +1525,7 @@ None（等价于 NULL）
 函数function/方法instancemethod
 模块
 类classobj
-
 object()
-classmethod()
-staticmethod()
-super()
-property()
 
 ### 3. 内部类型
 #### 代码
@@ -1682,7 +1686,7 @@ else:             # 可选：迭代结束后执行，当break跳出则不执行
 for循环的机制：
 1. 调用可迭代对象的`__iter__()`方法获得迭代器（通过iter()这个内建方法）
 1. 每次循环迭代调用迭代器的next()方法获得遍历的下一个数据
-1. 捕获到StopIteration异常，循环结束（当全部数据取完后会抛出一个StopIteration异常，以告知迭代完成）
+1. 当捕获到StopIteration异常，循环结束（当全部数据取完后会抛出一个StopIteration异常，以告知迭代完成）
 
 + 可迭代对象是一个有`__iter__()`方法的对象，该方法返回这个可迭代对象的迭代器。
 + 迭代器是一个有next()方法的对象（当然，通常迭代器本身也是可迭代对象，所以可以在`__iter__()`方法中返回自身）。
@@ -1719,10 +1723,30 @@ next(iterator[, default])
 ##### 相关模块
 itertools
 1. 无限迭代器
-1. 排列组合
+	+ count(start=0, step=1)：无限版range: `start, start+step, start+2*step, start+3*stemp, ...`
+	+ cycle(iterable)：无限循环迭代
+	+ repeat(e, times=None): e * times 无限版
 1. 终止于最短的输入序列的迭代器
+	+ `chain(*iterables)` 和`chain.from_iterable(iterable)`: 二阶flat
+	+ groupby(iterable, key=None): 需要先把key 聚集（比如sorted）再调用本函数才有意义，即，它将已经聚集在一起的key 合并为一条记录(key, 聚集生成器) 的二元组
+	+ pairwise(iterable): iterable 两两结合为一个元素返回新的迭代器
+	+ map 升级
+		- `zip_longest(*iterables, fillvalue=None)`：和zip 相同，只不过返回的列表长度和这些序列中最长的一个相同，不足的用fillvalue 补充
+		- starmap(function, iterable)：相当于map(func, zip_longest(it1, it2, ...)), 即用iterable 的每个元素作为参数调用func
+		- `accumulate(iterable, func=operator.add, *, initial=None)`: p=func(initial, a0), func(p, a1), func(p, a2), ...
+	+ filter 升级
+		- filterfalse(predicate, iterable): filter 的False 版
+		- takewhile(predicate, iterable): 保留满足predicate 的前导序列，返回一个生成器
+		- dropwhile(predicate, iterable): 去掉满足predicate 的前导序列，返回一个生成器
+		- islice(iterable, stop) 和islice(iterable, start, stop, step=1)：相当于用range 产出（不支持负索引）的下标遍历iterable
+		- compress(data, selectors): (d for d, s in zip(data, selectors) if s)
+	+ tee(iterable, n=2): 返回一个n 元组，每个元素都是一个iterable 构成的生成器（非线程安全）（一旦使用该函数，原来的iterable 就不要使用了，因为它的动作都不会通知给tee 返回的生成器）
+1. 排列组合
+	+ `product(*iterables, repeat=1)`: iterables * repeat 后，每个iterable 取一个元组进行笛卡尔积（类似多层嵌套循环）返回一个生成器，每个元素时一个元组（每次迭代，最右侧元素最先步进）
+	+ permutations(iterable, r=None): 从iterable 取出r 个元素进行全排列
+	+ combinations(iterable, r): 从iterable 取出r 个元素进行组合
+	+ combinations_with_replacement(iterable, r): 从iterable 取出r 个（可重复）元素进行组合
 支持无限迭代的输入
-<http://www.cnblogs.com/huxi/archive/2011/07/01/2095931.html>
 
 #### 2.3 continue、break、pass
 continue语句：跳过循环中剩下语句，进行下次迭代（进行条件检查或调用next()）
@@ -1746,8 +1770,8 @@ def func_name([args]):
 #### 1.1 参数
 参数是引用传递，所以对于可变对象，函数内的改变影响原始对象，而不可变对象则不影响
 ##### 1.1.1 默认参数
-参数可以用赋值符给以默认参数，同样必须在所有非默认参数之后
-**注意：函数的默认值是在函数定义时确认，并将该值存储起来，当默认值启用时，就使用该存储起来的值，类似于类的静态变量；有个问题就是如果该默认值是一个可变对象，那么如果函数中对这个使用默认值的参数进行的修改就会影响到这个存储起来的值，从而对下次使用默认值的函数调用造成影响**
+参数可以用赋值符给以默认参数，必须在所有非默认参数之后
+**注意：默认值只使用不可变对象: 函数的默认值是在函数定义时确认，并将该值存储起来，当默认值启用时，就使用该存储起来的值，类似于类的静态变量；而如果该默认值是一个可变对象，那么如果函数中对这个使用默认值的参数进行的修改就会影响到这个存储起来的值，从而对下次使用默认值的函数调用造成影响**
 例如：
 ```
 def foo(a=[]):
@@ -1769,7 +1793,7 @@ def dur( op=None, clock=[time.time()] ):
 
 
 ##### 1.1.2 可变参数
-可变长参数必须在其他参数之后（并且关键字可变参数需在位序可变参数之后），例如：
+位序可变参数必须在关键字可变参数之前（位序可变参数后面可以放置其他参数，但只能使用关键字形式赋值，关键字可变参数后则不可以有其他参数），例如：
 ```
 func(*tuple_args, **dict_args)
 ```
@@ -1879,49 +1903,320 @@ print dec(10)
 ## 第六章. 对象和类
 ### 1. 类定义
 ```
-class ClassName(base_class[es]):
+class ClassName(base_class, ...):
     "optional documentation string"
     static_member_declarations
 
     method_declarations(self)
 ```
-`base_class`声明基类，如果没有指定，则使用 object 作为基类（object是最基本的类型）
-每个实例方法第一个参数都是self，它是对象实例的引用，对象的私有成员和类的静态成员都可以使用它引用，例如通过`self.__class__.__name__`可以得到类名（`self.__class__`这个引用实际的类）
-构造器：`__init__(self)`（实际上是对象创建后自动执行的第一个方法，执行初始化工作），如果没有显式定义该方法，则默认提供一个空的构造器。
-foo = ClassName()就创建了一个该类的实例。当一个实例被创建，`__init__()`就会被自动调用。
+`base_class`声明基类，如果没有指定，则使用 object 作为基类（object是最基本的类型），支持多继承
+类文档字符串不会被继承，但类属性会被继承（除非覆盖定义）
+在多继承中，使用super(type[, obj]) 会根据`type.__mro__` 中指定的顺序查找标识符的实现，然后若obj 是实例对象，则super 将其转化为找到的先祖类实例；若是类对象，则super 将其转化为找到的先祖类的类对象；若不传obj 则返回一个找到的非绑定的类对象（调用方法需要自己传入self 或cls 作为第一个参数）
 
+静态数据成员属于类自身，实例属性可以在任何时候动态添加、修改和del（甚至在类的外部）
+当实例属性和类属性同名，则使用实例调用时，实例属性优先，所以使用实例访问类属性无法进行修改（可以修改可变类型的内容），因为修改的语法就意味着定义了一个同名的实例属性，所以修改类属性只能使用类名调用
+
+和函数对象类似，在类定义完成时，就声明了一个类对象，所以类定义可以放在局部作用域
+
+### 2. 内置属性
+`__class__` 对象对应的类对象，也可以作为一个可调用对象使用（调用的是构造器）
+`__name__` 类的名字(字符串)
+`__doc__` 类的文档字符串
+`__base__` 类的第一个父类
+`__bases__` 类所有父类构成的元组
+`__dict__` 类的属性（仅包括当前类定义的，不包括继承的）
+`__module__` 类定义所在的模块
+`__slots__` 限定实例的可用的属性名，其值可以是一个字符串可迭代对象，阻止自动为每个实例创建 `__dict__` 和 `__weakref__`（能显著节省空间和提高属性查找速度）。想要实例能够动态赋值，就需要在这个字符串可迭代对象中加入`'__dict__'`
+
+#### 设置属性
+property(fget=None, fset=None, fdel=None, doc=None): 通过这个工厂方法可以返回一个属性关联读写删除方法
 ```
-class A:
-    pass
+class C:
+    def __init__(self):
+        self._x = None
 
-class B(object):
-    pass
+    def getx(self):
+        return self._x
+
+    def setx(self, value):
+        self._x = value
+
+    def delx(self):
+        del self._x
+
+    x = property(getx, setx, delx, "I'm the 'x' property.")
+```
+如果 c 为 C 的实例，c.x 将调用 getter，c.x = value 将调用 setter， del c.x 将调用 deleter
+
+property 也可以作为装饰器用于getter 方法上，它将拷贝 fget 的文档字符串作为属性的doc
+```
+class C:
+    def __init__(self):
+        self._x = None
+
+    @property
+    def x(self):
+        """I'm the 'x' property."""
+        return self._x
+
+    @x.setter
+    def x(self, value):
+        self._x = value
+
+    @x.deleter
+    def x(self):
+        del self._x
+```
+
+### 3. 构造器 和 析构器
+`__new__(cls)` 构造方法，该方法是一个类方法，但无需使用装饰器修饰，该方法会先于`__init__()`初始化方法被调用
+若该方法返回的不是当前类的对象，则不再调用`__init__()`初始化方法
+通常用于继承内置的不可变类型时，在调用完父类的`__new__()`返回实例后，对其中值进行修改（这种修改无法在`__init__()` 中完成）
+实现单例模式、以及实现自定义的metaclass 时使用
+
+`__init__(self)` 初始化方法（self 就是`__new__()`方法返回的当前类的对象），如果没有显式定义该方法，则默认提供一个空的构造器（对于子类会自动调用父类的构造器）。
+该方法不需要返回
+foo = ClassName()就创建了一个该类的实例。当一个实例被创建，`__init__()`就会被自动调用。
+在子类中，若显式定义了构造器，就需要手动去调用父类的构造器了，有两种找到父类的方式：
+```
+FooParent.__init__(self)
+# 或者
+super(FooChild,self).__init__()
+```
+super 函数会将 self 转化为FooChild 父类的对象
+
+`__del__(self)` 析构方法，由于Python 使用引用技术的垃圾回收机制，所以该函数要到对象的引用计数清零时才会执行
+注：
+1. del t 命令只能清理当前t 的引用，但并不能保证清理对象，所以不一定能调用析构方法
+2. 不要忘记首先调用父类的`__del__()`
+3. 该函数中未捕获的异常会被忽略掉
+
+### 4. 方法
+#### 4.1 实例方法
+实例方法也是一个函数对象，也可以保存为变量或使用参数传递（和普通的函数对象差别仅仅是第一个参数绑定了self对象而已）
+第一个参数都是self，它是对象实例的引用，对象的私有成员和类的静态成员都可以使用它引用，例如通过`self.__class__.__name__`可以得到类名
+类似于实例属性，实例方法也可以定义在类的外部：
+```
+def f1(self, x, y):
+    return min(x, x+y)
+
+class C:
+    f = f1
+```
+
+#### 4.2 魔术方法
+`__hash__`: 供hash() 调用
+`__bool__`: 用于真值测试 以及 bool() 调用
+`__nonzero__`:
+
+`__str__`: 供str() 以及 format() 和 print() 调用
+`__repr__`: 供 repr() 调用，用于调试
+`__bytes__`: 供 bytes() 调用
+
+`__len__`: 供 len() 调用
+`__setitem__`: 按照索引赋值，也支持切片key
+`__getitem__` 按照索引获取值
+`__missing__` 在找不到指定的键时调用
+`__getattribute__`: x.name 的使用，也可以供getattr(obj, attr[, default]) 调用，这些调用都会直接进入该函数，除非通过super() 委托给同名方法，才会查看是否已经定义了指定的属性或方法
+`__getattr__`: x.name 的使用，也可以供getattr(obj, attr[, default]) 调用（若不存在attr指定的属性或方法，则返回default，否则会引发AttributeError，可以先用hasattr(obj, attr) 进行测试）若类已定义了指定的属性或方法，则直接使用之，该方法不再调用
+`__setattr__`: x.name 的赋值，也可以供setattr(obj, attr, val) 调用
+`__delattr__`: x.name 的删除，也可以供delattr(obj, attr) 调用
+`__get__`:描述器
+`__set__`
+`__delete__`
+`__iter__`: 供iter() 或for 循环调用，返回当前对象的迭代器（带有`__next__`方法的对象），若自身定义了`__next__`可以直接返回self
+`__next__`: 供next() 或for 循环调用，返回下一个元素或抛 StopIteration
+`__reversed__`: 供reversed() 调用，以返回反向迭代器
+`__contains__`:重载运算符in
+
+`__cmp__` 供cmp() 使用
+`__lt__` 重载运算符<, 若没有实现，会返回单例对象 NotImplemented
+`__le__` 重载运算符<=
+`__eq__` 重载运算符==
+`__ne__` 重载运算符!=
+`__gt__` 重载运算符>
+`__ge__` 重载运算符>=
+
+`__call__` 重载函数调用运算符()
+以下这些运算符加上r 表示右操作数运算符，加上i 表示原地操作运算符（返回值是self）
+`__add__` 重载运算符+
+`__sub__` 重载运算符-
+`__mul__` 重载运算符`*`
+`__matmul__` 重载运算符@
+`__truediv__`  重载运算符/
+`__floordiv__` 重载运算符//
+`__mod__` 重载运算符%
+`__pow__` 重载运算符`**`
+`__lshift__` 重载运算符<<
+`__rshift__` 重载运算符>>
+`__and__` 重载运算符&
+`__or__` 重载运算符|
+`__xor__` 重载运算符^
+
+`__neg__`
+`__pos__`
+`__abs__` 供abs() 调用
+`__invert__`: 重载运算符~
+
+`__complex__` 供complex() 调用
+`__int__(self)`: 供int() 调用
+`__float__(self)`: 供float() 调用
+`__index__`:  供operator.index() 调用，返回一个整数索引
+`__round__` 供round() 调用
+`__trunc__` 供math.trunc() 调用
+`__floor__` 供math.floor() 调用
+`__ceil__` 供math.ceil() 调用
+
+#### 4.3 类方法 和 静态方法
+需要通过装饰器，将方法进行转化
+```
+class A: # 经典类，在python3 中和新式类一样，默认继承object
+    @classmethod
+    def c_method(cls):
+        print(cls.__name__)
+
+    @staticmethod
+    def s_method():
+        print(A.__name__)
+
+class B(object): # 新式类
+    @classmethod
+    def c_method(cls):
+		super(B, cls).c_method(cls)	# 调用父类类方法，super 第二个参数使用类对象
 
 a = A()
-b = B()
 type(A)        # <type ‘classobj’>
 type(a)        # <type ‘instance’>
+
+b = B()
 type(B)        # <type ‘type’>
 type(b)        # <class ‘__main__.B’>
 ```
 
-访问权限、嵌套类?
+### 5. 访问权限
+private: 标识符使用双下划线 `__` 开头，实际上通过加上前缀`_className`就可以访问得到这些隐藏标识符（这样可以避免先祖类或子类定义同名变量带来的冲突）
+protected: 
+
+### 6. 元类
+它也是一个类，其实例是类对象，通过元类可以当创建类时能够自动地改变被创建的类
+它形式上就是一个可调用对象，接受类的描述信息(name, bases, attrd)，返回一个类对象
+所以元类相对与类，就像装饰器相对于函数，都是对原来的类型或函数对象进行修改，而后回赋给原对象
+
+在执行类定义时，解释器就会
+1. 查找元类metaclass：
+	1. 先寻找当前类属性`__metaclass__`，如果此属性存在，就将这个属性赋值给此类作为它的元类；
+	2. 否则它会向上查找父类中的`__metaclass__`；
+	3. 若所有父类都没有定义`__metaclass__`，则在模块层次中去寻找`__metaclass__`
+	4. 如果还是找不到`__metaclass__`, Python就会用内置的type来创建这个类对象
+2. 获取头参数，准备namespace: `namespace = metaclass.__prepare__(name, bases, **kwds)`，kwds 是类头自定义的关键字参数
+3. 执行元类体，将元类体中定义的属性和方法注入到namespace 中: `exec(body, globals(), namespace)`
+4. 执行元类构造器（或元类函数）: ` metaclass(name, bases, namespace, **kwds)`，其返回结果回赋给这个类对象
+	1. 在执行`__new__` 方法，在方法中使用`type.__new__` 创建这个类型时，调用父类的`__init_subclass__(cls)` 方法，kwds 也会经由`__new__` 传给`__init_subclass__`（注意，object 的`__init_subclass__` 函数并不接受kwds 参数，所以这时`type.__new__` 调用不要带kwds）
+
+指定元类
+```
+class FooMeta(type):				# 元类继承自type 或type 的子类
+	def __new__(cls, name, bases, attrd):		# 目标类创建时调用（即类定义时，可以通过参数查看类定义的描述信息），这里的cls 是FooMeta
+		t = type.__new__(cls, name, bases, attrd)
+		return t
+	def __init__(cls, name, bases, attrd):		# 目标类初始化时调用（也是类定义时，可以通过参数查看类定义的描述信息），这里的cls 是目标类，也就是__new__ 的返回值
+		super(FooMeta, cls).__init__(name, bases, attrs)
+	def __call__(cls, *args, **kwargs):		# 在目标类进行实例化的时候被调用（先于目标类的__new__）
+
+def func_meta(name, bases, attrd):	# 元类也可以是一个函数
+	return type(name, bases, attrd)	#  type 还可以作为一个工厂方法来声明一个类型，name 就是这个类型的名字，bases 是这个类型父类的元组，attrd 是类字典属性（属性和方法）
+
+class Foo(object):
+    __metaclass__ = FooMeta			# Python2 通过__metaclass__ 属性指定元类
+
+class Simple1(object, metaclass=func_meta, other_opt=''):	# Python3 这样定义元类，还可以自定义其他参数
+```
+
+
+### 7. 抽象类
+可以通过使用abc.ABCMeta 或其派生类作为元类，来使一个类变为抽象基类；或者也可以通过继承abc.ABC 来完成（抽象基类不能实例化，除非它的全部的抽象方法和特征属性均已被重载）
+抽象基类可以通过register(subclass) 方法注册它的抽象子类，这种继承关系不会出现在MRO中，但可以为issubclass() 识别
+register 一个一个的添加过于麻烦，可以在抽象基类中重载`__subclasshook__` 方法，用以自动判断一个类是否是其抽象子类
+```
+from abc import ABCMeta
+
+class MyABC(metaclass=ABCMeta):	# 方式1
+    pass
+
+from abc import ABC
+
+class MyABC(ABC):				# 方式2
+    @classmethod
+    def __subclasshook__(cls, C):		# cls 是当前的抽象基类，C 是这个被判断的类
+        if cls is MyIterable:
+            if any("__iter__" in B.__dict__ for B in C.__mro__):
+                return True				# True/False 都将作为issubclass/isinstance 的判断结果
+        return NotImplemented			# 这种返回值将按照正常机制继续执行检测
+
+MyABC.register(tuple)
+assert issubclass(tuple, MyABC)
+assert isinstance((), MyABC)
+```
+
+抽象基类可以用 @abc.abstractmethod 装饰器声明抽象方法和特征属性，表明一个方法必须被重载，这个方法可以拥有实现，也可以被派生类调用
+该装饰器仅仅影响常规继承所派生的子类；通过 ABC 的 register() 方法注册的“虚子类”不会受到影响
+当该装饰器需要和其他装饰器共同修饰一个函数时，本装饰器必须在最内层，例如：
+```
+class C(ABC):
+    @abstractmethod
+    def my_abstract_method(self, ...):
+        ...
+    @classmethod
+    @abstractmethod
+    def my_abstract_classmethod(cls, ...):
+        ...
+    @staticmethod
+    @abstractmethod
+    def my_abstract_staticmethod(...):
+        ...
+
+    @property
+    @abstractmethod
+    def my_abstract_property(self):
+        ...
+    @my_abstract_property.setter
+    @abstractmethod
+    def my_abstract_property(self, val):
+        ...
+
+    @abstractmethod
+    def _get_x(self):
+        ...
+    @abstractmethod
+    def _set_x(self, val):
+        ...
+    x = property(_get_x, _set_x)
+```
+（NotImplementedError）
+
+嵌套类
+
+
+
 
 ## 第七章. 模块
 当你创建了一个 Python 源文件，就是一个独立的模块，模块名是不带 .py 后缀的文件名
 在该源文件中，
 变量`__name__`就是当前模块的名字。一般作为主模块直接执行的，`__name__`都是`__main__`，而被import的模块使用`__name__`则显示该模块的模块名。
-变量`__file__`是模块文件的路径（包含文件名，可能是一个相对路径）
+变量`__file__`是当前模块文件的路径（包含文件名，可能是一个相对路径）
 
 ### 1. 导入模块
 ```
 import module_name [as alias_name]
 
 from module_name import identifier1 [as alias_name1][, identifier2 [as alias_name1][, ...identifierN [as alias_nameN]]]
+
+from .module_name import identifier
+from ..module_name import identifier
 ```
-前者是导入整个模块
-后者是导入模块中的某个标识符，但这种导入方式只能读取不能改写模块变量
-想要改写只能使用前者
+第一句是导入整个模块
+第二句是导入模块中的某个标识符，但这种导入方式只能读取不能改写模块变量，想要改写只能使用第一句
+第三四句是相对路径导入，前者是同级导入，后者是上一级导入
 
 sys.modules 变量是一个字典，它保存了已经加载的模块名和模块实例的映射关系
 
@@ -1936,12 +2231,14 @@ sys.modules 变量是一个字典，它保存了已经加载的模块名和模�
 还支持从zip 归档文件中导入模块（.py, .pyc, .pyo），只需要将归档文件当做一个目录即可
 只不过Python 不会为py 文件生成pyc 文件，所以如果zip 归档中如果没有pyc，导入速度会较慢
 
-### 2. 名字空间
-名字空间是标识符到对象的映射集合
-Python 解释器首先加载内建名称空间，即`__builtins__`中的标识符；而后加载模块的全局名字空间；当调用函数时创建局部名字空间
+### 2. 命名空间
+命名空间是标识符到对象的映射集合
+Python 解释器首先加载内建名称空间，即`__builtins__`中的标识符；而后加载模块的全局命名空间；当调用函数时创建局部命名空间
 可以通过globals() 和 locals() 内建函数判断出某一名字属于哪个名称空间
 globals()：返回当前全局标识符到对象映射的字典
 locals()：返回当前局部标识符到对象映射的字典（在全局作用域下调用，返回和globals()函数相同）
+
+模块包和类定义，都会创建一个新的命名空间
 
 访问导入模块中的成员：
 ```
@@ -1952,13 +2249,21 @@ module_name.function()
 ### 3. 作用域
 作用域是标识符的可见性
 在函数中定义的变量拥有函数级作用域（局部作用域），在所有函数之外定义的变量拥有模块级作用域（全局域）
-当搜索一个标识符的时候，python 先从当前的局部作用域开始搜索。如果在当前的局部作用域内没有找到那个名字，就会逐层向外查找该标识符（自由变量），直到全局域，如果还没找到最后确认该标识符是否是一个内置标识符，如果依然找不到就会被抛出 NameError 异常。
+当搜索一个标识符的时候:
+1. 最先从当前的局部作用域开始搜索;
+2. 如果在当前的局部作用域内没有找到那个名字，就会逐层向外查找该标识符（自由变量），直到全局域;
+3. 如果还没找到, 最后确认该标识符是否是一个内置标识符，如果依然找不到就会被抛出 NameError 异常。
 
 #### 3.1 作用域覆盖
 如果函数没有对全局变量（以及外部的自由变量）进行赋值，则可以直接读取该变量的值；
 如果函数内对全局变量（以及外部函数的同名变量）赋值，则视为定义了一个局部变量隐藏了同名的全局变量（或外部变量），而如果在赋值前读取该变量的值将抛出 UnboundLocalError 异常；
 想要真正对全局变量赋值，需使用`global var[, var, ...]`声明（位于对全局变量的读写操作之前，否则会有警告）
 Python 3.x引入了nonlocal 关键字，和global 功能类似，用于声明一个变量是外部（自由）变量，并且在当前作用域中需要修改这个外部变量。
+
+总结一下：
++ import 相当于在当前作用域锁引用的命名空间中引入外模块标识符并绑定（通过as 可以绑定别名）
++ global 和nonlocal 也分别是在当前作用域引入外层的标识符并绑定（外层可以还没有声明该标识符）
++ del 则是将该标识符从当前作用域所引用的命名空间中移除绑定
 
 ### 4. 包
 包是带有`__init__.py` 文件的目录
@@ -1974,6 +2279,8 @@ package_name.sub_package_name.module_name.identifier
 ```
 也可以只导入某一层包，那么能够使用的只有那一层以及上面各层包的`__init__.py` 文件中的内容
 只要保证顶层包在搜索路径中就可以保证该包下的任何子包和模块都可以成功导入
+
+如果标识符以 _ 开头，则不可被from module import * 导入进来，只能显式导入指定的标识符才行
 
 当包中标识符和模块或者包重名，如果模块或包被导入，则模块或包优先绑定该标识符；
 当模块和子包重名，则子包优先绑定该标识符
@@ -1991,7 +2298,7 @@ identifier
 ```
 注意：如果名字和标准库模块的符号冲突，会覆盖标准库的定义
 
-
+在命令行可以使用`python -m module_name` 来预导入指定的包
 
 ### 5. 自定义导入器
 需要两个类：查找器和载入器。查找器的实例接受一个参数：模块或包的全名。如果找到，返回一个载入器对象。载入器把模块载入内存，完成创建一个模块所需的所有操作，返回模块。
@@ -2284,6 +2591,7 @@ file(name, mode=’r’, buffering=1)
 该模块实际上只是真正加载的模块的前端，而真正加载的模块与具体的操作系统有关，比如：posix（适用于Unix）、nt（Win32）、mac（旧版的MacOS）、dos（DOS）、os2（OS/2）等。不需要直接导入这些模块，只需导入os 模块，Python会自动选择正确的模块。（根据某个系统支持的特性，可能无法访问到一些在其他系统上可用的属性）
 
 #### 2.1 模块属性
+name		系统类型：posix（Unix/Linux/新版mac）nt（Windows）, 想要区分Linux 和Mac 可以使用sys.platform（构建时指定的）或platform.system()（执行uname 和相关函数确认）
 linesep        系统的行分隔符。（如Windows使用'\r\n'，Linux使用'\n'）
 sep            用来分隔文件路径名的字符串
 pathsep        多个路径之间的分隔符（如Windows使用’;’，Linux使用’:’）
@@ -2306,7 +2614,7 @@ environ       当前环境变量的一个字典
 默认不跟踪符号连接，followlinks为True后可以改变着一点。
 （注意：在遍历期间不要改变当前的工作目录）
 + mkdir(path, mode=0777)    创建一个mode访问权限的目录（如果中间路径不存在，并不会递归创建中间路径，递归版本是makedirs）
-+ rmdir(path)                删除一个目录（也有一个递归版本：removedirs，它会按path由右向左依次删除，直到整个path都被删除或者遇到一个错误，该错误将被忽略，因为它一般是因为已经不满足删除条件，即非空目录）
++ rmdir(path)                删除一个目录（也有一个递归版本：removedirs，它会按path由右向左依次调用rmdir，直到整个path都被删除 或 遇到错误，该错误将被忽略，因为它一般是因为已经不满足删除条件，即非空目录）
 + remove(path)                删除一个文件，和unlink(path)相同
 + rename(old, new)            重命名一个文件或目录（也有一个递归版本renames，它会像makedirs一样为new创建中间路径，而后像removedirs一样递归删除old的中间目录。）
 + access(path, mode)            测试path，mode可以是`F_OK`不是是否存在，也可以是`R_OK`、`W_OK`、`X_OK`或其组合，表示是否具有该访问属性。
@@ -2369,6 +2677,7 @@ mkfifo
 + realpath(filename)        返回指定文件的绝对路径（会对符号链接进行解析到真实路径）
 + normpath(path)            返回指定路径的规范字符串形式（滤除多余的os.sep）
 + expanduser(path)            将路径中的~或~user转换为对应用户的主目录后的path的绝对路径（如果用户未知或$HOME未定义，则不返回）
++ expandvars('$HOME')
 
 ### 3. Unix样式的通配符
 支持 Unix样式的通配符（`*` ? `[]` `[!]`），对于这些元字符，要表示字面值，可以将其放在`[]`中
@@ -2382,6 +2691,17 @@ mkfifo
 + fnmatchcase(filename, pattern)：大小写严格匹配
 + filter(names, pattern)：相当于`[n for n in names if fnmatch(n, pattern)]`
 + translate(pattern)：将pattern 转换为正则字符串，可以使用re.compile 处理
+
+#### shutil 模块
++ move( src, dst)  移动文件或重命名
++ copyfile( src, dst) 从源src复制到dst中去。当然前提是目标地址是具备可写权限。抛出的异常信息为IOException. 如果当前的dst已存在的话就会被覆盖掉
++ copymode( src, dst) 只是会复制其权限其他的东西是不会被复制的
++ copystat( src, dst) 复制权限、最后访问时间、最后修改时间
++ copy( src, dst)  复制一个文件到一个文件或一个目录
++ copy2( src, dst)  在copy上的基础上再复制文件最后访问时间与修改时间也复制过来了，类似于cp –p的东西
++ copy2( src, dst)  如果两个位置的文件系统是一样的话相当于是rename操作，只是改名；如果是不在相同的文件系统的话就是做move操作
++ copytree( olddir, newdir, True/Flase) 把olddir拷贝一份newdir，如果第3个参数是True，则复制目录时将保持文件夹下的符号连接，如果第3个参数是False，则将在复制的目录下生成物理副本来替代符号连接
++ rmtree( src ) 递归删除一个目录以及目录内的所有内容
 
 ### 3. subprocess 模块
 用于调用shell（为了代替os.system/`os.popen*`/`os.spawn*`/`popen2.*`/`commands.*`）
@@ -2859,7 +3179,7 @@ params 是GET 的请求参数，即网址上`?` 后面用`&`分隔的部分，�
 kwargs 包括：
 + headers：可以指定一个字典（value 必须是字符串）
 + cookies：可以指定一个字典或RequestsCookieJar 对象
-+ timeout: 建立连接的超时时间，没有默认值，建议必选
++ timeout: 建立连接的超时时间，没有默认值，建议必选；可以指定一个二元组，表示connect 和 read 的超时时间，若为单值则二者共用
 + `allow_redirects`: 是否允许重定向，默认为True
 + auth: 元组('user', 'pass')，认证信息的优先级：auth > .netrc > headers
 + verify: 验证 SSL 证书，如果忽略对 SSL 证书的验证，可以设置为False（默认为True），或者可以指定`CA_BUNDLE` 文件的路径
