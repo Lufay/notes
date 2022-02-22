@@ -54,7 +54,7 @@ os.Args 是命令行参数的切片（类型是[]string）
 #### flag 包
 ##### 命令行配置
 ###### 绑定变量
-```
+```go
 // 第一个参数是选项名，第二个是默认值，第三个是说明信息，通过返回值接收（对应类型的指针）
 ok := flag.Bool("ok", false, "is ok")
 id := flag.Int("id", 0, "id")
@@ -65,7 +65,7 @@ flag.StringVar(&name, "name", "123", "name")
 ```
 
 ###### 设置usage
-```
+```go
 flag.Usage = func () {
 	fmt.Fprintf(os.Stderr, `nginx version: nginx/1.10.0
 Usage: nginx [-hvVtTq] [-s signal] [-c filename] [-p prefix] [-g directives]
@@ -105,7 +105,7 @@ Duration可以接受任何time.ParseDuration 能解析的类型
 实现flag.Value接口
 而后就可以通过如下方式配置该flag：`flag.Var(&flagVal, "name", "help message for flagname")`，该flag的类型和值由第一个参数表示
 
-```
+```go
 type Value interface {
     String() string
     Set(string) error
@@ -123,7 +123,7 @@ Lookup(name string)：返回指定name 的Flag 指针
 `Visit(fn func(*Flag))`：按照字典顺序遍历用户设置的flag，并且对每个标签调用fn
 `VisitAll(fn func(*Flag))`：按照字典顺序遍历配置的flag，并且对每个标签调用fn
 
-```
+```go
 type Flag struct {
     Name     string // name as it appears on command line
     Usage    string // help message
@@ -223,7 +223,7 @@ i++, i-- 是语句（赋值语句）而不是表达式，且只支持后缀
 ### 语句
 #### 变量声明
 变量会在声明时进行初始化
-```
+```go
 var var_name type  // 自动初始化为默认值（类型零值，例如0 和""）
 var var_name type = val  // 初始化
 var var_name = val  // 初始化，用val 进行类型推断
@@ -247,7 +247,7 @@ const (                     //iota被重设为0
 支持i , j = j, i
 
 #### 条件语句 if
-```
+```go
 if cond_expr {
 	code_block
 } else {
@@ -262,7 +262,7 @@ if a:= 8; a > 2 {}
 1. 在有返回值的函数中，不允许将“最终的” return 语句包含在 if...else... 结构中
 
 #### 选择语句 switch
-```
+```go
 switch val_expr {
 	case val1:
 		code_block
@@ -291,7 +291,7 @@ switch {
 1. 迭代式：`for init; cond; step {`
 1. 遍历式：`for index, val := range seq {`
 
-```
+```go
 for i := 0; i < 10; i++ {}
 for i,j := 0,len-1; i < j; i,j = i+1,j-1 {}	// 支持多重赋值，不支持以逗号为间隔的多个赋值语句
 for cond_expr {}	// 省去init 和stop，条件循环
@@ -314,7 +314,7 @@ goto label
 
 
 ## 函数
-```
+```go
 func func_name([params]) [(results)] {
 	// func_body
 }
@@ -329,12 +329,12 @@ results 是返回值列表，逗号分隔，每个返回如果除了类型还写
 defer 的时机就是在这个赋值和真正返回之前执行的，如果有多个defer，则后进先出依次执行
 
 ### 内建函数
-```
+```go
 func new(Type) *Type
 ```
 用来分配内存，参数是一个类型，返回值是一个指向新分配类型零值的指针
 
-```
+```go
 make(type, count, capacity)
 ```
 为 slice，map 或 chan 类型分配内存和初始化一个对象，返回类型的引用
@@ -344,7 +344,7 @@ capacity是预留的单元数
 
 ## 类型扩展
 类型重命名并扩展（下面扩展了len()方法）
-```
+```go
 type name string
 func (n name) len() int {
 return len(n)
@@ -352,7 +352,7 @@ return len(n)
 ```
 
 定义结构体及其方法
-```
+```go
 type Person struct {
 	name string  //注意后面不能有逗号
 	age  int
@@ -368,7 +368,7 @@ func (p *Person) GetAge( ) (int, error) {
 结构体实例的创建，可以使用new 内建函数，也可以使用大括号的方式（此种方式有2 种具体形式：按序给值，也可以按name-val 给值）
 
 定义函数类型并扩展（下面扩展了add方法）
-```
+```go
 type handler func(name string) int
 func (h handler) add(name string) int {
 return h(name) + 10
@@ -376,7 +376,7 @@ return h(name) + 10
 ```
 
 定义接口
-```
+```go
 type IPerson interface {
 	Run()
 	Name() string
@@ -384,14 +384,14 @@ type IPerson interface {
 ```
 结构体和函数对象都可以实现接口（只需要实现其所有定义的方法即可）
 godoc 命令支持额外参数 -analysis ，能列出都有哪些类型实现了某个接口
-```
+```go
 var p IPerson
 p = Person{"taozs", 18} //或者：&Person{"taozs", 18}
 ```
 接口中可以包含其他接口，但不能递归包含
 空接口interface{}，所有其它数据类型都实现了空接口
 类型检测：
-```
+```go
 switch t := x.(type) {
 	case int:
 		code_block	// t has type int
@@ -402,7 +402,7 @@ switch t := x.(type) {
 这里的每个case 不能写多个类型，否则就服务完成类型的转换（即还是接口类型）
 类型断言 x.(T)
 接口类型断言到具体类型
-```
+```go
 var p2 Person = p.(Person)	// 这种推断失败会先panic
 p2, ok := p.(Person)		// 这种推断失败ok 为false，p2 为nil
 ```
@@ -412,7 +412,7 @@ p2, ok := p.(Person)		// 这种推断失败ok 为false，p2 为nil
 ## IO
 ### io 包
 提供IO 的基本接口
-```
+```go
 type Reader interface {
     Read(p []byte) (n int, err error)
 }
@@ -509,7 +509,7 @@ varb 前可以指定`[i]`，来显式指定使用第i 个参数（后面如果�
 1. 提供的所有操作数必须为指针或者实现了Scanner接口
 1. Fscan等函数可能会在返回前多读取一个rune，这导致多次调用这些函数时可能会跳过部分输入。只有在输入里各值之间没有空白时，会出现问题
 
-```
+```go
 type Formatter interface {
     Format(f State, c rune)
 }
@@ -595,7 +595,7 @@ ReadFrom(io.Reader)：实现io.ReaderFrom 接口，不断读数据直到 EOF 或
 
 #### ReadWriter
 实现了io.ReadWriter 接口
-```
+```go
 type ReadWriter interface {
     Reader
     Writer
@@ -625,7 +625,7 @@ close(ch)	// 关闭将变成只读的管道
 有缓冲，满才会堵塞写，空才会堵塞读
 
 #### select
-```
+```go
 select {
 	case chanStmt:
 		code_block
@@ -648,7 +648,7 @@ select 中管道出现问题并不会报错，只不过不会走该case
 一个目录下的一个或多个go 文件组成，每个源文件都是以一条package 声明语句开始
 
 ### 导入包
-```
+```go
 import "pkg_name"
 // multi-import
 import (
@@ -697,7 +697,7 @@ dir 是测试包所在目录
 
 ### 功能测试
 函数命名：
-```
+```go
 func TestXyz(t *Testing.T) {
 	t.Log()			// 记录日志
 	t.Logf()
@@ -716,7 +716,7 @@ func TestXyz(t *Testing.T) {
 
 ### 压力测试
 函数命名：
-```
+```go
 func BenchmarkXyz(b *testing.B) {
 	b.ReportAllocs()	//启用内存使用分析
 	b.StopTimer() //调用该函数停止压力测试的时间计数，因为默认是打开计时的
@@ -748,7 +748,7 @@ func BenchmarkXyz(b *testing.B) {
 ### 样例测试
 用来看运行中，输出的内容是否与预期的一样
 示例函数需要归属于某个 包/函数/类型/类型 的方法，具体命名规则如下：
-```
+```go
 func Example() { ... }  # 被测试对象是整个包
 func ExampleF() { ... }  # 被测试对象是函数F
 func ExampleT() { ... }  # 被测试对象是类型T
@@ -763,7 +763,7 @@ func ExampleT_M_suffix() { ... }
 go doc 工具会解析示例函数的函数体作为对应 包/函数/类型/类型的方法 的用法。
 
 ### 用于测试的Main函数
-```
+```go
 func TestMain(m *testing.M) {
 	// call flag.Parse() here if TestMain uses flags
 	os.Exit(m.Run())
@@ -772,7 +772,7 @@ func TestMain(m *testing.M) {
 
 ### setup or teardown
 testing 并没有提供这样的函数，但可以通过Subtests 的方式来进行实现：
-```
+```go
 func TestFoo(t *testing.T) {
     // <setup code>
     t.Run("A=1", func(t *testing.T) { ... })
@@ -782,7 +782,7 @@ func TestFoo(t *testing.T) {
 }
 ```
 Run 方法的第一个参数是Subtests 的name，第二个参数是一个匿名方法，这个方法将在一个独立的goroutine 中运行，并block 住，直到所有并行Subtests 都执行结束。
-```
+```go
 go test -run ''      # Run all tests.
 go test -run Foo     # Run top-level tests matching "Foo", such as "TestFooBar".
 go test -run Foo/A=  # For top-level tests matching "Foo", run subtests matching "A=".
@@ -796,14 +796,14 @@ go test -run /A=1    # For all top-level tests, run subtests matching "A=1".
 #### 黑盒测试
 testing/quick包实现了帮助黑盒测试的实用函数 Check和CheckEqual。
 
-```
+```go
 Check(f, config *Config)
 ```
 第1个参数是要测试的只返回bool值的黑盒函数f，Check会为f的每个参数设置任意值并多次调用，如果f返回false，Check函数会返回错误值 `*CheckError`。
 第2个参数 可以指定一个quick.Config类型的config，传nil则会默认使用quick.defaultConfig。quick.Config结构体包含了测试运行的选项。
 
 CheckEqual函数是比较给定的两个黑盒函数是否相等，函数原型如下：
-```
+```go
 func CheckEqual(f, g interface{}, config *Config) (err error)
 ```
 
@@ -820,7 +820,7 @@ testing/iotest包中实现了常用的出错的Reader和Writer，可供我们在
 
 #### HTTP测试
 net/http/httptest包提供了HTTP相关代码的工具，我们的测试代码中可以创建一个临时的httptest.Server来测试发送HTTP请求的代码:
-```
+```go
 ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
  fmt.Fprintln(w, "Hello, client")
 }))
@@ -841,7 +841,7 @@ fmt.Printf("%s", greeting)
 ```
 
 还可以创建一个应答的记录器httptest.ResponseRecorder来检测应答的内容：
-```
+```go
 handler := func(w http.ResponseWriter, r *http.Request) {
  http.Error(w, "something failed", http.StatusInternalServerError)
 }

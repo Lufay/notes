@@ -14,9 +14,11 @@ status
 
 ### 表
 创建：
-```
+```sql
 CREATE table <表名> (
-     <字段名1> <类型1> [,..<字段名n> <类型n>]
+     <字段名1> <类型1> primary key auto_increment
+	 ,<字段名2> <类型2> default ''
+	 [,.. , <字段名n> <类型n>]
 )[engine=InnoDB default charset=utf8];
 ```
 显示：`describe 'tablename';`（可以缩写为desc，是对`SHOW columns from`的简略）
@@ -31,7 +33,7 @@ CREATE table <表名> (
 清空（快，无日志）：`TRUNCATE TABLE '表名'`
 
 #### 表和字段的限制项
-```
+```sql
 primary key
 foregin key(<字段名>) references tableName(filedName) [on delete|update casecade | no action]
 not null
@@ -43,7 +45,7 @@ auto_increment
 `primary key`相当于unique和not null
 
 ### DML
-```
+```sql
 SELECT [DISTINCT] <字段1，字段2，...>
 FROM <表名1> JOIN <表名2> ON <条件表达式>
 WHERE <条件表达式>
@@ -73,11 +75,15 @@ offset 表示从第offset条记录之后开始取（第一条是偏移是0），
 	nowait子句的作用就是避免进行等待，当发现请求加锁资源被锁定未释放的时候，直接报错返回（“资源正忙”）
 	若使用了skip locked，则可以越过锁定的行，不报告异常
 
-```
+```sql
 insert into <表名> [( <字段名1>[,... <字段名n>])] values ( <值1> )[,... ( <值n> )] [ON DUPLICATE KEY update 字段=新值,...]
+
 insert into <表名> [( <字段名1>[,... <字段名n>])] <SELECT 语句> [ON DUPLICATE KEY update 字段=新值,...]
+
 delete from <表名> where 表达式
+
 update <表名> set 字段=新值,... where <条件>
+
 replace <表名> set 字段=新值,... where <条件>
 ```
 replace 是insert + update，表示如果key 冲突则覆盖，否则insert
@@ -85,7 +91,7 @@ replace 是insert + update，表示如果key 冲突则覆盖，否则insert
 ### 表达式
 #### 条件表达式
 格式1：
-```
+```sql
 CASE <字段>
 	WHEN <字段值1> THEN <返回值1>
 	WHEN <字段值2> THEN <返回值2>
@@ -93,7 +99,7 @@ CASE <字段>
 END
 ```
 格式2：
-```
+```sql
 CASE
 	WHEN <条件表达式1> THEN <返回值1>
 	WHEN <条件表达式2> THEN <返回值2>
@@ -104,7 +110,7 @@ END
 多个WHEN 不会判断互斥，第一个满足就返回
 
 ### 触发器
-```
+```sql
 CREATE trigger tri_name
 before/after insert/update/delete
 on tb_name for each row
@@ -115,7 +121,7 @@ tri_body
 在进行delete时，可以用old引用原有的记录（只读），
 没有这些前缀表示当前的记录
 `tri_body`如果是单条语句可以直接写；如果是多条语句，需要使用`BEGIN ... END`，因为其中也要使用`;`作为语句分隔，因此为了和全局的`;`相区分，就必须使用delimiter调整全局分隔符：
-```
+```sql
 delimiter //
 CREATE trigger ...
 begin
