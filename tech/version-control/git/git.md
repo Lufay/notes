@@ -1,5 +1,8 @@
 [TOC]
 
+[练习](https://git-school.github.io/visualizing-git/)
+[学习&练习](https://learngitbranching.js.org/?locale=zh_CN)
+
 ## 概述
 ### 概念
 + 工作区（workspace）：编辑的目录
@@ -70,7 +73,7 @@ git status
 ### 版本
 每次提交都会生成一个sha1的commit id
 在命令中可以使用
-HEAD表示当前版本，也就是最近一次提交的那个版本（可以将HEAD看做一个指针，总指向当前版本）
+HEAD 是一个指针，指向当前的工作版本，commit/checkout/reset 都会移动该指针，如果HEAD没有指向一个分支的最新节点，则认为HEAD 是游离状态的
 也可以给出commit id（不用写全，给出前几位即可），其也可以替代上面的HEAD。
 
 <rev>^表示上个版本
@@ -81,8 +84,8 @@ HEAD表示当前版本，也就是最近一次提交的那个版本（可以将H
 版本集合
 <rev>，表示包括<rev>及其祖先节点
 ^<rev>，表示从集合中剔除<rev>及其祖先节点
-<rev1>..<rev2>，表示从^<rev1> <rev2>，即从<rev2>及其祖先节点的集合中剔除<rev1>及其祖先节点（如果rev1或rev2缺省，则表示HEAD）
-<rev1>...<rev2>，表示从<rev1>及其祖先节点和<rev2>及其祖先节点的集合中剔除他们的公共祖先节点（如果rev1或rev2缺省，则表示HEAD）
+<rev1>..<rev2>，前开后闭集合，表示^<rev1> <rev2>的交集，即从<rev2>及其祖先节点的集合中剔除<rev1>及其祖先节点（如果rev1或rev2缺省，则表示HEAD）
+<rev1>...<rev2>，前闭后闭集合，表示从<rev1>及其祖先节点和<rev2>及其祖先节点的集合中剔除他们的公共祖先节点（如果rev1或rev2缺省，则表示HEAD）
 <rev>^@，表示<rev>的祖先节点（不包括自身）
 <rev>^!，表示只包括<rev>，剔除其所有祖先结点
 
@@ -183,14 +186,20 @@ Git用`<<<<<<<`，`=======`，`>>>>>>>`标记出不同分支的内容，将冲�
 如果不想解决此次merge冲突，退回到merge前状态，使用`git reset --merge`
 
 ```
-git rebase [--fork-point <fp>] [--onto <newbase>] [<upstream> [<branch>]]
+git rebase -i [startpoint] [endpoint]
 ```
-如果指定<branch>，将先进行git checkout 切换到该分支；
+以交互模式合并多次提交（从startpoint 到endpoint 前开后闭区间）合并为一次提交，endpoint 默认为HEAD
+交互模式会分成2步：第一步先编辑合并方式，第二部编辑合并后的新提交信息
+
+```
+git rebase [--onto <newbase>] [<upstream> [<branch>]]
+```
+该命令会把当前分支相对于upstream 分支（从checkout fork之后的）所有提交暂存起来，然后在upstream 分支的onto位置开始提交，如果遇到冲突，该过程将中止，需要手动解决冲突，而后git rebase --continue 继续；或者git rebase --skip 跳过造成冲突的commit；git rebase --abort 将终止rebase，并回到原分支。
+如果未指定<branch>，则使用当前分支，若指定则先切换（switch）到该分支；
 如果<upstream>未指定，将使用当前分支配置中的remote 和 merge 项；
-如果指定fork-point，则<fp>..HEAD，否则<upstream>..HEAD 的改动都将被保存起来；
-如果指定onto，当前分支将被reset 到<newbase>，否则reset 到 <upstream>；
-而后将上面保存起来的若干个提交重新应用于当前分支，已经完成相同的文本改动将被跳过；
-如果遇到冲突，该过程将中止，需要手动解决冲突，而后git rebase --continue 继续；或者git rebase --skip 跳过造成冲突的commit；git rebase --abort 将终止rebase，并回到原分支。
+如果指定onto，当前分支将被reset 到<newbase>指定的位置，否则默认在upstream 最新位置开始提交。
+*注意：upstream分支并不会推进，所以当完成rebase后，一般需要将upstream 进行merge*
+*由于当前分支已经被切换到新提交的这些commit上了，所以原来的那些提交由于失去了分支指针，被认为是废弃的，会被gc 清理掉*
 
 ```
 git cherry-pick <commit>...
@@ -322,7 +331,7 @@ git push不会推送标签(tag)，除非使用--tags选项
 --recurse-submodules=check|on-demand
 
 #### 拉取远程库
-如果远程版本已更新，push失败，就要先拉取远程库并试图合并（默认的行为是fetch+merge，如果使用-r/--rebase 选项，则使用fetch+rebase 命令）
+如果远程版本已更新，push失败，就要先拉取远程库并试图合并（默认的行为是fetch+merge，如果使用-r/--rebase 选项，则使用fetch+rebase 命令，即将本地变更重新提交到分支的最新commit后面）
 ```
 git pull [$remote_repo [+][$remote_b_name[:$local_b_name]]]
 ```
@@ -453,6 +462,7 @@ git config --global alias.co checkout
 git config --global alias.br branch
 git config --global alias.unstage 'reset HEAD'
 git config --global alias.lg "log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
+git config --global pull.rebase true
 ```
 要删除别名，直接吧对应的行删掉即可。
 
