@@ -1,11 +1,134 @@
 # UML 绘图
+注释
 ```
 @startuml
 ' 单行注释
+
 /' 多行注释
 '/
+
 @enduml
 ```
+
+切分多图
+```
+@startuml ./image.png
+...
+newpage
+...
+newpage
+...
+@enduml
+```
+2个newpage 就可以切分出3个图：./image.png、./image001.png、./image002.png
+
+## 用例图
+### 用例
+```
+("用例1") <<interface>>
+("用例1") as (uc1) <<interface>>
+
+usecase "用例2"
+usecase ("用例2") as us2
+```
+两种格式，都可以使用别名
+interface 非必选项，可以指定构造型
+
+#### 用例文本
+可以使用分隔线
+```
+== 双行分隔
+==TEXT== 可指定文本
+
+__ 略粗分隔
+__TEXT__ 可指定文本TEXT
+
+-- 最细分隔
+--TEXT-- 可指定文本TEXT
+
+.. 虚线
+..TEXT.. 可指定文本TEXT
+```
+
+### actor
+```
+actor1 -> (uc1)
+actor1 -> (uc1) : LABEL
+
+actor2 <<interface>>
+:actor2: as ac2 <<interface>>
+
+actor "actor3"
+actor "actor3" as ac3
+```
+3种格式
++ 第一种是直连用例
++ 后两者可以独立定义actor，冒号的作用和第三种的引号一样，为了避免actor名字中的空格别误识别，可以使用别名
++ interface 非必选项，可以指定构造型
++ 默认火柴人样式，可以改为用户头像样式（`skinparam actorStyle awesome`）或透明人样式（`skinparam actorStyle hollow`）
+
+### 标注
+```
+note "text" as N
+(uc) .. N
+
+note left of ac : text
+note right of ac : text
+note top of (uc) : text
+note bottom of (uc) : text
+
+note left of (uc)
+text
+end note
+```
+三种格式
++ 第一种可以声明一个独立的note 节点
++ 第二三种都是依附在一个用例或actor 节点上，前者是单行文本，后者是多行文本
+
+### 连接用例
+```
+->	实线箭头, 默认水平
+-	不带箭头
+-->	实线箭头, 默认垂直（越多-，长度越长）
+--	不带箭头. - 越多线越长
+--> 的反向连接可以为 <--. 其它同此
+-left-> 指向左侧的箭头
+-right-> 指向右侧的箭头
+-up-> 指向上的箭头
+-down-> 指向下的箭头
+
+.>, 虚线箭头, 线较短
+. 不带箭头
+..>, 虚线箭头, 线较长. .. 不带箭头. . 越多线越长
+```
+
+### 继承扩展
+```
+:main admin: as Admin
+(use app) as (Use)
+User <|-- Admin
+(Start) <|- (Use)
+```
+用例和actor 都可以继承扩展
+
+## 模块包
+```
+package pack_name {
+	...
+}
+
+rectangle pack_name {
+    ...
+}
+```
+2种方式可以定义一个模块包，包里面可以定义图和节点
+
+## 类图
+<https://plantuml.com/zh/class-diagram>
+
+## 活动图
+从V7947开始提出一种全新的、更好的语法格式和软件实现供用户使用(beta版)
+<https://plantuml.com/zh/activity-diagram-beta>
 
 ## 时序图
 不必显式声明参与者
@@ -224,3 +347,24 @@ note right of
 note top of
 note bottom of
 ```
+
+## 对象图
+<https://plantuml.com/zh/object-diagram>
+
+## 组件图
+<https://plantuml.com/zh/deployment-diagram>
+
+## 部署图
+<https://plantuml.com/zh/deployment-diagram>
+
+## 甘特图
+<https://plantuml.com/zh/gantt-diagram>
+
+## 思维导图
+<https://plantuml.com/zh/mindmap-diagram>
+
+## 工作分解结构（WBS）
+<https://plantuml.com/zh/wbs-diagram>
+
+## 实体关系图（ER图）
+<https://plantuml.com/zh/ie-diagram>

@@ -22,7 +22,7 @@ test:test.o test1.o
 %.o:%.c
     gcc -o $@ $^
 ```
-% 从匹配模式来说跟shell 下的`*` 是一致的，差别是，它会根据命中目标部分进行映射关联。具体的就是它首先命中test，然后执行`gcc -o test.o test.c` 然后命中test1，然后执行`gcc -o test1.o test1.c`
+% 从匹配模式来说跟shell 下的`*` 是一致的（最长匹配），差别是，它会根据命中目标部分进行映射关联。具体的就是它首先命中test，然后执行`gcc -o test.o test.c` 然后命中test1，然后执行`gcc -o test1.o test1.c`
 
 ## 变量
 ### Makefile 变量

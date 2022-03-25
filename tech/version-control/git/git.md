@@ -472,6 +472,8 @@ git config --global pull.rebase true
 ### .gitignore
 用于说明不需要版本控制的文件（Specifies intentionally untracked files to ignore）
 注意其英文表述，是忽略untracked的文件，也就是说一旦文件已经被tracked，那么就无法被忽略
+[生成网站](https://www.toptal.com/developers/gitignore)
+
 #### 格式
 1. 支持`#`作为行注释
 1. 以`/`开头表示只匹配从项目根目录开始的指定文件或目录，否则匹配从项目任意相对目录开始的指定文件或目录

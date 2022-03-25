@@ -2226,6 +2226,7 @@ sys.modules 变量是一个字典，它保存了已经加载的模块名和模�
 #### 1.1 搜索路径
 想要成功导入模块，就要确保该模块在搜索路径中可以找到
 搜索路径在启动Python时，通过环境变量PYTHONPATH（冒号分隔的一组路径）读入。在解释器启动后，搜索路径被保存在sys.path 变量里，该变量是一个字符串列表，可以进行动态修改
+sys.path 默认值是第一个元素是空串，表示当前目录，而后是PYTHONPATH 导入的各个路径，然后是自带的标准库目录，最后是通过 pip 等命令安装的第三方库的目录
 搜索时是按照该列表顺序进行搜索，如果找到就不再搜索后面的路径
 
 还支持从zip 归档文件中导入模块（.py, .pyc, .pyo），只需要将归档文件当做一个目录即可
@@ -2901,6 +2902,8 @@ BsdDbShelf(dict, protocol=None, writeback=False)
 
 ##### 6.4.1 MySQLdb
 [下载](https://pypi.python.org/pypi/MySQL-python/) [文档](http://mysql-python.sourceforge.net/MySQLdb.html)
+底层直接调用了 MySQL 提供的原生库作为处理网络的机制，因此不能享受 gevent 的性能红利。不过此库已经很久没有维护，并且也不支持 python3，因此现在不建议使用此库。
+一个比较好的替代方案是 pymysql，它支持的特性更多，并且使用纯 python 编写。
 
 模块函数：
 + connect(host, user, passwd[, db, port, charset])
