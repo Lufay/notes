@@ -8,4 +8,4 @@ notes with markdown
 2. literature: 文学
 3. essay: 笔记
 4. tect: 技术
-5. sgs: 三国杀
+5. game: 游戏
