@@ -1,4 +1,4 @@
-# 半人马酋长
+# 半人马酋长Bradwarden Centaur Warchief
 
 ## 出装
 吃，拳套，树枝（魔杖），圆盾

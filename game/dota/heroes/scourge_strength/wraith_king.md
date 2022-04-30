@@ -1,4 +1,4 @@
-# 骷髅王
+# 骷髅王skeleton_king
 <http://dota.uuu9.com/201003/59825.shtml>
 
 ## 出装
