@@ -1,4 +1,4 @@
-# 月之女祭司
+# 月之女祭司Priestess of the Moon
 
 ## 出装
 吃喝，袜子，头环

@@ -1,4 +1,4 @@
-# 黑曜毁灭者
+# 黑曜毁灭者Obsidian Destroyer
 
 ## 出装
 吃，树枝，斗篷
