@@ -84,10 +84,11 @@ Python 的主提示符( >>> )和次提示符( ... )，其功效类似于SHELL中
 退出交互：使用exit()函数或者输入EOF（Linux下的Ctrl+D，Windows下的Ctrl+Z）
 
 #### 1.1 输出
+```py
+print var1, var2, var3  # Python 2 print是关键字
+print(var1, var2, var3) # Python 3 print是一个正常的函数
 ```
-print var1, var2, var3
-```
-其中var可以是字面值也可以是变量，用逗号分隔的各部分将显示为一个空格分隔，最后换行
+其中var可以是字面值也可以是变量，用逗号分隔的各部分将显示为一个空格分隔，最后换行（Python3 可以通过sep=' ' 和end='\n' 参数来指定）
 如果不想要换行，可以在语句末尾加上一个逗号“,”即可。结果将是以空格收尾，而不是换行收尾。
 单独的一个print语句，将打印一个空行
 
@@ -97,13 +98,13 @@ print var1, var2, var3
 str() 目的在于可读性较好的字符串表示
 repr() 目的在于可重建对象的字符串表示，对于一个对象obj，一般 obj == eval(repr(obj))
 
-
 print 语句相当于函数`sys.stdout.write('xxxx\n')'`，只不过后者需要import sys模块。
 
 ##### 输出重定向
-```
+```py
 logfile = open('/tmp/mylog.txt', 'a')
-print >> logfile, 'Fatal error: invalid input!'
+print >> logfile, 'Fatal error: invalid input!'     # Python 2
+print("critical error", file=sys.stderr)            # Python 3
 logfile.close()
 ```
 这里logfile，还可以是 sys.stderr （不需要打开，直接 import sys 即可）
@@ -537,83 +538,6 @@ E表示程序自身异常
 
 `fail(msg=None)`		直接fail掉
 
-##### nose
-[参考](http://nose.readthedocs.io/en/latest/)
-###### 安装
-```
-easy_install nose
-pip install nose
-python setup.py install
-```
-
-###### 测试执行
-```
-nosetests [options] [test_case]
-```
-对于options，除了在命令行指定，还可以通过项目中的setup.cfg 配置文件或用户主目录的.noserc 或 nose.cfg 配置文件进行指定，该文件是一个ini 格式的配置文件，将nosetests 的配置放在[nosetests] 的section 下，例如：
-```
-[nosetests]
-verbosity=3
-with-doctest=1
-```
-如果有这些配置文件，其中的配置将被组合，也可以使用-c 选项指定（可以使用多次以指定多个，其中的配置将被组合）
-如果某次执行nosetests 时想要忽略配置文件，可以设置`NOSE_IGNORE_CONFIG_FILES` 环境变量
-
-`test_case`如果缺省，则默认在当前目录下（可以使用-w 选项指定工作目录）进行测试用例的发现
-否则，可以指定为：
-1. 文件或目录名（绝对或相对路径）
-1. 模块名
-1. 文件或模块名:函数名
-1. 文件或模块名:类名
-1. 文件或模块名:类名.方法名
-
-除了使用nosetests 脚本，还可以在测试脚本里导入nose 模块使其通过nose 执行：
-```
-import nose
-nose.main()
-```
-执行并打印结果，脚本exit 0 表示成功，1 表示失败
-```
-import nose
-result = nose.run()
-```
-如果成功，result 为True，否则为False 或抛出一个未捕获的异常
-
-如果需要使用nose 的插件，只要安装即可，插件将给nosetests 增加命令行参数，为了确认插件是否安装，可以使用：
-```
-nosetests --plugins
-```
-还可以使用-v 或-vv 获得每个插件的更详细信息
-如果使用`nose.main(plugins=[])`或`nose.run(plugins=[])`，可以指定一个使用的插件列表
-
-###### 测试用例发现
-nose会自动识别源文件，目录或包中的测试用例。任何符合正则表达式`(?:\b|_)[Tt]est``(?:^|[\\b_\\.-])[Tt]est`（可以使用-m 选项进行更改）的类、函数、文件或目录，以及TestCase的子类都会被识别并执行。
-*注意：nose 不会包含那些可执行的文件，所以要想要这些文件被包含，就需要移除可执行位，或使用–exe选项*
-
-###### 测试用例编写
-在测试用例中可以使用assert或raise AssertionErrors
-
-nose支持setup和teardown函数，在测试用例的前后执行。四种作用域：
-1. package。可以在`__init__.py`中定义，setup方法名可以是setup, `setup_package`, setUp, setUpPackage，而teardown方法名可以是teardown, `teardown_package`, tearDown, tearDownPackage
-1. module。在模块内定义setup, `setup_module`, setUp, setUpModule，和/或teardown, `teardown_module`, tearDownModule
-1. class。除了继承自unittest.TestCase 的类，其他被发现的测试类也可以定义setUp 和tearDown 方法使之在每个测试方法之前和之后执行；在类中还可以定义`setup_class`, setupClass, setUpClass, setupAll, setUpAll 和`teardown_class`, teardownClass, tearDownClass, teardownAll, tearDownAll 类方法，使之在整个类的加载前和后执行
-1. function。任何符合正则的函数都会被包装成FunctionTestCase，可以修改函数对象的setup 和teardown 属性，也可以通过`with_setup`这个装饰器进行设置
-```
-def setup_func():
-    "set up test fixtures"
-
-def teardown_func():
-    "tear down test fixtures"
-
-@with_setup(setup_func, teardown_func)
-def test():
-    "test ..."
-```
-
-###### 测试用例批量生成
-可以将测试函数和方法做成生成器。这个生成器必须yield 一个tuple，这个tuple 的第一个元素必须是一个可调用对象，剩下的参数是传给这个可调用对象的参数。
-
-
 #### 4.2 调试器
 pdb，支持（条件）断点，逐行执行，检查堆栈。还支持事后调试。
 可以在执行Python时加上-m pdb选项（python -m pdb a.py args），进行调试，断点是在程序执行的第一行之前。
@@ -641,25 +565,27 @@ u/d		将当前栈框上移/下移
 logging模块
 线程安全
 
-```
+```py
 import logging
 logging.basicConfig(
-    filename = 'xxx.log', filemode = 'a',
+    filename = 'xxx.log', filemode = 'a', encoding='utf-8',
     datefmt = '%Y-%m-%d %H:%M:%S %f',
     format = '%(levelname)s %(asctime)s [%(funcName)s:%(lineno)d] %(message)s',
     level = logging.DEBUG
 )
 ```
+其被设置为一次性的配置，只有第一次调用会进行操作。
 配置：
 filename：   用指定的文件名创建FiledHandler，日志会被存储在该文件中。
 filemode：   文件打开方式，在指定了filename时使用这个参数，默认值为“a”还可指定为“w”。
+encoding:   文件编码，Python3.9 添加该参数
 datefmt：    指定日期时间格式，同time.strftime()。
-format：      指定日志显示格式（默认：'%(levelname)s:%(name)s:%(message)s'）。
-level：        设置rootlogger的日志级别（只有该级别或以上级别的日志才会打印）
+format：      指定日志显示格式，默认：'%(levelname)s:%(name)s:%(message)s'
+level：        设置rootlogger的日志级别（只有该级别或以上级别的日志才会打印）默认WARNING
 stream：     用指定的stream创建StreamHandler。可以指定输出到sys.stderr, sys.stdout或文件，默认为sys.stderr。当设置了filename之后，该配置忽略
 
 ##### 日志的级别有
-CRITICAL > ERROR > WARNING（默认） > INFO > DEBUG > NOTSET
+CRITICAL > ERROR > WARNING > INFO > DEBUG > NOTSET
 除此之外，还可以自定义日志级别
 
 CRITICAL：致命，程序无法继续运行
@@ -697,7 +623,7 @@ logging.critical('critical message')
 
 ##### 四个概念
 + Logger：负责接收用户message，完成打印；可以添加多个Handler和Filter
-+ Handler：负责管理一个日志target；可以设置一个Formatter和添加多个Filter
++ Handler：负责管理一个日志target，可以根据不同的级别分发到不同地方；可以设置一个Formatter和添加多个Filter
 + Formatter：负责日志的格式
 + Filter：负责日志过滤（基于logger的name）
 
@@ -706,13 +632,13 @@ logging.critical('critical message')
 ```
 logging.getLogger([name])
 ```
-name是一个Logger的标识key，因为Logger组成一个树形的层次关系，所以name字符串中可以用 . 划分层次。默认有一个root Logger，所有其他的Logger都默认在root之下，如果name缺省获得的就是root Logger。子Logger继承父Logger的配置。
+name是一个Logger的标识key，因为Logger组成一个树形的层次关系，所以name字符串中可以用`.`划分层次。默认有一个root Logger，所有其他的Logger都默认在root之下，如果name缺省获得的就是root。子Logger继承父Logger的配置（可以通过将记录器的 propagate 属性设置为 False 来关闭传播）。一般可以使用`__name__`模块名作为标识key，作为模块级logger
 
 一个Logger可以拥有多个Handler，从而可以同时输出到多个target
 
 方法：
-上面5个打印函数
-setLevel(lel)：设置打印最低日志级别
+上面5个打印函数实质上就是调用root Logger 的对应方法，此外还有exception()用法和前5个一样，差别是会记录当前的堆栈追踪，若自定义的日志级别，可以使用log()，它将日志级别作为显式参数
+setLevel(lel)：设置打印最低日志级别，低于此级别则不会下发给其下面的handler
 addHandler(hd)：增加Handler
 removeHandler(hd)：删除Handler
 addFilter(filt)：增加Filter
@@ -723,7 +649,7 @@ removeFilter(filt)：删除Filter
 
 ###### Handler
 获得一个Handler：
-```
+```py
 logging.FileHandler('/tmp/test.log')
 
 logging.StreamHandler()
@@ -732,7 +658,7 @@ RotatingFileHandler('myapp.log', maxBytes=10*1024*1024, backupCount=5)
 ```
 
 方法：
-setLevel(lel)：设置打印最低日志级别
+setLevel(lel)：设置打印最低日志级别，低于此级别则该handler不会处理
 setFormatter(formatter)：  给这个handler选择一个Formatter
 addFilter(filt)：增加Filter
 removeFilter(filt)：删除Filter
@@ -779,8 +705,9 @@ close()：从handler的map中清除该handler
 ###### Formatter
 获得一个Formatter：
 ```
-logging.Formatter(fmt=None, datefmt=None)
+logging.Formatter(fmt=None, datefmt='%Y-%m-%d %H:%M:%S', style='%')
 ```
+style 是Python3.2 新加入的参数，可以是 `％`，`{` 或 `$` 之一（`%` 格式见上，`{`格式与str.format() （使用关键字参数）兼容，`$`格式符合 string.Template.substitute()）
 
 ###### Filter
 获得Filter：
@@ -788,88 +715,113 @@ logging.Formatter(fmt=None, datefmt=None)
 logging.Filter('mylogger.child1.child2')：通过Logger标识key的前缀来完成过滤
 ```
 
-##### 配置文件
+##### 配置
+```py
+import logging
+import logging.config
+
+LOGGING_CONFIG = {
+    "version": 1,       # 模式版本，当前有效值只能为1
+    "formatters": {
+        "default": {
+            'format':'%(asctime)s %(filename)s %(lineno)s %(levelname)s %(message)s',
+        },
+        "plain": {
+            "format": "%(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "INFO",
+            "formatter": "default",
+        },
+        "console_plain": {
+            "class": "logging.StreamHandler",
+            "level":logging.INFO,
+            "formatter": "plain"
+        },
+        "file":{
+            "class": "logging.FileHandler",
+            "level":20,
+            "filename": "./log.txt",
+            "formatter": "default",
+        }
+    },
+    "loggers": {
+        "console_logger": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "console_plain_logger": {
+            "handlers": ["console_plain"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "file_logger":{
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": False,
+        }
+    },
+    "disable_existing_loggers": True,   # 该配置默认是True，表示此前配置的除root 之外的loggger 都将失效
+}
+
+# 使用文件配置，disable_existing_loggers 默认是True
+logging.config.fileConfig("logger.conf", disable_existing_loggers=True)
+# 使用字典配置
+logging.config.dictConfig(LOGGING_CONFIG)
+
+logger = logging.getLogger("example01")
 ```
+也可以使用YAML 格式读入字典配置
+```conf
+# 列出对象标识key，若getLogger的key 未配置，则使用root logger
 [loggers]
 keys=root,simpleExample
 [handlers]
-keys=consoleHandler
+keys=consoleHandler,hand01,hand02
 [formatters]
-keys=simpleFormatter
+keys=simpleFormatter,form01,form02
+
+# 下划线后面的是标识key
+# propagate 是否继承父类的log信息，0:否 1:是
 [logger_root]
 level=DEBUG
 handlers=consoleHandler
 [logger_simpleExample]
 level=DEBUG
-handlers=consoleHandler
+handlers=hand01,hand02
 qualname=simpleExample
 propagate=0
+
+# args handler初始化函数参数
 [handler_consoleHandler]
 class=StreamHandler
 level=DEBUG
 formatter=simpleFormatter
 args=(sys.stdout,)
-[formatter_simpleFormatter]
-format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
-datefmt=
-```
-```
-#logger.conf
-###############################################
-# [logger_xxxx] xxxx是loggers中的key，也是getLogger使用的key
-# qualname  logger名称，应用程序通过 logging.getLogger获取。对于不能获取的名称，则记录到root模块。
-# propagate 是否继承父类的log信息，0:否 1:是
-###############################################
-[loggers]
-keys=root,example01,example02
-[logger_root]
-level=DEBUG
-handlers=hand01,hand02
-[logger_example01]
-handlers=hand01,hand02
-qualname=example01
-propagate=0
-[logger_example02]
-handlers=hand01,hand03
-qualname=example02
-propagate=0
-###############################################
-# [handler_xxxx]
-# args handler初始化函数参数
-##############################################
-[handlers]
-keys=hand01,hand02,hand03
 [handler_hand01]
-class=StreamHandler
-level=INFO
-formatter=form02
-args=(sys.stderr,)
-[handler_hand02]
 class=FileHandler
 level=DEBUG
 formatter=form01
 args=('myapp.log', 'a')
-[handler_hand03]
+[handler_hand02]
 class=handlers.RotatingFileHandler
 level=INFO
 formatter=form02
 args=('myapp.log', 'a', 10*1024*1024, 5)
-###############################################
-[formatters]
-keys=form01,form02
+
+[formatter_simpleFormatter]
+format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+datefmt=
 [formatter_form01]
 format=%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s
 datefmt=%a, %d %b %Y %H:%M:%S
 [formatter_form02]
 format=%(name)-12s: %(levelname)-8s %(message)s
 datefmt=
-```
-```
-import logging
-import logging.config
-
-logging.config.fileConfig("logger.conf")
-logger = logging.getLogger("example01")
 ```
 
 #### 4.4 配置文件
@@ -889,7 +841,7 @@ section名区分大小写，option名会统一将大写改为小写，因此不�
 
 *注：并不支持option数组格式*
 
-##### ConfigParser 模块
+##### ConfigParser 模块（Python3 改为小写的 configparser）
 该模块主要有三个类：
 RawConfigParser、ConfigParser、SafeConfigParser，前者是后者的父类，RawConfigParser 不支持%(key)s 引用，SafeConfigParser 会比ConfigParser 有更多的合法性检查。
 
@@ -922,6 +874,8 @@ hotshot：较新，C实现，生成结果时间长
 cProfile：新，C实现，分析时间长
 
 ## 第三章. 数据类型
+[内置类型](https://docs.python.org/zh-cn/3/library/stdtypes.html)
+
 ### 1. 基本数据类型
 
 #### 1.1 数值类型
@@ -977,11 +931,31 @@ float()         0.0
 
 ###### decimal
 还有一种十进制浮点数decimal，比float有着更大的取值范围或精度，但不是内建类型：
-```
+```py
 import decimal
 decimal.Decimal('1.1')  # 获得一个该类型的值
 ```
 为什么要有十进制浮点数呢，是因为float表示精度有限，而且是基于二进制的，因此即便`0.1` 这种简单的浮点数，实际上都有着精度误差，可以通过`decimal.Decimal(.1)`看到，而decimal可以构造出十进制上无误差的小数。于是，要构造这种小数就不能用浮点数来构造，而应该用字符串，即如上。同理，这种类型不能和float进行运算，可以和整数进行运算，因为和float进行运算会导致不精确的结果，污染decimal，而和整形数则不会。
+
+###### fractions.Fraction
+Python3 支持的分数运算
+实例是可哈希的，并应当被视为不可变对象
+```py
+from fractions import Fraction
+Fraction()              # 默认，分子=0,分母=1
+Fraction(16, -10)       # 会约简为Fraction(-8, 5)
+Fraction(2.25)          # Fraction(9, 4)
+Fraction('3/7')         # Fraction(3, 7)
+Fraction('-.125')       # Fraction(-1, 8)
+Fraction('7e-6')        # Fraction(7, 1000000)
+Fraction(Decimal('1.1'))    # Fraction(11, 10)
+```
+
+numerator: 最简分数形式的分子
+denominator: 最简分数形式的分母
+as_integer_ratio(): 返回由两个整数组成的元组
+limit_denominator(max_denominator=1000000): 找到并返回一个 Fraction 使得其值最接近 self 并且分母不大于 max_denominator。
+支持math.floor() math.ceil() round(number[, ndigits])
 
 ##### 1.1.5 complex（复数）
 使用j或J表示虚数的单位，实部real和虚部imag都是float
@@ -997,17 +971,6 @@ conjugate()方法：返回共轭复数
 ##### 1.1.6 相关模块
 + numbers		[数字的抽象基类](https://docs.python.org/zh-cn/3/library/numbers.html)
 + math/cmath	标准C数学函数库，前者是常规运算，后者是复数运算
-+ operator		函数形式调用操作符（不仅仅是数值运算可以，下面的容器运算也可以使用该模块）
-abs, pos(+), neg(-), add(+), sub(-), `mul(*)`, truediv(/), floordiv(//), mod(%), `pow(**)`
-inv(~), lshift(<<), rshift(>>), `and_(&)`, `or_(|)`, xor(^)
-matmul(@, 矩阵乘法)
-lt(<), le(<=), eq(==), ne(!=), ge(>=), gt(>)
-truth, `not_`, `is_`, `is_not`
-concat(+), contains(in), indexOf, countOf, getitem(索引/切片取值), setitem(索引/切片赋值), delitem(索引/切片删除)
-加上前缀i 表示对应的原地运算（比如+=），但仅对可变类型有效
-`attrgetter(*attrs)`: 返回一个函数对象，该函数接受一个对象，然后访问其多个属性，返回一个元组
-`itemgetter(*items)`: 返回一个函数对象, 该函数接受一个对象，然后访问其多个索引，返回一个元组
-`methodcaller(name, *args, **kwargs)`: 返回一个函数对象，该函数接受一个对象，然后调用其name 字符串指定的方法，参数通过后续参数指定
 + random		多种分布的伪随机数发生器
 该模块有很多直接可用的函数，但实际上这些函数都是Random这个类的方法，它们被关联到一个共享状态的实例上，当多线程需要随机数可以使用多个实例，并用jumpahead()方法确保生成不重叠的随机序列。
 这些函数以random()为基础：该函数以当前时间为随机数种子，返回`[0, 1)`中的一个随机浮点数
@@ -1061,6 +1024,8 @@ copy        提供浅拷贝copy(obj)和深拷贝deepcopy(obj)的能力（为了�
 因为python的字符串可以保存任何字符，所以对于str串更应该称为字节串；而unicode字符串才是python内部真正的字符串（不必考虑其内部表示），这也就是之所以`s->u`叫做解码decode，反之`u->s`叫做编码encode。
 通常在进行IO（包括存储和网络传输），是以字节流进行，而python进行处理的时候将其解码为Unicode串，处理完后重新编码进行IO
 
+Python3 该字符串是默认，原来的字节串需要引号前面使用b 前缀
+
 ###### raw string
 引号前面使用r 前缀（u在r前）
 字符串中的所有字符都直接按照字面值给出，不存在转义或不能打印的字符（常用于构造正则表达式import re）。
@@ -1069,8 +1034,10 @@ copy        提供浅拷贝copy(obj)和深拷贝deepcopy(obj)的能力（为了�
 ###### 三引号字符串
 三引号（三个连续的单引号或者双引号）之间的字符是一种所见即所得的字符串，因为该串中的换行，制表和引号等特殊字符无需转义。
 对于长字符串，需要跨行写的情况，如果用普通字符串，则在换行前使用"\"（此时，"\"和换行都将忽略，而不会出现在字符串中），否则会有语法错误。而使用三引号字符串，则可以直接跨多行书写（此时，换行将以"\n"保留在字符串中）。
+*注：多行字符串是从前三引号就已经开始到后三引号结束的所有字符，其中包含了换行和缩进*
 
 ###### 构造函数
+byte()              Python3 对原字节串的支持
 str()               ''（空串）（如果对对象使用该函数，则调用对象的`__str__()`方法）
 unicode()           u''（Unicode空字符串）（如果对对象使用该函数，则调用对象的`__unicode__()`方法）
 basestring()        抽象工厂函数，作用仅仅是为前两者提供父类，因此，不能调用实例化
@@ -1244,7 +1211,7 @@ list("fjal")			['f', 'j', 'a', 'l']（可将其他可迭代对象转换为列表
 ```
 range([start,] stop[, step])
 ```
-start默认为0，stop标定终止数字（结果不含该数字），step是步进值，可正可负，默认为1。它将生成从start开始的，每项递增step，最后一项小于（step为正）或大于（step为负）的列表
+start默认为0，stop标定终止数字（结果不含该数字），step是步进值，可正可负，默认为1。它将生成从start开始的，每项递增step，最后一项小于（step为正）或大于（step为负）的列表（Python3 是生成器对象）
 
 ###### 方法
 append(x)：追加一个元素
@@ -1254,7 +1221,7 @@ pop(i=-1)：删除位置为i的元素并返回之
 remove(x)：删除第一个值为x的元素，不存在则抛异常
 index(x, start=0, stop=len)：在[start:stop]范围内返回第一个值为x的元素的位置，不存在则抛异常
 count(x)：返回,值为x的元素在列表中出现的次数
-sort(cmp=None, key=None, reverse=False)：排序，cmp是一个类似cmp(x,y)的比较函数，key是一个一元函数，传入列表的每个元素，返回用于比较的key，reverse为True时，表示反序排序
+sort(cmp=None, key=None, reverse=False)：排序，cmp是一个类似cmp(x,y)的比较函数，key是一个一元函数，传入列表的每个元素，返回用于比较的key，reverse为True时，表示反序排序（Python3 移除cmp参数，作为迁移方案，提供了functools.cmp_to_key()可以将cmp函数转换为key函数）
 reverse()：反转序列
 del alist：销毁列表
 del alist[i]：删除列表的第i项（还可以删除一个切片）
@@ -1275,6 +1242,7 @@ alist[1:3] = []：切片更新操作（等号右侧必须是一个可迭代对�
 ###### 生成器表达式
 由于列表解析意味着必须生成整个列表，也就意味着可能需要占用大量的内存，而实际使用的可能仅仅是遍历其元素，而不是真的需要整个列表。于是就有了更节省内存的生成器表达式，即为列表解析中的 [] 替换为 ()（当用作函数参数时可以省略）。
 生成器表达式每次仅仅产生（yield）一个元素，非常适合于迭代。只不过，生成器表达式返回的是一个生成器（generator），也是一种迭代器。
+生成器只能迭代一次，不能多次使用，也不能使用[]、len() 进行切片和计算长度
 
 ###### array 模块
 一种受限的可变序列类型array，要求所有元素都必须是同一类型，它需要在构造时，指定它受限的类型：
@@ -1339,9 +1307,7 @@ setdefault(key, default=None)方法：有key则返回对应值（并不会修改
 get(key, default=None)方法：类似[key]，如果存在该key则返回value；如果不存在，get返回default
 key in d：判断key是否是字典的一个键
 `has_key(key)`方法：判断字典中是否有这个key（推荐使用in 运算符）
-keys()方法：返回所有key的列表
-values()方法：返回所有value的列表
-items()方法：返回一个将字典的每一项变为一个二元组组成的一个列表
+keys()、values()、items()：返回所有key、value、(k,v)二元组的列表（Python3 返回的是一个view 对象，可以及时反映出原始dict 对象的变化，该对象可迭代、支持len 和in 操作）
 iterkeys()方法：同上，只不过返回的是一个迭代子，而不是列表
 itervalues()方法：同上，只不过返回的是一个迭代子，而不是列表
 iteritems()方法：同上，只不过返回的是一个迭代子，而不是列表
@@ -1365,6 +1331,10 @@ dict.fromkeys(iterkey, value=None)函数：返回一个字典，字典的键来�
 其中：
 set([1,3,6]) 可以直接使用 {1,3,6} 构造（空集合只能用set()）
 frozenset只能使用frozenset(iterable) 进行构造
+
+集合判断重复的条件是
+1. 首先根据`__hash__`进行预判
+2. 若hash 相同，在使用`__eq__`进行等值判断
 
 ###### 集合推导
 类似于列表解析，只不过把`[]`换成`{}`
@@ -1421,18 +1391,20 @@ frozenset只能使用frozenset(iterable) 进行构造
 生成一个命名元组类，通过该类构造的元组，可以类似访问属性的方式访问成员（而不必用索引），而且其很轻量，不比普通元组占用更多内存。
 生成函数：
 ```python
-namedtuple(typename, field_names, verbose=False, rename=False)
+t = namedtuple(typename, field_names, rename=False, defaults=None, module=None)
 ```
-返回一个名为typename 的tuple的子类。（一般接受返回值的变量也命名为typename，因为typename 是类型名，但却并不是当前空间中有效的标识符，相当于返回了一个匿名类型，并起了一个别名为接受的返回值，而真实名字typename 并不能使用）
-field_names 可以是一个字符串序列，或者是一个字符串（用空格或逗号分隔）。用以表示各个成员的命名，如果命名不符合规范，且rename 参数为True，则使用`_n`进行命名替换（n 是成员的索引）
-verbose 如果是True，则在构造子类前打印其定义
+返回一个名为typename 的tuple的子类，跟class 定义的类一样返回的都是type类型，其`__name__`是typename（相当于namedtuple返回了一个匿名类型，其返回值是一个类型对象）
+field_names 可以是一个str序列，或者是一个用空格或逗号分隔的字符串。用以表示各个成员的命名，如果命名不符合规范或重名，且rename 参数为True，则使用`_n`进行命名替换（n 是成员的索引）
+defaults 可以是一个默认值iterable，并且右对齐进行默认值分配
+module 可以指定`__module__`属性
 
 返回的这个类型，可以使用位置参数，也可以使用关键字参数进行构造；同时既可以当作tuple 操作，也可以当作一个对象操作（支持`.`和getattr函数）。
 此外还有一些新增的属性和方法：  
-`_fields`：字符串元组  
-`_make(iterable)`：类方法，使用一个可迭代对象生成一个对象
-`_asdict()`：对象方法，返回一个OrderedDict 对象
-`_replace(**kwargs)`：对象方法，修改部分成员，并返回一个新的对象
+`_fields`: 字符串元组  
+`_field_defaults`: 字段名->默认值 的字典
+`_make(iterable)`: 类方法，使用一个可迭代对象生成一个对象
+`_asdict()`: 对象方法，返回一个OrderedDict 对象
+`_replace(**kwargs)`: 对象方法，修改部分成员，并返回一个新的对象
 
 使用namedtuple 可以很容易定义枚举常量
 
@@ -1469,13 +1441,15 @@ default_factory默认是None，可以是一个无参的函数，当字典索引k
 **注意：仅当索引key失败会触发生成器，如果使用get()等方法，则不会而保持其默认行为**
 
 ##### OrderedDict
-有序字典（按插入顺序）（dict的子类）  
-**注意：对于使用关键字参数的构造器和update方法，其顺序将丢失，因为python使用dict 进行参数传递**  
-更新值并不影响顺序  
+有序字典（按插入顺序）（dict的子类，从Python3.7 dict 具有该特性，但更看重映射的空间效率、迭代速度、更新性能），其更看重重新排序的性能，因此很适合做LRU 缓存  
+**注意：若使用其关键字参数的构造器和update方法，在python3.6之前无法保证按参数顺序保存到OrderedDict中**  
+更新值并不影响顺序（除非修改`__setitem__`方法的实现）  
 和OrderedDict 进行等值比较顺序敏感，和其他Mapping 对象比较则顺序不敏感  
 额外支持的方法：  
 popitem(last=True)：默认弹出最后插入的kv二元组，last为False，则弹出最早插入的kv二元组  
+move_to_end(key, last=True)：将指定的key 放到尾部（默认）或头部（last=False）
 还支持reversed()函数进行逆序
+Python3.9 支持`|`和`|=` 进行合并操作
 
 ##### Counter
 计数器类（dict的子类）
@@ -1520,7 +1494,8 @@ nsmallest(n, iterable[, key])：返回迭代器中n 个最小的数组成的列�
 
 ### 2. 其他内建类型
 类型type
-None（等价于 NULL）
+None: 单例，等价于 NULL，其布尔值为False
+Ellipsis：单例，在 Python 3 中可以直接写`...`，其布尔值为True，可以用在类型annotation的Callable、Tuple中作为占位符，表示不确定的参数、不定长的 tuple，也可以替代pass 语句，在NumPy 中用于扩展切片能力
 文件file
 函数function/方法instancemethod
 模块
@@ -1552,6 +1527,15 @@ object()
 
 ## 第四章. 运算符、表达式、语句
 ### 1 运算符和表达式
+operator 模块，其中包含了所有运算符的函数形式
+truth, `not_`（对对象进行真值判断和否定判断）
+concat(+), contains(in), indexOf, countOf, getitem(索引/切片取值), setitem(索引/切片赋值), delitem(索引/切片删除)
+
+模块函数
+`attrgetter(*attrs)`: 返回一个函数对象，该函数接受一个对象，然后访问其多个属性，返回一个元组
+`itemgetter(*items)`: 返回一个函数对象, 该函数接受一个对象，然后访问其多个索引，返回一个元组
+`methodcaller(name, *args, **kwargs)`: 返回一个函数对象，该函数接受一个对象，然后调用其name 字符串指定的方法，参数通过后续参数指定
+
 #### 1.1 赋值与销毁
 Python的变量都是引用，因此，对于一个频繁使用的其他模块、类变量，可以用一个本地的局部变量去接收该引用，既能简化写法，又能提高访问效率。
 在赋值时，不管这个对象是新创建的，还是一个已经存在的，都是将该对象的引用（并不是值）赋值给变量。并且Python 的赋值语句不会返回值，这是因为Python支持链式赋值，例如
@@ -1565,7 +1549,8 @@ y = x = x+1
 销毁对象的引用：del x, y, ...
 
 ##### 增量赋值
-支持增量赋值（例如`*=`），但不支持自增自减（连用的+/-表示两个单目的+/-），它和一般格式的赋值不同的是，对于可变对象，这种赋值是直接修改对象，而不是运算后重新申请一个对象，再赋引用给这个变量
+支持增量赋值（例如`*=`），但不支持自增自减（连用的+/-表示两个单目的+/-），它和一般格式的赋值不同的是，对于可变对象，这种赋值是直接修改对象（原地运算），而对于不可变对象则是运算后重新申请一个对象，再赋引用给这个变量
+原地运算，在operator 中是对应的运算符函数前加上i，仅对可变类型有效
 
 ##### 多元赋值
 使用基于元组的多元赋值：
@@ -1576,13 +1561,14 @@ y = x = x+1
 并且，右侧的值是在全部都计算完毕之后，才赋给左边的；由于是基于元祖的多元赋值，因此，必须保证左右两边的个数相同。
 
 #### 1.2 算术运算符
-`+`
-`-`
-`*`
-`/`（类型相关的除法，整数执行地板除，浮点数执行真除法）
-`//`（地板除，⌊x/y⌋）
-`%`（取余，计算公式：x%y=x-⌊x/y⌋×y）
-`**`（幂，乘方，另有内置函数pow(x, y)）
+`+`：对应operator.pos 和operator.add
+`-`：对应operator.neg 和operator.sub
+`*`：对应operator.mul
+`/`：类型相关的除法，整数执行地板除，浮点数执行真除法（Python3 不区分类型均为真除法，即返回类型是float，对应operator.truediv）
+`//`：地板除，即⌊x/y⌋，float也可以执行，对应operator.floordiv
+`%`：取余，计算公式：x%y=x-⌊x/y⌋×y，对应operator.mod
+`**`：幂，乘方，对应operator.pow
+`@`：矩阵乘，对应operator.matmul
 
 从上可以发现：`a == (a//b)*b + a%b`
 这个等式无论正数还是负数，或是浮点数、复数都是成立的（注：复数的地板除，是对实部下取整，虚部为0）
@@ -1592,7 +1578,7 @@ y = x = x+1
 即`-10**-2` 表示的是`-(10**(-2))`
 
 ##### 内置的算术函数
-abs(x)，取绝对值或复数的模
+abs(x)，取绝对值或复数的模，对应operator.abs
 divmod(x, y)，取得由`x//y`和`x%y`组成的二元组
 pow(x, y[, z])，两个参数同`x**y`，三个参数同`x**y % z`，但效率更高，用于密码计算
 round(num, ndigit=0)：对num四舍五入到小数点后ndigit位（可以为负数），返回之（float类型）（对于负数，先对正数四舍五入，再取负）。（注意：虽然名义上是四舍五入，但由于float的精度问题，当舍入位为5且后无尾数时，并不能保证一定就进位，比如round(0.15,1)得到0.1，而round(0.05+0.1,1)得到0.2。
@@ -1609,6 +1595,7 @@ math.factorial(x)，x!
 
 #### 1.3 比较运算符（返回True或False的布尔值）
 <       <=      >       >=      ==      !=      <>（同前者，不推荐）
+operator 对应的 lt(<), le(<=), eq(==), ne(!=), ge(>=), gt(>)
 特别的，像`3 < 4 < 5`这种语句也是合法的（连用比较运算符相当于隐式使用and运算）
 
 ##### 对象比较的逻辑
@@ -1630,6 +1617,7 @@ cmp(obj1, obj2)
 
 #### 1.4 is (not) （返回True或False的布尔值）
 用is或is not判断两个变量是否指向同一对象，相当于id(a) == id(b)或id(a) != id(b)
+在operator 中对应`is_`, `is_not` 函数
 
 #### 1.5 逻辑运算符与条件表达式
 and     or      not
@@ -1643,6 +1631,7 @@ x or y：判断x为True，则返回x；x为False，则返回y
 
 #### 1.6 位运算（仅用于整数）
 ~    &    |    ^    <<    >>
+operator 对应的inv(~), lshift(<<), rshift(>>), `and_(&)`, `or_(|)`, xor(^)
 其中 << 左移运算，对int左移溢出后，会自动转变为long，而不会变为异号或为0
 
 设value为一个值，bit为指定位为1的值：
@@ -1705,20 +1694,21 @@ next(iterator[, default])
 调用iterator的next()方法返回下一个元素，如果给定default 参数，则不抛StopIteration异常，改为返回default。
 
 ##### 与迭代有关的函数
-+ reversed(seq)：返回该序列seq的逆序迭代器
-+ sorted(iter, cmp=None, key=None, reverse=False)：返回一个有序的列表，其他的可选参数同列表的sort方法
-+ enumerate(iterable[, start])：iterable为一个可迭代对象，start设置迭代的起始位置，返回一个可迭代对象，该对象每次next会生成一个由(位序, 值)构成的二元组。
+**注意：以下返回的迭代器，支持惰性计算，但不支持[]索引、len()计算长度、bool()判断空，并且只能迭代一次，无法重复使用**
++ reversed(seq)：返回该序列seq的逆序*迭代器*
++ sorted(iter, cmp=None, key=None, reverse=False)：返回一个有序的列表，其他的可选参数同列表的sort方法（Python3 移除了cmp 参数）
++ enumerate(iterable[, start])：iterable为一个可迭代对象，start设置迭代的起始位置，返回一个*迭代器*，该对象每次next会生成一个由(位序, 值)构成的二元组。
 + filter类
-    - filter(func, iter)：func是一个判断函数对象，返回func判断为True的元素的列表，即每次从iter中取出一个元素，作为func的参数进行判断，若为True则加入结果中，返回的具体类型和iter的类型一致。如果func为None，则func相当于bool()，即判断元素本身的布尔值。
+    - filter(func, iter)：func是一个判断函数对象，返回func判断为True的元素的*迭代器*，即每次从iter中取出一个元素，作为func的参数进行判断，若为True则加入结果中，返回的具体类型和iter的类型一致。如果func为None，则func相当于bool()，即判断元素本身的布尔值。
 + map类
-    - zip(iter1, iter2, …)：返回一个元组的列表，其中第一个元组由这些序列的第一个元素依次组成，第二个元组由这些序列的第二个元素依次组成，直到其中一个序列取完为止。即返回的列表长度和这些序列中最短的一个相同。
-    - map(func, iter1[, iter2, …])：func是一个函数对象，返回func结果的列表，即每次从各个序列中取出一个元素作为func的参数（具体是先组成一个元组，再使用`*tuple`传参），返回结果依次作为结果列表的一个元素，如果某些序列提前耗尽，则后续均为None。如果func指定为None，则func的行为就是直接返回组成的这个元组（行为类似zip，但zip返回的列表长度取决于序列中最短的一个，而map返回的序列长度则取决于序列中最长的一个）
+    - zip(iter1, iter2, …)：返回一个元组的*迭代器*，其中第一个元组由这些序列的第一个元素依次组成，第二个元组由这些序列的第二个元素依次组成，直到其中一个序列取完为止。即返回的列表长度和这些序列中最短的一个相同。
+    - map(func, iter1[, iter2, …])：func是一个函数对象，返回func结果的*迭代器*，即每次从各个序列中取出一个元素作为func的参数（具体是先组成一个元组，再使用`*tuple`传参），返回结果依次作为结果列表的一个元素，如果某些序列提前耗尽，则后续均为None。如果func指定为None，则func的行为就是直接返回组成的这个元组（行为类似zip，但zip返回的列表长度取决于序列中最短的一个，而map返回的序列长度则取决于序列中最长的一个）
 + reduce类
     - any(iter)：如果可迭代对象iter至少存在一个bool(x)为True的元素x，则返回True，否则返回False
     - all(iter)：如果可迭代对象iter为空，或所有元素x的bool(x)都为True，则返回True，否则返回False
     - sum(iter, init=0)：返回数值序列和init的总和（效果同reduce(operator.add, seq, init)）
     - max(iter, key=None)，min(iter, key=None)：key是一个函数返回一个用于比较的值，按该函数返回的值选出迭代对象中的最大和最小值。（此外，这两个函数还有一个可变参数版本：max(arg1, arg2, …, key=None)，min(arg1, arg2, …, key=None)
-    - reduce(func, iter[, init])：func是一个需要两个参数的函数对象，每次从iter中取出一个元素和上次func的结果作为本次func的参数，如果提供了init参数，则初始init作为上次func的结果，如果未提供init参数，则首次取iter的两个元素作为func的参数。这里func不能是None。
+    - reduce(func, iter[, init])：func是一个需要两个参数的函数对象，每次从iter中取出一个元素和上次func的结果作为本次func的参数，如果提供了init参数，则初始init作为上次func的结果，如果未提供init参数，则首次取iter的两个元素作为func的参数。这里func不能是None。*该函数在Python3 被移入到functools 模块中*
 
 ##### 相关模块
 itertools
@@ -1738,7 +1728,7 @@ itertools
 		- filterfalse(predicate, iterable): filter 的False 版
 		- takewhile(predicate, iterable): 保留满足predicate 的前导序列，返回一个生成器
 		- dropwhile(predicate, iterable): 去掉满足predicate 的前导序列，返回一个生成器
-		- islice(iterable, stop) 和islice(iterable, start, stop, step=1)：相当于用range 产出（不支持负索引）的下标遍历iterable
+		- islice(iterable, stop) 和islice(iterable, start, stop, step=1)：相当于用range 产出（不支持负索引）的下标遍历iterable，返回一个生成器，可以使用它对生成器进行切片
 		- compress(data, selectors): (d for d, s in zip(data, selectors) if s)
 	+ tee(iterable, n=2): 返回一个n 元组，每个元素都是一个iterable 构成的生成器（非线程安全）（一旦使用该函数，原来的iterable 就不要使用了，因为它的动作都不会通知给tee 返回的生成器）
 1. 排列组合
@@ -1853,7 +1843,8 @@ func = deco1(deco_arg)(deco2(func))
 ```
 装饰器通常使用闭包实现，即在装饰器函数内定义一个函数，作为替换函数，该函数会调用被装饰函数，从而完成装饰，最后装饰器返回该替换函数。
 由于装饰器返回的了装饰后的函数对象，所以装饰后，原函数的函数属性将被覆盖，如果想要原函数的函数属性（函数名、docstring、参数列表），可以使用`functools.wraps` 装饰器，该装饰器是个有参装饰器，参数是被装饰的函数对象，如：
-```
+```py
+from functools import wraps
 def deco2(func):
 	@wraps(func)
 	def wrapped_function(*args, **kwargs):
@@ -1861,6 +1852,26 @@ def deco2(func):
 		retrun func(*args, **kwargs)
 	return wrapped_function
 ```
+
+#### cache
+functools.cache 装饰器可以让函数针对不同的参数进行结果缓存，可以理解成一个字典（因此参数的必须都是可哈希的）
+*注意：对于def func(a=1)，func()和func(1)会缓存两次*
+
+functools.cached_property 装饰器用于实例方法，和property 装饰器不同的是，property 的属性是只读的，而cached_property 则直接是可读写的，写入的值优先于缓存的值，可以通过del 删除属性值，使其重新缓存
+
+functools.lru_cache(maxsize=128, typed=False) 装饰器比cache 多提供了容量上限的设置，当达到上限时使用LRU 算法进行替换
+被包装的函数有以下方法：
++ cache_parameters()：获取装饰器配置参数
++ cache_info()：显示 hits, misses, maxsize 和 currsize的named tuple
++ cache_clear()：清空缓存
++ `__wrapped__` 属性：获取包装前的原始函数
+
+##### 其他三方cache
+同时兼容 Python2 和 Python3 的第三方模块 fastcache 能够实现同样的功能，且其能支持 TTL
+
+<https://github.com/dgilland/cacheout>
+<https://github.com/tkem/cachetools/>
+<https://github.com/pallets-eco/cachelib>
 
 ### 4. 匿名函数lambda
 ```
@@ -1873,7 +1884,7 @@ expression的结果就是返回值
 
 ### 5. 偏函数
 即其他语言中的参数绑定
-使用functools.partial()方法
+对函数使用functools.partial()函数，对实例方法使用functools.partialmethod()函数
 偏函数是默认参数的一种有益补充，因为默认参数是在定义时给定，而且只能逆序指定；而使用偏函数绑定的参数是动态的，而且可以通过关键字绑定到任意的参数上
 例如：
 ```python
@@ -1899,6 +1910,40 @@ print dec(10)
 生成器可以抛出异常
 为了使生成器获得调用者给其的传值，yield 语句会返回一个值，该值就是调用者传入的值（如果调用者使用的是next() 未传值，则该返回值为None）。
 
+### 7. 泛型重载
+仅支持对第一个参数进行类型分派，当找不到准确匹配的类型，则按照继承树向上找一个匹配的类型，而被singledispatch 修饰的函数，则被认为object 类型，所以是一个兜底方法
+```py
+from functools import singledispatch
+
+@singledispatch
+def fun(arg, verbose=False):
+    if verbose:
+        print("Let me just say,", end=" ")
+    print(arg)
+
+@fun.register
+def _(arg: list, verbose=False):
+    if verbose:
+        print("Enumerate this:")
+    for i, elem in enumerate(arg):
+        print(i, elem)
+
+@fun.register(complex)      # 该装饰器返回装饰前的函数，所以可以重复叠多层
+def _(arg, verbose=False):
+    if verbose:
+        print("Better than complicated.", end=" ")
+    print(arg.real, arg.imag)
+
+def nothing(arg, verbose=False):
+    print("Nothing.")
+fun.register(type(None), nothing)
+```
+被装饰后的函数有以下方法：
+dispatch(type): 返回指定类型的函数对象
+registry 属性：所有已注册的`<class: func_obj>` 字典
+
+对类方法或实例方法，使用functools.singledispatchmethod 装饰（必须是最外装饰器）
+
 
 ## 第六章. 对象和类
 ### 1. 类定义
@@ -1914,7 +1959,8 @@ class ClassName(base_class, ...):
 在多继承中，使用super(type[, obj]) 会根据`type.__mro__` 中指定的顺序查找标识符的实现，然后若obj 是实例对象，则super 将其转化为找到的先祖类实例；若是类对象，则super 将其转化为找到的先祖类的类对象；若不传obj 则返回一个找到的非绑定的类对象（调用方法需要自己传入self 或cls 作为第一个参数）
 
 静态数据成员属于类自身，实例属性可以在任何时候动态添加、修改和del（甚至在类的外部）
-当实例属性和类属性同名，则使用实例调用时，实例属性优先，所以使用实例访问类属性无法进行修改（可以修改可变类型的内容），因为修改的语法就意味着定义了一个同名的实例属性，所以修改类属性只能使用类名调用
+Python3 支持在实例方法外声明实例属性，*注意：只是声明`var type`，不能使用`var = val`这种定义，因为前者是实例属性，后者就变成了类属性了*
+当使用实例访问一个属性时，优先查找实例属性，若找不到定义，再访问同名的类属性；当用类访问一个属性，则直接访问的是类属性。这样，就导致了一种结果，那就是使用实例访问类属性无法进行修改，因为修改的语法会被认为定义了一个同名的实例属性，不过有点例外就是，若类属性时可变类型时，可以修改其内容，所以修改类属性只能使用类名调用
 
 和函数对象类似，在类定义完成时，就声明了一个类对象，所以类定义可以放在局部作用域
 
@@ -1924,7 +1970,7 @@ class ClassName(base_class, ...):
 `__doc__` 类的文档字符串
 `__base__` 类的第一个父类
 `__bases__` 类所有父类构成的元组
-`__dict__` 类的属性（仅包括当前类定义的，不包括继承的）
+`__dict__` 对象属性构成的字典（仅包括当前对象已经初始化的，不包括类声明的属性和类的属性）
 `__module__` 类定义所在的模块
 `__slots__` 限定实例的可用的属性名，其值可以是一个字符串可迭代对象，阻止自动为每个实例创建 `__dict__` 和 `__weakref__`（能显著节省空间和提高属性查找速度）。想要实例能够动态赋值，就需要在这个字符串可迭代对象中加入`'__dict__'`
 
@@ -1969,13 +2015,18 @@ class C:
 ```
 
 ### 3. 构造器 和 析构器
-`__new__(cls)` 构造方法，该方法是一个类方法，但无需使用装饰器修饰，该方法会先于`__init__()`初始化方法被调用
-若该方法返回的不是当前类的对象，则不再调用`__init__()`初始化方法
-通常用于继承内置的不可变类型时，在调用完父类的`__new__()`返回实例后，对其中值进行修改（这种修改无法在`__init__()` 中完成）
-实现单例模式、以及实现自定义的metaclass 时使用
+在调用`obj = cls()` 生成一个实例时，首先是调用`__new__(cls)` 进行构造，若返回的对象是cls 实例，则调用`__init__(self)`进行初始化，而后就返回该对象。
 
-`__init__(self)` 初始化方法（self 就是`__new__()`方法返回的当前类的对象），如果没有显式定义该方法，则默认提供一个空的构造器（对于子类会自动调用父类的构造器）。
-该方法不需要返回
+`__new__(cls)` 构造方法，该方法是一个类方法（参数一般和`__init__`一致），但无需使用classmethod装饰器修饰，若没有重写该方法，默认继承父类的该方法（直到object 的该方法是返回cls 类型的一个实例，但还没初始化），该方法需要返回一个实例
+由于没有使用classmethod 修饰，所以调用父类的的该方法必须显式指定clsc参数：`super().__new__(cls, ...)`
+若该方法返回的不是当前类的实例，则不再调用`__init__()`初始化方法
+该方法一般不用重写，一般用在这些场景：
+1. 继承内置的不可变类型时，可以对参数进行处理后，使用处理后的参数调用父类（即该不可变类）的`__new__()` 返回实例返回（`__init__()` 不能接受这种参数）
+2. 实现单例模式
+3. 实现自定义的metaclass
+
+`__init__(self)` 初始化方法（self 就是`__new__()`方法返回的当前类的实例），如果没有显式定义该方法，则默认提供一个空的构造器（对于子类会自动调用父类的构造器）。
+该方法不需要返回（若返回了一个非None 值将报错）
 foo = ClassName()就创建了一个该类的实例。当一个实例被创建，`__init__()`就会被自动调用。
 在子类中，若显式定义了构造器，就需要手动去调用父类的构造器了，有两种找到父类的方式：
 ```
@@ -1996,12 +2047,21 @@ super 函数会将 self 转化为FooChild 父类的对象
 实例方法也是一个函数对象，也可以保存为变量或使用参数传递（和普通的函数对象差别仅仅是第一个参数绑定了self对象而已）
 第一个参数都是self，它是对象实例的引用，对象的私有成员和类的静态成员都可以使用它引用，例如通过`self.__class__.__name__`可以得到类名
 类似于实例属性，实例方法也可以定义在类的外部：
-```
+```py
 def f1(self, x, y):
     return min(x, x+y)
 
 class C:
     f = f1
+```
+在类外就只能定义单个实例的方法：
+```py
+c = C()
+c.f = f1    # 这种形式在调用时，还是得要指定对象
+c.f(c, 1, 2)
+
+c.ff = types.MethodType(f1, c) # 这种形式，就绑定了对象
+c.ff(1, 2)
 ```
 
 #### 4.2 魔术方法
@@ -2036,6 +2096,7 @@ class C:
 `__ne__` 重载运算符!=
 `__gt__` 重载运算符>
 `__ge__` 重载运算符>=
+*可以仅实现`__eq__`和`__lt__、__le__、_gt__、__ge__` 这些方法之一，而后使用functools.total_ordering 这个类装饰器，就可以自动生成全部的方法*
 
 `__call__` 重载函数调用运算符()
 以下这些运算符加上r 表示右操作数运算符，加上i 表示原地操作运算符（返回值是self）
@@ -2069,7 +2130,7 @@ class C:
 
 #### 4.3 类方法 和 静态方法
 需要通过装饰器，将方法进行转化
-```
+```py
 class A: # 经典类，在python3 中和新式类一样，默认继承object
     @classmethod
     def c_method(cls):
@@ -2083,6 +2144,10 @@ class B(object): # 新式类
     @classmethod
     def c_method(cls):
 		super(B, cls).c_method(cls)	# 调用父类类方法，super 第二个参数使用类对象
+
+def outer_cls(cls):
+    pass
+A.c1_method = types.MethodType(outer_cls, A) # 在类外定义类方法
 
 a = A()
 type(A)        # <type ‘classobj’>
@@ -2218,7 +2283,7 @@ from ..module_name import identifier
 第二句是导入模块中的某个标识符，但这种导入方式只能读取不能改写模块变量，想要改写只能使用第一句
 第三四句是相对路径导入，前者是同级导入，后者是上一级导入
 
-sys.modules 变量是一个字典，它保存了已经加载的模块名和模块实例的映射关系
+sys.modules 变量是一个字典，它保存了已经加载的模块名和模块实例的映射关系，比如`sys.modules[__name__]`就是当前的模块实例
 
 模块导入遵循作用域原则，模块顶层导入的有全局作用域，函数中导入的，是局部作用域
 首次导入模块会加载模块的代码，即会执行模块的顶层代码
@@ -2232,12 +2297,32 @@ sys.path 默认值是第一个元素是空串，表示当前目录，而后是PY
 还支持从zip 归档文件中导入模块（.py, .pyc, .pyo），只需要将归档文件当做一个目录即可
 只不过Python 不会为py 文件生成pyc 文件，所以如果zip 归档中如果没有pyc，导入速度会较慢
 
+#### 1.2 importlib
+该包以编程方式提供import 的实现
+比如：
+```py
+name = 'mypy'
+
+if name in sys.modules：
+    print(f"{name!r} already in sys.modules")
+elif (spec := importlib.util.find_spec(name)) is not None:  # 检查某模块可否导入
+    mypy = importlib.import_module(name)
+    # 或者
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    print(f"{name!r} has been imported")
+else:
+    print(f"can't find the {name!r} module")
+```
+
 ### 2. 命名空间
 命名空间是标识符到对象的映射集合
 Python 解释器首先加载内建名称空间，即`__builtins__`中的标识符；而后加载模块的全局命名空间；当调用函数时创建局部命名空间
+（Python3 中，内置模块更名为builtins，当需要修改内置标识符时可以导入该模块）
 可以通过globals() 和 locals() 内建函数判断出某一名字属于哪个名称空间
 globals()：返回当前全局标识符到对象映射的字典
-locals()：返回当前局部标识符到对象映射的字典（在全局作用域下调用，返回和globals()函数相同）
+locals()：返回当前局部标识符到对象映射的字典（函数作用域下，包括了函数参数和此前定义的局部变量）（在全局作用域下调用，返回和globals()函数相同）
 
 模块包和类定义，都会创建一个新的命名空间
 
@@ -2320,7 +2405,7 @@ reload(module)
 ### 6. 常用模块
 #### time 模块
 有两种时间表示方式：时间戳表示，元组表示
-1. 时间戳表示：从Epoch 而来的秒数（整数或浮点，范围在1970 – 2038 之间）
+1. 时间戳表示：从epoch 开始的秒数（整数或浮点，范围在1970 – 2038 之间）
 1. 元组表示：9个整数分别表示年月日，时分秒，星期（周一是0），一年中的第几天，DST
 在python中，有个`struct_time`就是这个9元组的一个表示
 
@@ -2333,7 +2418,8 @@ reload(module)
 
 ##### 函数
 sleep(seconds)：线程休眠，seconds是一个浮点数
-time()：返回当前时间的浮点时间戳
+time()：返回当前时间的浮点时间戳（从epoch 开始的秒数）
+time_ns(): 当前时间的整数时间戳（从epoch 开始的纳秒数）
 
 1. 时间戳 => 9元组格式
 gmtime([seconds])：不提供时间戳，则使用当前时间；使用UTC时间，亦即GMT
@@ -2390,7 +2476,7 @@ resolution：最小日期差（timedelta(days=1)）
 year、month、day
 ###### 类方法
 today()：返回本地的当天日期对象
-fromtimestamp(timestamp)：将一个时间戳转换为日期对象
+fromtimestamp(timestamp)：将一个时间戳（秒级时间戳，可以是浮动数）转换为日期对象
 fromordinal(ordinal)：将一个日期序数转换为日期对象，以date(1, 1, 1)为1，date(1, 1, 2)为2，以此类推
 ###### 实例方法
 replace(year=None, month=None, day=None)：修改日期中某部分的值，生成一个新的日期对象
@@ -2501,32 +2587,29 @@ port 是SMTP 服务的端口，默认是25
 <https://docs.python.org/2/library/email.html>
 
 #### types 模块
-标准解释器的类型名
+标准解释器的类型名，也可以进行动态类型创建
 
-##### 模块常量
-IntType
-FloatType
-StringType
-ListType
-TupleType
-DictType
-GeneratorType
+##### 类型对象
+IntType：等价int，Python3 移除
+FloatType：等价float，Python3 移除
+StringType：等价str，Python3 移除
+ListType：等价list，Python3 移除
+TupleType：等价tuple，Python3 移除
+DictType：等价dict，Python3 移除
 
-#### inspect 模块
-反射信息
+NoneType: None 的类型，即type(None)
+NotImplementedType：NotImplemented 的类型
+EllipsisType：Ellipsis 的类型
 
-##### 函数
-ismodule()
-isclass()
-ismethod()
-isfunction()
-isgeneratorfunction()：判断是否是生成器函数
-isgenerator()：判断是否是一个生成器
-istraceback()
-isframe()
-iscode()
-isbuiltin()
-
+FunctionType
+LambdaType
+MethodType
+GeneratorType: yield 函数
+CoroutineType：async def 函数
+AsyncGeneratorType：async def 函数 + yield
+CodeType：例如 compile() 的返回值
+CellType：用作函数中自由变量的容器
+ModuleType
 
 ## 第八章. IO相关
 ### 1. 文件对象file
@@ -2694,6 +2777,7 @@ mkfifo
 + translate(pattern)：将pattern 转换为正则字符串，可以使用re.compile 处理
 
 #### shutil 模块
+高级文件访问功能（比如复制文件、复制文件权限、目录树递归复制）
 + move( src, dst)  移动文件或重命名
 + copyfile( src, dst) 从源src复制到dst中去。当然前提是目标地址是具备可写权限。抛出的异常信息为IOException. 如果当前的dst已存在的话就会被覆盖掉
 + copymode( src, dst) 只是会复制其权限其他的东西是不会被复制的
@@ -2900,11 +2984,23 @@ BsdDbShelf(dict, protocol=None, writeback=False)
 需要ORM可以使用SQLObject，SQLAlchemy，Django自带的ORM
 [参考](http://smartzxy.iteye.com/blog/680740)
 
-##### 6.4.1 MySQLdb
+##### 6.4.1 MySQLdb（第三方）
 [下载](https://pypi.python.org/pypi/MySQL-python/) [文档](http://mysql-python.sourceforge.net/MySQLdb.html)
-底层直接调用了 MySQL 提供的原生库作为处理网络的机制，因此不能享受 gevent 的性能红利。不过此库已经很久没有维护，并且也不支持 python3，因此现在不建议使用此库。
-一个比较好的替代方案是 pymysql，它支持的特性更多，并且使用纯 python 编写。
+底层直接调用了 MySQL 提供的原生库作为处理网络的机制，因此不能享受 gevent 的性能红利。不过此库已经很久没有维护，并且也不支持 python3，因此现在不建议使用。其2.0 版本更名为[moist](https://github.com/farcepest/moist)
 
+
+##### 6.4.2 PyMySQL（第三方）
+Python3 使用，支持的特性更多，并且使用纯 python 编写。
+`pymysql.install_as_MySQLdb()` 该语句可以后续`import MySQLdb` 或`import _mysql` 都实际使用的是pymysql（因为他们API 基本一致，类似猴子补丁）
+###### 安装
+```
+pip3 install PyMySQL
+# 或
+git clone https://github.com/PyMySQL/PyMySQL
+cd PyMySQL/ && python3 setup.py install
+```
+
+###### 使用
 模块函数：
 + connect(host, user, passwd[, db, port, charset])
 连接数据库，返回一个连接对象，其中，数据库名db可以省略，可以使用连接对象的select_db方法，或使用sql命令use来指定；port是MySQL使用的TCP端口，默认是’3306’，charset是数据库编码。
@@ -2912,26 +3008,26 @@ BsdDbShelf(dict, protocol=None, writeback=False)
 
 连接对象的方法：
 + select_db(db)
-+ cursor(cursorclass=None)：获得了操纵游标对象（默认的游标对象SQL查询返回的结果是tuple of tuple，如果设置为MySQLdb.cursors.DictCursor，则SQL查询返回的结果是tuple of dict）
-+ query(sql)：不用游标对象，直接执行sql语句
-+ commit()：对于支持事务的数据库引擎（如InnoDB引擎，而mysiam引擎则不是），执行对数据库的改动（增删改，不过，不包括truncate table），如果在数据库连接关闭前没有执行该方法提交，则这些改动不会生效。
-+ ping()：检查连接是否关闭，如果关闭将自动重连
++ cursor(cursorclass=None)：获取游标对象，默认的游标对象SQL查询返回的结果是tuple of tuple，如果设置为MySQLdb.cursors.DictCursor，则SQL查询返回的结果是tuple of dict（该操作会默认开始一个隐形的事务）
++ query(sql)：不用游标对象，直接执行sql语句，返回受影响的行数
++ commit()：对于支持事务的数据库引擎（如InnoDB引擎，而mysiam引擎则不是），执行游标对象对数据库的所有改动（增删改，不包括truncate table），如果在数据库连接关闭前没有执行该方法提交，则这些改动不会生效。
 + rollback()：如果sql执行失败（会有异常抛出），需要回滚以确保数据库一致性。
++ ping()：检查连接是否关闭，如果关闭将自动重连
 + close()：断开数据库连接
 
 游标对象的方法：
-+ execute(query, args)：执行sql语句query（其中可以包含字符串格式化的占位符），args就是填充占位符的序列，返回受影响的行数。（之所以这样使用，而不是直接使用字符串格式化，是因为那样并不安全，容易受到SQL注入攻击）
++ execute(query, args=None)：执行sql语句query（其中可以包含字符串格式化的占位符），args就是填充占位符的序列，返回受影响的行数。（之所以这样使用，而不是直接使用字符串格式化，是因为那样并不安全，容易受到SQL注入攻击）
 + executemany(query, args)：query同上，args是一个填充占位符的序列的序列，每一个内部序列都可以填充占位符成为一个完成的sql语句，该方法就对这个外部序列重复执行多次sql，返回受影响的行数。
 + nextset()：移动到下一个结果集，返回True，如果没有下一个则返回None。
-+ callproc(procname, args)：执行一个存储过程，args为存储过程的参数列表，返回受影响的行数。
++ callproc(procname, args=None)：执行一个存储过程，args为存储过程的参数序列，返回受影响的行数。
 + fetchall()：获取执行sql语句返回的结果集（若前面已经获取，则获取余下的），如果有结果，则返回一个元组的序列（每个元组表示一行）。
-+ fetchmany([size])：返回指定行数的结果集，若未指定或指定的行数大于实际的行数，则返回cursor.arraysize（默认是1）行数据
++ fetchmany(size=None)：返回指定行数的结果集，若size=None或大于实际的行数，则返回cursor.arraysize（默认是1）行数据
 + fetchone()：返回结果集中的下一行。
-+ scroll(value, mode=’relative’)：移动游标value行，’relative’表示相对当前行，’absolute’表示相对第一行。
++ scroll(value, mode='relative')：移动游标value行，’relative’表示相对当前行，’absolute’表示相对第一行。
 + close()：
 此外，还有一个只读属性：rowcount，表示执行execute后受影响的行数。
 
-##### 6.4.2 sqlite3
+##### 6.4.3 sqlite3
 [文档](https://docs.python.org/2/library/sqlite3.html)
 <http://www.cnblogs.com/hongten/p/hongten_python_sqlite3.html>
 
@@ -2964,7 +3060,6 @@ tarfile        访问tar归档文件，支持压缩
 zipfile        访问zip归档文件的工具
 gzip/zlib        访问GNU zip（gzip）文件（压缩需要zlib 模块）
 bz2            访问bz2格式的压缩文件
-shutil        高级文件访问功能（比如复制文件、复制文件权限、目录树递归复制）
 filecmp        比较目录和文件
 fileinput        多个文本文件的行迭代器
 
@@ -3067,7 +3162,7 @@ with context_expr [as var]:
 with open(name, ‘rb’) as input:
     data = input.read()
 ```
-context_expr返回一个上下文管理对象赋值到var，仅能工作于志成上下文管理协议的对象，比如：
+context_expr返回一个上下文管理器赋值到var，上下文管理器是一个拥有`__enter__()`方法和`__exit__()`方法的对象，主要作用于共享资源，`__enter__()`和`__exit__()`方法基本和资源的分配和释放有关（如数据库连接、锁、信号量、状态管理、文件）比如：
 file
 decimal.Context
 thread.LockType
@@ -3077,14 +3172,123 @@ threading.Condition
 threading.Semaphore
 threading.BoundedSemaphore
 
-上下文对象是通过`__context__()`获得的
-而上下文对象本身就是上下文管理器，因此该对象就有上面的方法
-一旦获得了上下文对象，就会调用其`__enter__()`方法，完成with语句块执行前的准备工作，如果提供了as，就用该方法的返回值来赋值；而后执行with语句块，执行结束后都会调用上下文对象的`__exit__()`方法，该方法有三个参数：异常类，异常实例，traceback对象，如果没有异常发生，三个参数都是None；否则就被赋以异常的上下文环境，从而在`__exit__()`里处理异常，如果该函数返回一个布尔测试为False的值，则异常将抛给用户进行处理，如果想屏蔽这个异常，则返回一个布尔测试为True的值（如果没有异常返回的也是True）
-上下文管理器主要作用于共享资源，`__enter__()`和`__exit__()`方法基本和资源的分配和释放有关（如数据库连接、锁、信号量、状态管理、文件）。
-为了帮助你编写对象的上下文管理器，有一个contextlib模块，包含了实用的functions/decorators，这样即可以不用关心上面这些下划线方法的实现。
+若context_expr 就是一个构造函数调用，则构造函数会先于`__enter__()`方法被调用
+~~上下文对象是通过`__context__()`获得的~~
+~~而上下文对象本身就是上下文管理器，因此该对象就有上面的方法~~
+1. 一旦获得了上下文对象，就会调用其`__enter__(self)`方法，完成with语句块执行前的准备工作，如果提供了as，就用该方法的返回值来赋值；
+2. 而后执行with语句块，执行结束后就会调用上下文对象的`__exit__(self, exc_type, exc_val, exc_tb)`方法，该方法后三个参数：异常类型，异常实例，traceback对象（即sys.exc_info()函数返回的三个值），如果没有异常发生，三个参数都是None；否则就被赋以异常的上下文环境，从而在`__exit__()`里处理异常。如果该函数返回一个布尔测试为False的值，则异常将抛给用户进行处理，如果想屏蔽这个异常，则返回一个布尔测试为True的值（如果没有异常返回的也是True）
 
+#### contextlib 模块
+该模块可以帮助你编写对象的上下文管理器，它包含了实用的functions/decorators，可以不用关心上面这些下划线方法的实现。
++ contextmanager: 简化上下文管理器的写法
++ closing: close() 协议的上下文管理器
++ suppress: 忽略报错的上下文管理器
++ redirect_stdout, redirect_stderr: 标准IO 的重定向
++ ExitStack: 动态上下文堆栈的管理器
+```py
+@contextlib.contextmanager
+def get_ctx(i)
+    enter_process()
+    yield ctx(i)
+    exit_process()
+
+@get_ctx(1)  # 被contextmanager 装饰的函数，也会变成一个有参装饰器，可以装饰其他函数，对被装饰函数进行包装
+def demo():  # 但不能传递，即demo 能作为装饰器
+    ...
+# 调用demo()相当于
+with get_ctx(1):
+    demo()
+
+from contextlib import closing  # exit 自动调用close() 方法
+with closing(urlopen('https://www.python.org')) as page:
+    pass
+
+with contextlib.suppress(NonFatalError):    # 可以在下面的语句块中忽略指定的异常
+    pass
+
+from contextlib import redirect_stdout, redirect_stderr
+capture = io.StringIO()
+with redirect_stdout(capture), redirect_stderr(capture):
+    print_func(5)
+
+with contextlib.ExitStack() as stack:
+    @stack.callback
+    def callback():     # stack.callback 可以直接作为装饰器进行回调注册，但无法指定参数
+        pass
+
+    for i in range(n):
+        stack.enter_context(get_ctx(i)) # 先依次执行每个context的enter，在语句块退出时，再反序执行每个context 的exit
+    stack.callback(func1, *args)
+    stack.callback(func2, *args)    # 上下文结束时，逆序执行func2 -> func1
+    do_something()
+```
+
+
+
+## 运行时
+### inspect
+<https://docs.python.org/zh-cn/3/library/inspect.html>
+反射自省，该模块提供了4种主要的功能：类型检查、获取源代码、检查类与函数、检查解释器的调用堆栈。
+
+#### 函数
+`getmembers(obj, [pred])`: 获取obj 对象的指定类别的成员(name, value)的二元组列表，pred 可以使用以下的is 函数
+ismodule(obj)
+isclass(obj)
+ismethod(obj)
+isfunction(obj)
+isgeneratorfunction(obj)：判断是否是生成器函数
+isgenerator(obj)：判断是否是一个生成器
+iscoroutinefunction(obj)
+iscoroutine(obj)
+isawaitable(obj)
+isasyncgenfunction(obj)
+isasyncgen(obj)
+istraceback(obj)
+isframe(obj)
+iscode(obj)
+isbuiltin(obj)
+isroutine
+isabstract
+
+getmodulename(path): 获取指定路径的文件的模块名
+
+getmodule(obj): 尝试获取obj定义的模块
+getsourcefile(obj): 返回obj定义的源文件名（对于内置对象将抛TypeError）
+getsourcelines(obj): 返回一个(list, int) 二元组，前者是源代码列表，后者是源代码的起始行号
+getsource(obj): 返回obj定义的源文件文本
+getfile(obj): 返回obj定义的文件名（对于内置对象将抛TypeError）
+getdoc(obj)
+getcomments(obj)
+
+#### Signature & Parameter & BoundArguments
+signature(callable): 获取一个可调用对象的Signature 对象
+
+##### Signature属性
+parameters: 有序字典，key 是参数名，value 是Parameter 对象
+return_annotation: 返回类型标注，若没有，则该值是Signature.empty
+
+##### Signature方法
+bind(*args, **kwargs): 若参数匹配签名，则返回BoundArguments，否则抛TypeError
+bind_partial(*args, **kwargs): 和bind 相同，可以缺省必选参数
+
+##### Parameter属性
+name: 参数名
+default: 参数默认值，若没有，则为Parameter.empty
+annotation: 参数类型标注，若没有，则为Parameter.empty
+kind: 包括POSITIONAL_ONLY、POSITIONAL_OR_KEYWORD、VAR_POSITIONAL、KEYWORD_ONLY、VAR_KEYWORD
+
+##### BoundArguments属性
+arguments: 参数名-参数值的字典，其变动会反映在args和kwargs的属性上
+args: 位置参数元组
+kwargs: 关键字参数字典
+signature: Signature对象的引用
+
+##### BoundArguments方法
+apply_defaults(): 将默认值应用于缺省参数上
 
 ## 并发编程
+<https://docs.python.org/zh-cn/3/library/concurrency.html>
+
 ### threading 模块
 ### multiprocessing 模块
 
@@ -3294,6 +3498,27 @@ dialect：只读的
 
 
 ### json 模块
+#### 模块函数
++ 序列化
+dumps(obj, skipkeys=False, default=func, cls=JSONEncoder, sort_keys=True, separators=(',', ':'), indent=4)
+dump(obj, fp, ...): fp 是支持write() 的类文件对象
+当字典的key 不是str, int, float 或 None，默认抛TypeError，可以设置skipkeys=Treu 跳过这些key（最终key 都转为字符串）
+default 可以指定一个函数，当对象无法解析时调用，可以返回一个能解析的对象或抛TypeError
+cls 可以指定一个JSONEncoder 子类（覆盖其default(obj)方法）
+indent 可以是缩进长度，也可以是缩进字符串
++ 反序列化
+loads(str, cls=JSONDecoder, object_hook=to_obj_func, object_pairs_hook=to_dict_func, parse_float=None, parse_int=None, parse_constant=None)
+load(fp, ...)
+cls 可以指定一个JSONDecoder 子类
+但反序列化出一个字典时，会调用object_hook 或object_pairs_hook 返回一个对象来替换dict，差别是前者的函数的参数是字典（无序）后者的参数是二元组列表（有序），当两者同时存在，则后者优先
+parse_float/parse_int/parse_constant，是当解析浮点数、整数、常量值（-Infinity，Infinity，NaN）时使用的函数，参数都是字符串
+
+#### 命令行工具
+`python -m json.tool [infile] [outfile]` 可以从sys.stdin或infile里读入json str 进行验证和美化，写入outfile 或sys.stdout
+
+其他选项
+--sort-keys：将字典输出按照键的字母顺序排序
+--indent, --tab, --no-indent, --compact：用于空白符控制
 
 ### html
 #### HTMLParser 模块

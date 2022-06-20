@@ -196,6 +196,9 @@ render_template 可以使用关键字参数，将变量传入到模板文件中�
 ## 模型
 Flask 自身并不有ORM 能力，需要使用插件实现
 <https://read.helloflask.com/c5-database>
+<https://blog.csdn.net/gfdfhjj/article/details/83869441>
+<https://www.jianshu.com/p/80039ee6b4db>
+<https://blog.csdn.net/qq_28452411/article/details/86553914>
 
 ## 安全
 用户输入的数据会包含恶意代码，所以不能直接作为响应返回，需要使用 Flask 提供的 escape() 函数可以对用户输入进行转义处理

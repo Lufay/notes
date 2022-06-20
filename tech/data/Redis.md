@@ -23,11 +23,15 @@ make PREFIX=/some/other/directory install
 或
 使用`utils/install_server.sh`脚本
 
+或使用homebrew 安装：`brew install redis`
+
 ### 启动
 ```
 ./src/redis-server [redis.conf]
 ```
 如果不给出redis.conf，则使用默认配置启动
+
+若使用homebrew 安装，则可以使用`brew services start redis`  启动后台Redis 服务
 
 ### client
 ```
@@ -91,6 +95,9 @@ hash-max-zipmap-value 512：在超过一定的数量或者最大的元素超过�
 activerehashing yes：是否激活重置哈希，默认为开启
 
 ### 数据类型
+[命令大全-en](https://redis.io/commands)
+[命令大全-cn](https://www.redis.com.cn/commands.html)
+
 #### 字符串 string
 一个字节序列，二进制安全的（可以存储二进制数据），最大存储 512 MB的字符串
 SET key $val：创建或修改
@@ -225,7 +232,7 @@ ZREMRANGEBYSCORE key min max：移除定的分数区间的所有成员
 
 
 ### 操作key
-EXISTS key：检查给定 key 是否存在。若 key 存在返回 1 ，否则返回 0
+EXISTS key...：检查给定 key 是否存在。返回指定这些key 存在的个数
 KEYS pattern：查找所有符合给定模式(pattern 可以使用shell中的? * []通配符)的 key。返回key 的列表
 DEL key：删除 key，key 不存在会被忽略。返回被删除key 的数量
 RENAME key newkey：修改 key 的名称，当newkey 已存在时，会覆盖

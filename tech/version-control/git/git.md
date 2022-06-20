@@ -43,6 +43,7 @@ git为我们自动生成第一个分支master以及指向master的一个指针HE
 git add $file
 ```
 把文件$file的改动添加到仓库的暂存区（当然，该文件要在仓库目录下）
+
 ```
 git rm [-r] [--cached] $file
 ```
@@ -50,6 +51,14 @@ git rm [-r] [--cached] $file
 如果$file 是一个目录，则需要使用-r 选项（除非该目录是一个子模块目录）
 如果不想删除工作区的文件，只想删除版本库中的文件，使用--cached 选项
 
+```
+git clean [-ndfx] [$path]
+```
+将untracked 文件清理掉，若没有指定$path，默认是当前目录
+-n 用于演示将删除哪些文件，并不真实删除
+-d untracked 的目录也会被清理
+-x 默认不删除.gitignore文件里面指定的文件夹和文件，该选项可以无视.gitignore文件
+-f 若clean.requireForce不是FALSE，则需要加上该选项才能执行删除
 
 ```
 git commit -m "$comment"
@@ -123,18 +132,21 @@ git diff [--options] --cached [<commit>] [<path>...]
 
 
 ```
-git log
+git log [option] [revision range] [-- path]
 ```
 由近及远给出提交日志，其中一长串十六进制字符串是commit id（使用SHA1计算）
-使用-N 参数只显示最近N 次提交记录；
-使用--author 仅显示指定作者相关的提交；--committer 仅显示指定提交者相关的提交
-使用--graph选项看到分支合并图；
-适用--oneline 等价于--pretty=oneline --abbrev-commit；
-使用--pretty=oneline参数，将一次提交都显示在一行；
-使用--abbrev-commit 仅显示 SHA-1 的前几个字符，而非所有的 40 个字符；
-使用--stat 显示每次更新的文件修改统计信息；
-使用--name-only 仅在提交信息后显示已修改的文件清单；
-使用--name-status 显示新增、修改、删除的文件清单；
+可以限定版本号范围和路径（路径前加`^`表示排除）
+options:
+-N 参数只显示最近N 次提交记录；
+--author 仅显示指定作者相关的提交；--committer 仅显示指定提交者相关的提交
+`-p <path> [--full-diff]` 显示指定路径下提交的diff 内容
+--graph选项看到分支合并图；
+--oneline 等价于--pretty=oneline --abbrev-commit；
+--pretty=oneline参数，将一次提交都显示在一行；
+--abbrev-commit 仅显示 SHA-1 的前几个字符，而非所有的 40 个字符；
+--stat 显示每次有变更的文件列表（带有修改统计信息）；
+--name-only 显示每次有变更的文件列表（不带编辑状态）；
+--name-status 显示每次新增、修改、删除的文件列表（带有编辑状态）；
 
 ```
 git reflog
@@ -171,11 +183,16 @@ git branch $b_name
 git branch (-m | -M) [$old_b_name] $new_b_name
 ```
 分支改名，$new_b_name不存在可以使用-m，如果已经存在，使用-M 强制
+
 ```
 git checkout $b_name
 ```
 切换到 `$b_name`分支，后面的操作都相对于该分支进行
 如果 `$b_name`分支不存在，可以加-b选项，将先进行`branch $b_name`操作
+```
+git checkout -- $file
+```
+丢弃指定文件工作区的改动（即，回撤到暂存区或仓库中的版本）
 
 ```
 git merge [$repo_short_name/]$b_name
@@ -221,13 +238,13 @@ git reset HEAD $paths
 把暂存区指定路径下的文件的修改撤销掉（相当于git add 的逆操作）
 
 ```
-git reset [--mode] [<commit>]
+git reset [--mode] [<commit>] $paths
 ```
 重置HEAD 到指定的版本（既可以是之前的版本，也可以是之后的版本）
 选项--mode可以是以下情形：
---soft：仅仅回退仓库的HEAD指针到指定的提交版本
---mixed [-N]：回退仓库和暂存区（默认选项），如果指定-N，则被移除的路径标记为intent-to-add
---hard：回退仓库、暂存区、工作区
+--soft：仅回退仓库，该版本后的变更存放在暂存区
+--mixed [-N]：回退仓库和暂存区（默认选项）该版本后的变更存放在工作区，如果指定-N，则被移除的路径标记为intent-to-add
+--hard：回退仓库、暂存区、工作区，即会彻底清理掉变更
 --merge：
 --keep：
 因为回退之后的本地版本低于已同步的远程仓库的版本，所以基于回退版本的push就会遭遇冲突，此时需要的是revert

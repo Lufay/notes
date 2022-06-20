@@ -2,6 +2,7 @@
 作用：生成虚拟化的运行环境，避免和其他项目由于依赖版本差异而导致的各种问题
 
 ## 安装
+Python3.3+ 有内置模块venv 可以无需安装
 ```sh
 pip install virtualenv  # python3 用 pip3
 # 或

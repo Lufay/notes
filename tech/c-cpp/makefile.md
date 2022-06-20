@@ -5,15 +5,18 @@
 
 每个规则（指令段）：
 ```
-target ...: prerequisites
+targets: prerequisites
     command1
     command2
 ```
-+ target 是该段的一个标的，如果target 指定的文件不存在或者它的修改时间早于prerequisites 中任何一个的修改时间，则执行该段代码（[特殊的目标](http://c.biancheng.net/view/7129.html)）
++ targets 是该段的一个或多个标的，如果target 指定的文件不存在或者它的修改时间早于prerequisites 中任何一个的修改时间，则执行该段代码（[特殊的目标](http://c.biancheng.net/view/7129.html)）
+多个目标表示，每个目标都适用于prerequisites 和commands
 有一种特殊情况，就是target 指定的这个文件存在，但我实际并不想要使用它的情况做判断，这时候，我就需要声明这个target 是一个伪目标：`.PHONY : all clean`（声明伪目标要在该目标的规则定义之前）
-+ prerequisites 是target 所依赖的一些标的（标的必须是存在的文件，否则必须在Makefile文件中有定义段），可以没有，多个用空格分隔，支持使用shell通配符（“?”、“*”、“[]”）
-+ command 是要执行的shell 命令，**注意：command 必须使用Tab 制表符开头**，另外每一行command 就是一个子进程，两行之间的局部变量不互通，如果想要放到一个进程中，可以在行末使用`\` 进行行续接（命令要使用`;`分隔）
++ prerequisites 是targets 所依赖的一些标的（标的必须是存在的文件，否则必须在Makefile文件中有定义段），可以没有，多个用空格分隔，支持使用shell通配符（“?”、“*”、“[]”）
++ command 是要执行的shell 命令，可以没有，**注意：command 必须使用Tab 制表符开头，可以通过设置.RECIPEPREFIX 内置变量进行修改**，另外每一行command 就是一个子进程，两行之间的局部变量不互通，如果想要放到一个进程中，可以在行末使用`\` 进行行续接（命令要使用`;`分隔）
+给targets 前加上`.ONESHELL:`，则其中的commands 就会放在一个进程中执行
 默认情况下，先回显一行命令，然后执行返回该行命令的结果，可以在command 开头使用`@` 不让该命令进行回显
++ targets 是必须的，prerequisites 和command 至少有一个
 
 ### % 匹配
 ```
@@ -22,14 +25,17 @@ test:test.o test1.o
 %.o:%.c
     gcc -o $@ $^
 ```
-% 从匹配模式来说跟shell 下的`*` 是一致的（最长匹配），差别是，它会根据命中目标部分进行映射关联。具体的就是它首先命中test，然后执行`gcc -o test.o test.c` 然后命中test1，然后执行`gcc -o test1.o test1.c`
+% 从匹配模式来说跟shell 下的`*` 是一致的（最长匹配），差别是，它会根据命中目标部分进行映射关联。
+具体到上面的例子就是它首先命中test，然后执行`gcc -o test.o test.c` 然后命中test1，然后执行`gcc -o test1.o test1.c`
 
 ## 变量
 ### Makefile 变量
-在Makefile 中`var=xxx` 可以定义，使用时，使用`$(var)`或`${var}`" `展开该Makefile 变量
+在Makefile 中`var=xxx` 可以定义（可以有空格，相当于一个列表），使用时，使用`$(var)`或`${var}`" `展开该Makefile 变量
 *注意：如果xxx 中含有shell 通配符，在使用`$(var)`并不会立即展开通配符，此时需要使用wildcard 函数，比如：`var=$(wildcard *.c)`
 
 和shell 变量一样，支持变量连接 和 $() 的嵌套解析
+
+command 定义的变量是shell 变量，可以使用$$shell_var 来引用shell 变量
 
 #### 内置变量
 CC：C 编译程序
@@ -37,7 +43,7 @@ CFLAGS：C 编译参数
 CXX：C++编译程序。
 CPP：C程序的预处理器。
 AR：库文件打包程序
-MAKE：就是make
+MAKE：当前的make工具
 CURDIR：make的工作目录，可以使用-C 选项注入该变量
 SHELL：就是解析命令的shell程序，默认/bin/sh
 
@@ -54,8 +60,8 @@ SHELL：就是解析命令的shell程序，默认/bin/sh
 `$*`	在模式规则和静态模式规则中，代表“茎”。“茎”是目标模式中“%”所代表的部分（当文件名中存在目录时，“茎”也包含目录部分）。
 
 GNU make 还额外加入字符 "D" 或者 "F"，用以处理包含路径的操作
-`$(@D)`	表示文件的目录部分（不包括斜杠）。如果 "$@" 表示的是 "dir/foo.o" 那么 "$(@D)" 表示的值就是 "dir"。如果 "$@" 不存在斜杠（文件在当前目录下），其值就是 "."。
-`$(@F)`	表示的是文件除目录外的部分（实际的文件名）。如果 "$@" 表示的是 "dir/foo.o"，那么 "$@F" 表示的值为 "dir"。
+`$(@D)`	表示$@文件的目录部分（不包括斜杠）。如果 "$@" 表示的是 "dir/foo.o" 那么 "$(@D)" 表示的值就是 "dir"。如果 "$@" 不存在斜杠（文件在当前目录下），其值就是 "."。
+`$(@F)`	表示$@文件除目录外的部分（实际的文件名）。如果 "$@" 表示的是 "dir/foo.o"，那么 "$@F" 表示的值为 "foo.o"。
 `$(*D)`
 `$(*F)`	分别代表 "茎" 中的目录部分和文件名部分
 `$(%D)`
@@ -122,6 +128,9 @@ GNU make 还额外加入字符 "D" 或者 "F"，用以处理包含路径的操�
 ### 逻辑函数
 <http://c.biancheng.net/view/7095.html>
 
+### 执行shell命令
+`$(shell echo src/{00..99}.txt)`
+
 ## 条件判断
 ifeq	判断参数是否不相等，相等为 true，不相等为 false。
 ifneq	判断参数是否不相等，不相等为 true，相等为 false。
@@ -143,6 +152,13 @@ ifeq ($(CC),gcc)
 else
     $(CC) -o foo $(objects) $(noemal_libs)
 endif
+
+LIST = one two three
+all:
+for i in $(LIST); do \
+echo $$i; \
+done
+
 ```
 
 ## 路径搜索
@@ -182,7 +198,10 @@ make 命令会默认选择Makefile 文件的第一个没有通配符的target �
 
 ### 选项
 [参考](http://c.biancheng.net/view/7126.html)
+-f file   默认执行当前目录下的Makefile 文件，也可以指定执行文件
 `-C $dir` 可以指定执行指定目录下的Makefile
 -n        只命令回显，不执行
 -s        所有命令都不回显
 -j n      指定并发执行的命令数，默认是1（注意同一时间只能有一进程占用标准IO）
+-B        让所有目标总是重新建立
+-d        打印调试信息
