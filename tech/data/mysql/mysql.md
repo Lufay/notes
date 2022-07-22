@@ -13,7 +13,23 @@
 比如 T.tags 是一个使用`,`分隔的字符串字段
 ```sql
 select T.*, substring_index(
-    substring_index(T.tags, ',', topic.topic.help_topic_id + 1), ',', -1
+    substring_index(T.tags, ',', topic.help_topic_id + 1), ',', -1
 ) as tag
 from T join mysql.help_topic topic on topic.help_topic_id < (length(T.tags) - length(replace(T.tags, ',', '')) + 1);
 ```
+
+如果该表无权限或者长度不够，可以选择自己构造自然序列表
+```sql
+-- 测算所需行数
+select max(length(T.tags) - length(replace(T.tags, ',', '')) + 1)
+from T
+
+-- 构造自然序列表
+SELECT
+	@i := @i + 1 AS id
+FROM
+	( SELECT @i := -1 UNION           -- 给i赋初值，确保id 从0开始
+    SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 ) t1,
+	( SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 ) t2
+```
+如上，使用笛卡尔积构造了一个5*4=20 行的表

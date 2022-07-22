@@ -32,7 +32,7 @@ CREATE table <表名> (
 修改表名：`rename table 原表名 to 新表名` 或`alter table <表名> RENAME TO <新表名>`;（不能有任何锁定表的事务）
 删表：`DROP table 'tablename' [if exists 'tablename'];`
 加列：`alter table <表名> ADD [COLUMN] <字段> <类型> <字段限定项> [FIRST|AFTER <col>];`（默认加到最后一列，FIRST加到第一列，AFTER可以指定在哪一列后）
-加索引：`alter table <表名> ADD INDEX <索引名> (<字段名1> [, <字段名2>, ...]);`
+加索引：`alter table <表名> ADD INDEX <索引名> (<字段名1> [, <字段名2>, ...]), [ADD INDEX <索引名>(...)];`
 加字段限制：`alter table <表名> ADD <限制>(<字段名>)`
 删列、索引、限制：将上面的add变为DROP
 修改列：将上面的add变为`change <old_field_name> <new_field_name> <field_type>`
@@ -100,6 +100,7 @@ update <表名> set 字段=新值,... where <条件>
 
 replace <表名> set 字段=新值,... where <条件>
 ```
+delete 的where 表达式中不允许嵌套同表的查询语句
 replace 是insert + update，表示如果key 冲突则覆盖，否则insert
 
 ### 表达式
@@ -158,7 +159,7 @@ replace(str, sub, rep): 将str 中的sub 替换为rep 返回
 length(str): 返回字符串所占的字节数。一个汉字或是中文符号是算三个字节,一个数字或字母或英文符号算一个字节。
 char_length: 返回字符串所占的字符数，不管汉字还是数字或者是字母或者符号(不分中英文)都算是一个字符。
 `instr`: 类似string.find，不区分大小写，找得到返回位序，找不到返回0
-`substring_index(str, splitor, idx)`: 若idx为正数，则返回str 中第idx 的splitor位置之前的子串；若idx 为负，则返回str 中倒数-idx 的splitor位置之后的子串
+`substring_index(str, delim, idx)`: 若idx为正数，则返回str 中第idx个 delim 位置之前的子串；若idx 为负，则返回str 中倒数-idx 的delim 位置之后的子串
 
 #### 类型转换
 CAST(var AS INT): 转为指定的类型

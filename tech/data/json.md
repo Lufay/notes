@@ -55,7 +55,7 @@ JSON.parse(str[, reviver])
 ##### 序列化
 ~~$.toJSON(val)~~
 ##### 反序列化
-$.parseJSON(str)
+`$.parseJSON(str)`
 
 #### 对于较老的浏览器
 可以使用js的json库<https://github.com/douglascrockford/JSON-js>
@@ -66,7 +66,7 @@ $.parseJSON(str)
 ### python解析
 import json
 #### 序列化
-py object -> json
+py object -> json str
 类型的映射关系：
 | Python类型 | Json类型 |
 |---|---|
@@ -76,26 +76,27 @@ py object -> json
 | int, long, float | number |
 | True/False | true/false |
 | None | null |
-```
-dumps(obj, skipkeys=False, ensure_asci=True, check_circular=True, allow_nan=True, cls=None, indent=None, separators=None, encoding='utf-8', default=None, sort_keys=False,...)
+```py
+dumps(obj, skipkeys=False, default=func, cls=JSONEncoder, sort_keys=False, indent=None, separators=(',', ':'),
+    ensure_asci=True, check_circular=True, allow_nan=True, ...) -> str
+dump(obj, fp, ...)      # fp 是支持write() 的类文件对象，其他关键字参数和上面一致，无返回值
+
+JSONEncoder(...).enencode(obj)
+JSONEncoder(...).iterencode(big_obj)
 ```
 + obj 就是序列化的Python对象；
-+ skipkeys 如果设置为False，则如果obj字典的key不是基本类型就会被忽略而不是抛出一个TypeError异常；
-+ `ensure_asci` 如果为False，那么所有的非ASCII字符将不被转义，返回值将是一个Unicode实例；
-+ `check_circular` 如果是False，就不再对容器进行循环引用检查，如果有循环引用将导致OverflowError异常；
-+ `allow_nan` 如果是False，那么对于python的nan, inf, -inf不再转换为json的NaN，Infinity, -Infinity，而是抛出一个ValueError；
-+ cls 指定一个序列化的类（继承JSONEncoder 并重载default()方法），默认调用JSONEncoder 这个类来进行序列化
-+ indent 是一个自然数，默认None，即紧凑形式，0是带换行，其他是表示缩进的字符数（因为默认的分隔符是", "，因此每行末都会有一个多余的空格，可以通过制定separators来自定义分隔符）；
-+ separators 是一个二元组(`item_sep`, `dict_sep`)，前者是kv中每个项目的分隔符，后者是kv之间的分隔符，默认是(', ', ': ')；
-+ encoding 指定返回字符串的编码；
-+ default 该参数可以传一个函数对象，该函数对象接收一个参数，如果obj 中有不能被序列化的子对象，就会调用该函数，该函数返回一个可以被JSON 编码的对象或者抛一个TypeError 异常。如果未指定该函数则不能序列化都抛一个TypeError 异常
-+ `sort_keys` 如果为True，那么返回的内容将按key进行排序。
-
-还有一个dump函数，它多了一个第二个参数，是一个类文件对象（支持write操作，用于自定义字符串的产出位置）
-也可以直接使用JSONEncoder().enencode() 或JSONEncoder().iterencode()
++ skipkeys 当字典的key 不是str, int, float 或 None，默认抛TypeError，可以设置skipkeys=True 跳过这些key（最终key 都转为字符串）
++ default 可以指定一个函数对象，该函数对象接收一个参数，如果obj 中有不能被解析的子对象，就会调用该函数，该函数返回一个可以被JSON 编码的对象或者抛一个TypeError 异常。如果未指定该函数，则不能序列化都抛一个TypeError 异常
++ cls 可以指定一个JSONEncoder 子类（覆盖其default(obj)方法），默认调用JSONEncoder 这个类来进行序列化
++ indent 可以是缩进长度（默认None，即紧凑形式，0表示带换行，其他正整数表示缩进的字符数），也可以是缩进字符串（因为默认的分隔符是", "，因此每行末都会有一个多余的空格，可以通过指定separators来自定义分隔符）
++ separators 是一个二元组(`item_sep`, `dict_sep`)，前者是kv中每个项目的分隔符，后者是kv之间的分隔符，默认是(', ', ': ')
++ `sort_keys` 如果为True，那么返回的内容将按key进行排序
++ `allow_nan` 如果是False，那么对于python的nan, inf, -inf不再转换为json的NaN，Infinity, -Infinity，而是抛出一个ValueError
++ `ensure_asci` 默认所有输入的非 ASCII 字符转义，如果为False，那么所有的非ASCII字符将不被转义，这些字符会原样输出；
++ `check_circular` 如果是False，就不再对容器或自定义对象进行循环引用检查，如果有循环引用将导致RecursionError 异常；
 
 例子：
-```
+```py
 dd = {
     u'jsonrpc': u'2.0',
     u'id': 0,
@@ -117,7 +118,7 @@ ss = json.dumps(dd, indent=4)
 ```
 
 #### 反序列化
-json -> py object
+json str -> py object
 类型的映射关系：
 | Json类型 | Python类型 |
 |---|---|
@@ -128,26 +129,34 @@ json -> py object
 | number(real) | float |
 | true/false | True/False |
 | null | None
-```
-loads(s, encoding=None, cls=None, obj_hook=None, parse_float=None, parse_int=None, parse_constant=None, object_pairs_hook=None,...)
-```
-+ s 是json字符串（基于ASCII编码，如果不是的话，还需要字符串调用decode解析为一种基于ASCII编码的字符集）；
-+ encoding 指定了这个字符串的编码（如果不是utf-8编码需指定）；
-+ cls 指定一个反序列化的类（继承JSONDecoder），默认调用JSONDecoder
-+ `obj_hook`是一个函数，用解码返回的字典做参数进行调用，用返回值替代解码返回的字典；
-+ 而parse...系列参数是在某种类型被解析是调用
-+ `object_pairs_hook`是一个函数，当解码返回的字典想要保持其key 顺序时调用（和`obj_hook`同时机，但优先于`obj_hook`），用返回值替代解码返回；
+```py
+loads(s, object_hook=to_obj_func, object_pairs_hook=to_dict_func, cls=JSONDecoder,
+    parse_float=None, parse_int=None, parse_constant=None, ...)
+load(fp, ...)   # fp 是一个类文件对象（支持read操作，用于提供解析的字符串）
 
-还有一个load函数，它的第一个参数是一个类文件对象（支持read操作，用于提供解析的字符串）
+JSONDecoder(...).decode(s)
+JSONDecoder(...).raw_decode(s)  # 从 s 中解码出 JSON 文档（以 JSON 文档开头的一个 str 对象）返回一个 Python 表示形式为 2 元组以及指明该文档在 s 中结束位置的序号。
+```
++ s 是json字符串（可以是 str, bytes 或 bytearray 实例），格式非法将抛出JSONDecodeError 异常
++ 反序列化出一个字典时，会调用`object_hook`或`object_pairs_hook`返回一个对象来替换dict，差别是前者的函数的参数是字典（无序）后者的参数是二元组列表（有序），当两者同时存在，则后者优先
++ cls 可以指定一个JSONDecoder 子类，默认调用JSONDecoder
++ parse_float/parse_int/parse_constant参数是，是当解析浮点数、整数、常量值（-Infinity，Infinity，NaN）时使用的工厂函数，参数都是字符串
 
 例子：
-```
+```py
 ss = '{"jsonrpc":"2.0","error":{"code":7,"message":"service on specified stub not found","data":{"error_code":7,"line":546,"prev_exception":null,"file":"sofa\\/rpc\\/rpc_server_impl.cpp","function":"OnReceived","message":"service on specified stub not found","stack":""}},"id":0}'
 dd = json.loads(ss)
 ```
 
 ### shell 解析
 工具jq
+
+#### python json 的命令行工具
+`python -m json.tool [infile] [outfile]` 可以从sys.stdin或infile里读入json str 进行验证和美化，写入outfile 或sys.stdout
+
+##### 其他选项
+--sort-keys：将字典输出按照键的字母顺序排序
+--indent, --tab, --no-indent, --compact：用于空白符控制
 
 ### cpp 解析
 使用rapidjson 性能好，更符合标准，[中文文档](http://rapidjson.org/zh-cn/index.html)

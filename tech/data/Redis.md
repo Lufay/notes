@@ -137,7 +137,7 @@ HLEN key：获取哈希表中字段的数量
 HKEYS key：获取所有哈希表中的字段
 HVALS key：获取哈希表中所有值
 HGETALL key：获取在哈希表中指定 key 的所有字段和值。以列表形式返回哈希表的字段及字段值。 若 key 不存在，返回空列表
-`HSCAN key cursor [MATCH pattern] [COUNT count]`：迭代哈希表中的键值对
+`HSCAN key cursor [MATCH pattern] [COUNT count]`：迭代哈希表中的键值对（第二个数组是field1 value1 [field2 value2 ...] 格式），参考SCAN 命令
 
 HINCRBY key field increment：指定字段的整数值加上增量 increment
 HINCRBYFLOAT key field increment：浮点数值
@@ -198,7 +198,7 @@ SUNIONSTORE destination key1 [key2]
 SDIFF key [key1 key2 ...]：返回给定所有集合的差集（key - key1 - key2 - ...）
 SDIFFSTORE destination key [key1 key2 ...]
 
-`SSCAN key cursor [MATCH pattern] [COUNT count]`
+`SSCAN key cursor [MATCH pattern] [COUNT count]`：迭代key集合中的元素（第二个返回是集合成员的数组），参考SCAN 命令，避免SMEMBERS 命令返回大数据量的阻塞问题
 
 
 
@@ -228,13 +228,17 @@ ZREMRANGEBYSCORE key min max：移除定的分数区间的所有成员
 
 `ZINTERSTORE destination numkeys key [key ...] [WEIGHTS weight [weight ...]] [AGGREGATE SUM|MIN|MAX]`：计算给定的一个或多个（numkeys指定）有序集的交集并将结果集存储在新的有序集合 destination 中。默认情况下，结果集中某个成员的分数值是所有给定集下该成员分数值之和。
 `ZUNIONSTORE destination numkeys key [key ...] [WEIGHTS weight [weight ...]] [AGGREGATE SUM|MIN|MAX]`：并集
-`ZSCAN key cursor [MATCH pattern] [COUNT count]`
+`ZSCAN key cursor [MATCH pattern] [COUNT count]`：迭代key有序集合中的元素（第二个数组的元素包括集合成员和相应的分值），参考SCAN 命令
 
 
 ### 操作key
 EXISTS key...：检查给定 key 是否存在。返回指定这些key 存在的个数
 KEYS pattern：查找所有符合给定模式(pattern 可以使用shell中的? * []通配符)的 key。返回key 的列表
-DEL key：删除 key，key 不存在会被忽略。返回被删除key 的数量
+SCAN cursor [MATCH pattern] [COUNT count]: 每次只返回部分数据，避免keys 命令返回大数据量的阻塞问题，但因为迭代过程中对应的数据集可能发生变化，所以SCAN 不保证反应最新的结果，也有可能返回重复的元素（需要自行处理幂等）
+    SCAN 返回包含两个元素的数组，第一个元素是用于进行下一次迭代的新游标， 而第二个元素则是一个数组，即遍历的内容（key数组）。cursor 使用0 表示启动一个新的遍历，而返回的新游标为0 则表示该次遍历结束。
+    pattern 和keys 命令相似，都是glob 风格的
+    count 默认是10，只是一种建议，实际返回的第二个数组可能多于也可能少于，而且每次迭代count 可以变化
+DEL key...：删除一个或多个 key，key 不存在会被忽略。返回被删除key 的数量
 RENAME key newkey：修改 key 的名称，当newkey 已存在时，会覆盖
 RENAMENX key newkey：仅当 newkey 不存在时，将 key 改名为 newkey。修改成功时，返回 1 。 如果 newkey 已经存在，返回 0
 TYPE key：返回 key 所储存的值的类型: none (key不存在) string (字符串) list (列表) set (集合) zset (有序集) hash (哈希表)

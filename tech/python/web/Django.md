@@ -33,8 +33,8 @@ asgi.py: 一个 ASGI 兼容的 Web 服务器的入口
 settings.py：配置文件，通过查看manage.py 文件可以看到，该文件是通过设置DJANGO_SETTINGS_MODULE环境变量进行指定的，因此可以使用其他配置文件进行启动。`python manage.py diffsettings` 可以查看当前配置与默认配置的差异。在应用中可以使用django.conf.settings 这个对象（不是模块）访问配置。
 urls.py：路由系统，即url与视图的对应关系。该文件是在配置中的ROOT_URLCONF 所指定的。
 
+app/apps.py: app 核心配置，其中必须要有一个继承自AppConfig 的类，名字是app名字的驼峰命名法，并且该类有一个静态成员name 是app 的名字
 app/admin.py: 
-app/apps.py: app 的配置
 app/models.py:
 app/views.py
 app/tests.py
@@ -178,6 +178,7 @@ delete()：删除，可以使用using='db_alias' 来指定使用的数据库
 ##### 字段
 ###### 主键
 默认Django 给每个模型一个自动递增的主键id，其类型在 AppConfig.default_auto_field 中指定，或者在 DEFAULT_AUTO_FIELD 配置中全局指定。除非，你显示指定了`primary_key`
+对于自增主键，一定要使用xxxAutoField，这种字段类型，否则无论是objects.create() 还是 model.save() 都不会将自动生成的ID 回写到create 返回的对象，亦或是model 本身上
 
 ###### 外键
 ForeignKey（即ManyToOne，会自动创建索引，除非使用`db_index=False`来禁用）， ManyToManyField 和 OneToOneField，第一个位置参数是另一个模型类（可以是'self'，类名或类名的字符串，若在另一个app中，需要带`<app_name>.`前缀）

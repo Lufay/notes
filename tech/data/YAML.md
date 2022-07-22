@@ -46,9 +46,9 @@ key/value对用冒号“:”来分隔，冒号后面一定要有一个空格（�
 	字符串可以写成多行，从第二行开始，必须有一个单空格缩进。换行符会被转为空格
 	多行字符串可以使用`|`保留换行符，也可以使用`>`折叠换行
 	`+`表示保留文字块末尾的换行，`-`表示删除字符串末尾的换行
-	- 布尔值（true/false）
-	- 时间（ISO8601 格式）、日期（复合 iso8601 格式）
-	- Null（~）
+	- 布尔值：true/false
+	- 时间、日期：必须符合 ISO8601 格式
+	- null：~
 
 #### 注意
 1. 许在文件中加入选择性的空行，以增加可读性；
@@ -109,3 +109,50 @@ PECL 需要编译安装
 需要PHP 5.3+
 可以使用Composer安装，当然也可以直接`require_once`或include
 解析YAML 文件可以使用Spyc::YAMLLoad('spyc.yaml')，也可以使用`spyc_load_file('spyc.yaml')`
+
+### Python 解析
+`pip install pyyaml`
+
+#### pyyaml
+dump 保存对象是缩写形式，而不是多行格式
+
+```py
+import yaml
+data = yaml.load(s)
+datas = yaml.load_all(s)  # 用于内容里有多个YAML 文档，返回一个可迭代对象
+data = yaml.load(fp)
+
+yaml.dump(data, [fp])
+yaml.dump_all(datas, f)
+```
+
+##### 自定义对象
+默认dump 会得到`!!python/object:{module.name}.{class_name} {yaml_ojb}`
+
+###### 继承 yaml.YAMLObject
+继承 yaml.YAMLObject 并定义类成员 yaml_tag 指定一个标识字符串，则yaml 会把其实例解析为一个带yaml_tag 的yaml 对象
+
+###### yaml.add_constructor 和 yaml.add_representer 
+```py
+# 优化dump 导出的字符串
+def obj_repr(dumper, data):
+    return dumper.represent_mapping(yaml_tag, {})   # 注册yaml_tag 和对应的解析结果
+yaml.add_representer(Class, obj_repr)   # 将解析方法和类绑定
+
+# 加载自定义的优化的导出字符串
+def obj_cons(loader, data):
+    d = loader.construct_mapping(data)  # 将字符串解析为dict
+    return Class(**d)
+yaml.add_constructor(yaml_tag, obj_cons)  # 将构造方法和yaml_tag 绑定
+```
+
+#### ruamel.yaml
+`pip install ruamel.yaml`
+<https://yaml.readthedocs.io/en/latest/overview.html>
+
+```py
+from ruamel import yaml
+obj = yaml.load(s, Loader=yaml.Loader)
+
+yaml.dump(obj, fp, Dumper=yaml.RoundTripDumper)
+```
