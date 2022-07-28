@@ -895,7 +895,7 @@ flags = int('0b_1111_0000', 2)
 
 #### 1.1.1 int
 + 二进制：0b 打头
-可以使用`bin()`将一个十进制数转换为二进制字符串
+可以使用`bin()`将一个十进制数转换为二进制字符串（带有0b）
 + 十进制：1~9 开头
 + 八进制： 0 打头，且后一个数小于8。
 可以使用`oct()`将一个十进制数转换为八进制字符串
@@ -1024,7 +1024,7 @@ len()函数实际上是调用对象类中的`__len__()`方法
 序列通用操作
 1. `+` 序列连接（类似的也支持`+=`运算）
 2. `* n` 重复 n 次进行连接（类似的也支持`*=`运算）
-*注意*：连接只能在同类型进行
+*注意*：连接只能在同类型进行；并且拷贝n 次的都是引用
 3. `[n]` 索引某个元素
 索引值n，正向从0递增，反向从 -1 递减——相当于加上len做偏移
 4. `[start:end:step]` 切分出子序列，前闭后开区间，表示将从序列中选取从索引为start开始的元素，每次步进step，不到索引为end的元素的这些元素组成一个新的序列
@@ -1462,7 +1462,7 @@ t = namedtuple(typename, field_names, rename=False, defaults=None, module=None)
 返回一个名为typename 的tuple的子类，跟class 定义的类一样返回的都是type类型，其`__name__`是typename（相当于namedtuple返回了一个匿名类型，其返回值是一个类型对象）
 field_names 可以是一个str序列，或者是一个用空格或逗号分隔的字符串。用以表示各个成员的命名，如果命名不符合规范或重名，且rename 参数为True，则使用`_n`进行命名替换（n 是成员的索引）
 defaults 可以是一个默认值iterable，并且右对齐进行默认值分配
-module 可以指定`__module__`属性
+module 可以指定返回类型对象的`__module__`属性，缺省则为当前位置的模块
 
 返回的这个类型，可以使用位置参数，也可以使用关键字参数进行构造；同时既可以当作tuple 操作，也可以当作一个对象操作（支持`.`和getattr函数）。
 此外还有一些新增的属性和方法：  
@@ -2129,13 +2129,13 @@ Python3 支持在实例方法外声明实例属性，*注意：只是声明`var 
 `__doc__` 类的文档字符串
 `__base__` 类的第一个父类
 `__bases__` 类所有父类构成的元组
-`__dict__` 对象属性构成的字典（仅包括当前对象已经初始化的，不包括类声明的属性和类的属性）
+`__dict__` 实例属性构成的字典（仅包括当前对象已经初始化的，不包括类声明的属性和类的属性），改变该字典的内容会直接影响实例属性值
 `__module__` 类定义所在的模块
 `__slots__` 限定实例的可用的属性名，其值可以是一个字符串可迭代对象，阻止自动为每个实例创建 `__dict__` 和 `__weakref__`（能显著节省空间和提高属性查找速度）。想要实例能够动态赋值，就需要在这个字符串可迭代对象中加入`'__dict__'`
 
 ### 设置属性
 property(fget=None, fset=None, fdel=None, doc=None): 通过这个工厂方法可以返回一个属性关联读写删除方法
-```
+```py
 class C:
     def __init__(self):
         self._x = None
@@ -2154,7 +2154,7 @@ class C:
 如果 c 为 C 的实例，c.x 将调用 getter，c.x = value 将调用 setter， del c.x 将调用 deleter
 
 property 也可以作为装饰器用于getter 方法上，它将拷贝 fget 的文档字符串作为属性的doc
-```
+```py
 class C:
     def __init__(self):
         self._x = None
@@ -2162,11 +2162,11 @@ class C:
     @property
     def x(self):
         """I'm the 'x' property."""
-        return self._x
+        return self._x          # 若_x 是可变对象，可以改变_x 的内容，不能改变_x 的指向
 
     @x.setter
     def x(self, value):
-        self._x = value
+        self._x = value         # 只有通过这种方式可以改变指向
 
     @x.deleter
     def x(self):
@@ -2913,7 +2913,7 @@ resolution：最小时间差（timedelta(microseconds=1)）
 ##### 实例属性（只读）
 hour、minute、second、microsecond、tzinfo
 ##### 实例方法
-replace(hour=None, minute=None, second=None, microsecond=None, tzinfo=None)：修改time 中某部分的值
+replace(hour=None, minute=None, second=None, microsecond=None, tzinfo=None)：修改time 中某部分的值，生成一个新的time对象
 isoformat()：返回形如'00:00:00.000000'的字符串，也就是str()函数的返回结果
 strftime(format)：返回指定格式的字符串
 `__format__(format)`：支持str对象的format 方法
@@ -2940,7 +2940,7 @@ utcfromtimestamp(timestamp)：UTC 版本的fromtimestamp
 combine(date, time)：组合date 对象和time 对象（包括其tz信息）为一个datetime 对象
 strptime(dateString, format)：将一个字符串按指定格式转化为一个datetime 对象
 ##### 实例方法
-replace(year=None, month=None, day=None, hour=None, minute=None, second=None, microsecond=None, tzinfo=None)：修改datetime 中某部分的值
+replace(year=None, month=None, day=None, hour=None, minute=None, second=None, microsecond=None, tzinfo=None)：修改datetime 中某部分的值，生成一个新的datetime对象
 timetuple()：返回`time.struct_time`类型的9元组
 toordinal()：返回日期序数
 weekday()：返回星期（0是周一，6是周末）
@@ -2963,7 +2963,7 @@ timedelta(days=0, seconds=0, microseconds=0, milliseconds=0, minutes=0, hours=0,
 hashable（可用于字典key）
 
 该对象支持+-运算，支持对乘整数和整除整数，支持取反，abs，比较
-还可以对date/datetime对象进行加减运算
+还可以跟date/datetime对象进行加减运算（以表示之前、或之前的时间）
 
 `total_seconds()`返回时间区间的秒数（浮点）
 
@@ -3028,12 +3028,14 @@ ModuleType
 ### 1.1 创建（打开文件）
 #### 1.1.1 open()
 ```
-open(file_name, access_mode = 'r', buffering=-1)
+open(file_name, access_mode = 'r', buffering=-1, encoding="utf-8")
 ```
 `file_name`是打开文件名的字符串（可使用绝对路径和相对路径）
 `access_mode`是打开模式，'r' 表示读取（默认，文件必须存在），'w' 表示覆写（没有则新建，有则清空原内容重写）， 'a' 表示追加（没有则新建）；可叠加的：'+' 表示读写（r+要求文件必须存在，w+若已存在会清空），’U’通用换行符支持（通常配合r和a，如果使用该选项打开文件，则在文件读入python时，无论原来的EOL是什么，都将替换为\n）， 'b'表示二进制访问（为了兼容非Unix的文本文件）
 buffering：0表示无缓冲，1表示行缓冲，更大的数表示指定的缓冲大小（大约字节数），负值表示使用系统默认缓冲机制（通常是全缓冲）。
 如果 open() 成功，一个文件对象会被返回。
+
+Python 3.10 支持使用 encoding="locale" 来表示使用当前语言区域的编码格式
 
 #### 1.1.2 file()
 file(name, mode=’r’, buffering=1)
@@ -3080,6 +3082,28 @@ file(name, mode=’r’, buffering=1)
 标准输出sys.tdout（到显示器的缓冲输出）
 标准错误sys.tderr（到显示器的非缓冲输出）
 这三个文件对象是预置的，无须打开，只要导入sys模块即可访问这三个对象。
+
+## io 模块
+IOBase <- RawIOBase <- FileIO
+       <- BufferedIOBase <- BytesIO
+                         <- BufferedReader <--|
+                         <- BufferedWriter <- BufferedRandom
+                         <- BufferedRWPair
+       <- TextIOBase <- TextIOWrapper
+                     <- StringIO
+
+### StringIO
+内存中文本流
+StringIO(str)
+
+getvalue(): 返回一个包含缓冲区全部内容的 str
+
+### BytesIO
+内存中二进制流
+BytesIO(bytes)
+
+getbuffer(): 返回一个对应于缓冲区内容的可读写视图而不必拷贝其数据
+getvalue(): 返回包含整个缓冲区内容的 bytes
 
 ## 2. os 模块
 该模块实际上只是真正加载的模块的前端，而真正加载的模块与具体的操作系统有关，比如：posix（适用于Unix）、nt（Win32）、mac（旧版的MacOS）、dos（DOS）、os2（OS/2）等。不需要直接导入这些模块，只需导入os 模块，Python会自动选择正确的模块。（根据某个系统支持的特性，可能无法访问到一些在其他系统上可用的属性）
@@ -3681,7 +3705,7 @@ def get_ctx(i)
     exit_process()
 
 @get_ctx(1)  # 被contextmanager 装饰的函数，也会变成一个有参装饰器，可以装饰其他函数，对被装饰函数进行包装
-def demo():  # 但不能传递，即demo 能作为装饰器
+def demo():  # 但不能传递，即demo 不能作为装饰器
     ...
 # 调用demo()相当于
 with get_ctx(1):
@@ -3719,11 +3743,11 @@ with contextlib.ExitStack() as stack:
 反射自省，该模块提供了4种主要的功能：类型检查、获取源代码、检查类与函数、检查解释器的调用堆栈。
 
 ### 函数
-`getmembers(obj, [pred])`: 获取obj 对象的指定类别的成员(name, value)的二元组列表，pred 可以使用以下的is 函数
+`getmembers(obj, [pred])`: 获取obj 对象的指定类别的成员(name, value)的二元组列表，pred 可以使用以下的is 函数，*注意：若obj 是一个模块对象，则这里获取的成员还包括了通过import 导入的对象*
 ismodule(obj)
 isclass(obj)
 ismethod(obj)
-isfunction(obj)
+isfunction(obj): 判断是否是函数对象，包括lambda 表达式的函数对象
 isgeneratorfunction(obj)：判断是否是生成器函数（带有yield 的函数）
 isgenerator(obj)：判断是否是一个生成器（生成器函数返回的）
 iscoroutinefunction(obj)

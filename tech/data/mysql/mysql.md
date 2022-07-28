@@ -1,6 +1,6 @@
-# MySQL 内置表
+# MySQL 内置
 
-## mysql.help_topic
+## mysql.help_topic 表
 帮助信息主题表(
     help_topic_id,  # 递增ID，从0开始，最大值为636
     name,           # 帮助主题名称
@@ -33,3 +33,9 @@ FROM
 	( SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 ) t2
 ```
 如上，使用笛卡尔积构造了一个5*4=20 行的表
+
+## information_schema 库
+保存MySQL的元数据信息
+
+### INNODB_TABLESTATS 表
+该表记录了所有ENGINE=InnoDB 的表

@@ -36,6 +36,7 @@ test:test.o test1.o
 和shell 变量一样，支持变量连接 和 $() 的嵌套解析
 
 command 定义的变量是shell 变量，可以使用$$shell_var 来引用shell 变量
+其本质上是Makefile会将`$$`解析为一个`$` 也就将command 转换为一条shell 命令
 
 #### 内置变量
 CC：C 编译程序
@@ -100,6 +101,7 @@ GNU make 还额外加入字符 "D" 或者 "F"，用以处理包含路径的操�
 ## 内置函数
 函数调用格式：`$(<function> <arguments>)`或者是`${<function> <arguments>}`
 参数之间要用逗号分隔开
+本质上，Makefile 会在扫描function 将其解析出来而后成为shell 命令，所以Makefile 中的函数更像是宏指令，按照一定的规则把command 转换为字符串（也就是shell 命令）
 
 ### 字符串处理
 
@@ -128,6 +130,15 @@ GNU make 还额外加入字符 "D" 或者 "F"，用以处理包含路径的操�
 ### 逻辑函数
 <http://c.biancheng.net/view/7095.html>
 
+#### foreach
+参数表为`<var>,<list>,<text>`, 其中list 就是遍历对象，每个用空格分隔的词都是一个单元，这些单元逐一赋值到var 上，然后参与到text 的构成，最后的返回是把每个单元的text 用空格连接起来
+
+#### if
+参数表为`<condition>,<then-part>[,<else-part>]`，其中若condition 是一个非空字符串即为true，就返回then 部分，否则返回else 部分
+
+#### call
+参数表为`<expression>,<parm1>,<parm2>,<parm3>,...`，实际上就是把expression 当成函数进行调用，expression 中包含的`$(1)`、`$(2)`、`$(3)`等，将被`<parm1>,<parm2>,<parm3>,...`所替换
+
 ### 执行shell命令
 `$(shell echo src/{00..99}.txt)`
 
@@ -137,7 +148,7 @@ ifneq	判断参数是否不相等，不相等为 true，相等为 false。
 ifdef	判断是否有值，有值为 true，没有值为 false。（这里有一种比较特殊的foo = $(bar)，则无论bar 是否为空，foo 都是有值的）
 ifndef	判断是否有值，没有值为 true，有值为 false。
 
-```
+```makefile
 ifeq (ARG1, ARG2)
 ifeq 'ARG1' 'ARG2'
 ifeq "ARG1" "ARG2"
@@ -145,7 +156,7 @@ ifeq "ARG1" 'ARG2'
 ifeq 'ARG1' "ARG2"
 ```
 
-```
+```makefile
 foo:$(objects)
 ifeq ($(CC),gcc)
     $(CC) -o foo $(objects) $(libs_for_gcc)

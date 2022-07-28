@@ -22,12 +22,13 @@ status
 创建：
 ```sql
 CREATE table <表名> (
-     <字段名1> <类型1> primary key auto_increment
-	 ,<字段名2> <类型2> [CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci] default ''
+     <字段名1> <类型1> primary key auto_increment comment '字段的注释'
+	 ,<字段名2> <类型2> [CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci] default '' comment '字段的注释'
 	 [,.. , <字段名n> <类型n>]
-)[ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8_unicode_ci];
+)[ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8_unicode_ci comment='表的注释'];
 ```
 复制创建：`CREATE table <表名> like <已有表>`（仅结构） 或 `CREATE table <表名> like select * from <已有表>`（结构+数据）
+展示表信息：`show create table 'tablename'`
 显示：`describe 'tablename';`（可以缩写为desc，是对`SHOW columns from`的简略）
 修改表名：`rename table 原表名 to 新表名` 或`alter table <表名> RENAME TO <新表名>`;（不能有任何锁定表的事务）
 删表：`DROP table 'tablename' [if exists 'tablename'];`

@@ -64,7 +64,15 @@ JSON.parse(str[, reviver])
 <http://www.json.org>
 
 ### python解析
-import json
+```py
+try:
+    import simplejson as json
+except ImportError:
+    import json
+```
+simplejson 比原版的json 更新更快，拥有更多功能，而且在速度上也有提升
+此外还可以看看 UltraJSON（几乎完全用C编写的包）
+
 #### 序列化
 py object -> json str
 类型的映射关系：
@@ -85,7 +93,7 @@ JSONEncoder(...).enencode(obj)
 JSONEncoder(...).iterencode(big_obj)
 ```
 + obj 就是序列化的Python对象；
-+ skipkeys 当字典的key 不是str, int, float 或 None，默认抛TypeError，可以设置skipkeys=True 跳过这些key（最终key 都转为字符串）
++ skipkeys 当字典的key 不是str, int, float, bool 或 None，默认抛TypeError，可以设置skipkeys=True 跳过这些key（最终key 都转为对应的字符串形式）
 + default 可以指定一个函数对象，该函数对象接收一个参数，如果obj 中有不能被解析的子对象，就会调用该函数，该函数返回一个可以被JSON 编码的对象或者抛一个TypeError 异常。如果未指定该函数，则不能序列化都抛一个TypeError 异常
 + cls 可以指定一个JSONEncoder 子类（覆盖其default(obj)方法），默认调用JSONEncoder 这个类来进行序列化
 + indent 可以是缩进长度（默认None，即紧凑形式，0表示带换行，其他正整数表示缩进的字符数），也可以是缩进字符串（因为默认的分隔符是", "，因此每行末都会有一个多余的空格，可以通过指定separators来自定义分隔符）
