@@ -39,6 +39,12 @@ app/models.py:
 app/views.py
 app/tests.py
 
+#### 配置
+USE_TZ=True: 是否默认使用时区感知。
+TIME_ZONE='UTC': 时区name。
+LANGUAGE_CODE='en-us': 语言代码，简体中文为"zh-Hans"，繁体中文为'zh-Hant'。用于当locale 没有或无法确认语言时，提供一个默认的语言选项
+USE_I18N=True: 指定是否启用 Django 的翻译系统
+
 ### 2. 创建视图
 views.py：
 ```py
@@ -276,6 +282,12 @@ unique
 ```
 python manage.py createsuperuser
 ```
+
+## 一些问题
+1. 在处理POST 请求时，会遇到CSRF verification failed 的错误，该错误是为了防止跨站请求伪造，该问题的解决方法有以下几种：
+   1. 全局关闭CSRF：将配置中的MIDDLEWARE 中的django.middleware.csrf.CsrfViewMiddleware 去掉
+   2. 单接口关闭CSRF：给该接口方法添加`from django.views.decorators.csrf import csrf_exempt` 装饰器
+   3. 给模板文件的表单`<form>`后添加`{% csrf_token %}` 则该表单的请求中将自动带上CSRF
 
 # REST framework
 前后端分离的开发思路：后端不再渲染HTML 或重定向，而仅仅返回处理后的应用数据，而由前端负责展示效果，从而解耦

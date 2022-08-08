@@ -75,13 +75,25 @@ curl [options / URLs]
 -i 默认情形下，输出不包含协议头信息，比如下载HTML文件，不显示header。该选项包含协议头信息
 -I 只显示协议头信息
 -D <file> 将服务器的返回的header保存为文件，头部的cookie也可被保存
--H <header:value> 为HTTP请求自定义头信息传给服务器
+-H, --header <header:value> 为HTTP请求自定义头信息传给服务器
+-X, --request <method> 为HTTP请求指定使用的方法
 -e 伪装请求来源，由于有些资源的位置必须通过另一个网络地址才能跳转过去，使用-e指定这个源地址
 -A, --user-agent 伪装浏览器，例如："Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)"（IE5.0，Win2000）或"Mozilla/4.73 [en] (X11; U; Linux 2.2.15 i686)"（Netscape，PIII的Linux）
 -x <host[:port]>在给定端口上使用HTTP代理，避免对方的IP屏蔽
 -u <user[:password]>指定服务器的用户名和密码（如果未填密码，则以交互式输入密码）
 -U <user[:password]>指定代理服务器的用户名和密码
 -E/--cert <cert[:passwd]> 客户端证书文件和密码 (SSL)
+
+### data 格式
+application/x-www-form-urlencoded（默认）：-d "param1=value1&param2=value2" 或 -d @data.txt
+application/json：-d '{"key1":"value1", "key2":"value2"}' 或 -d @data.json
+
+### 示例
+```
+curl -H 'Content-Type: application/json'\
+-X POST -d '["student1", "student2"]'\
+http://localhost:8080/api/somepath/resource
+```
 
 # nc
 NetCat，可通过TCP或UDP协议传输读写数据。支持二进制数据

@@ -2244,7 +2244,11 @@ c.ff(1, 2)
 `__get__`:描述器
 `__set__`
 `__delete__`
-`__iter__`: 供iter() 或for 循环调用，返回当前对象的迭代器（带有`__next__`方法的对象），若自身定义了`__next__`可以直接返回self
+`__getstate__`: 供pickle.dumps 使用，返回一个可序列化对象，若未定义该方法，则使用`__dict__` 作为返回
+`__setstate__(state)`: 供pickle.loads 使用，将序列化出来的对象作为参数state，用于给self 赋值，若未定义该方法，则将state 赋值到`__dict__`
+`__getnewargs__`: 返回一个tuple，用于pickle.loads 传递给`__new__` 作为位置参数使用。如果定义了`__getnewargs_ex__`，则忽略该方法
+`__getnewargs_ex__`: 返回一个二元组(args, kwargs)，用于pickle.loads 传递给`__new__` 作为位置参数和关键字参数（用于协议2+版本）
+`__iter__`: 供iter() 或for 循环调用，返回当前对象的迭代器（带有`__next__`方法的对象），若自身定义了`__next__`可以直接返回self。该方法也可以定义为一个生成器
 `__next__`: 供next() 或for 循环调用，返回下一个元素或抛 StopIteration
 `__reversed__`: 供reversed() 调用，以返回反向迭代器
 `__contains__`:重载运算符in
@@ -2870,7 +2874,7 @@ strptime(string, format)：parse
 
 ### datetime 模块
 实现了日期和时间的类型，用于算术运算
-类date、time、datetime（继承date）、timedelta
+类date、time、datetime（继承date）、timedelta、timezone
 
 #### date 类
 date(year, month, day)
@@ -2966,6 +2970,50 @@ hashable（可用于字典key）
 还可以跟date/datetime对象进行加减运算（以表示之前、或之前的时间）
 
 `total_seconds()`返回时间区间的秒数（浮点）
+
+#### timezone 类
+实现了tzinfo 这个抽象基类
+北京时间时区：`timezone(timedelta(hours=8), 'Asia/Shanghai')`
+
+#### pytz 模块（第三方）
+使用Olson TZ Database解决了跨平台的时区计算一致性问题，解决了夏令时带来的计算问题。
+
+默认创建的datetime 对象都是naive datetime，因为没有时区信息（本质上是相对时间），可以使用timezone 返回的时区对象的localize(dt)方法为其设置tzinfo
+而有时区信息的datetime 则可以使用astimezone 将其时间按时区转化为另一个时区的对应时间
+
+LMT学名Local Mean Time，用于比较平均日出时间的，北京时间是+8:06，astimezone 可能会收到LMT 时间扰动
+CST是China Standard Time，北京时间是+8:00
+有个看起来的坑是
+```py
+TZ_SH = pytz.timezone('Asia/Shanghai')
+t = datetime(..., TZ_SH)
+tt = t.astimezone(pytz.utc).astimezone(TZ_SH)
+```
+这里t 和tt 可能展现上有所不同，就是因为前者采用的是LMT，后者采用的是CST，但实际上t == tt
+
+##### 属性和方法
+utc: UTC 时区对象，相当于timezone('UTC')
+all_timezones: 所有的的时区name列表
+timezone(name): 返回指定name 的时区对象，例如中国是'Asia/Shanghai'，该时区对象也是实现了tzinfo 这个抽象基类
+
+#### zoneinfo 模块
+Python3.9 支持的标准库，可以替换pytz
+其使用系统时区数据库或 PyPI 上的第一方包 tzdata 获取时区信息。所以对于跨平台兼容性的项目，推荐对 tzdata 声明依赖。 如果系统数据和 tzdata 均不可用，则所有对 ZoneInfo 的调用都将引发 ZoneInfoNotFoundError。
+系统的搜索路径，在编译时被加载到zoneinfo.TZPATH 这个常量中，可以在编译时通过`--with-tzpath` 进行修改
+加载该模块时，也会使用PYTHONTZPATH 这个环境变量（必须使用绝对路径，并用os.pathsep 分隔）重置TZPATH
+运行时也可以通过reset_tzpath() 重置TZPATH
+
+##### 模块方法
+available_timezones(): 类似all_timezones，返回一个set
+
+##### ZoneInfo 类
+实现了tzinfo 这个抽象基类
+
+ZoneInfo(name): 返回一个时区对象实例，该实例会被缓存，因此可以使用is 进行比较（在调用时，会一次搜索TZPATH 中的路径找name 的文件，失败则会在 tzdata 包中查找匹配）
+ZoneInfo.no_cache(name): 返回一个时区对象实例，不缓存
+
+###### 实例
+key: 构造时使用的name，默认的`__str__` 也将返回它，同样，进行序列化时，也只会序列化这个key（但反序列化则会取决于实例原本的生成方式）
 
 ### calendar 模块
 isleap(year)：是否是闰年
@@ -3373,9 +3421,12 @@ pickle 和 marshal 模块
 
 序列化格式是Python特定的，与机器架构无关的。优点是没有外部标准的限制，可以跨平台使用，缺点是序列化结果无法用于非Python程序反序列化。
 pickle有三种序列化格式协议：
-0：ASCII表示，可读性好，但空间和时间性能都不好。（默认）
-1：旧式的二进制格式，兼容旧版本的Python。
-2：Python 2.3引入的新的二进制格式，序列化新式的class更有效。
+0: ASCII表示，可读性好，但空间和时间性能都不好。（默认）
+1: 旧式的二进制格式，兼容旧版本的Python。
+2: Python 2.3引入的新的二进制格式，序列化新式的class更有效。
+3: Python 3.0引入，显式地支持 bytes 字节对象，Python 3.0-3.7 的默认协议（Python2 不支持）
+4: Python 3.4引入，支持存储非常大的对象，Python 3.8使用的默认协议
+5: Python 3.8引入，增加了对带外数据的支持
 如果给的协议号为负或`pickle.HIGHEST_PROTOCOL`都表示使用最大的协议号。
 
 这两个模块只负责序列化，并不保证对数据源序列化时的安全性，并不处理持久化对象及其并发访问的问题。但也因此可以灵活的将其用于持久化文件、数据库、网络传输。
@@ -3826,6 +3877,7 @@ urllib        通过URL建立到指定web服务器的网络连接
 ### urllib2
 <https://docs.python.org/2/library/urllib2.html>
 用于打开URL 链接（通常是HTTP），包括了数字认证、重定向、cookies 等等
+Python3 合并为一个[urllib](https://docs.python.org/zh-cn/3/library/urllib.html)
 
 #### 函数
 + urlopen(url, data=None[, timeout[, cafile[, capath[, cadefault[, context]]]]])
