@@ -31,7 +31,7 @@ boss 安达利尔，会放毒圈，中毒会持续掉血，抗毒低的话可以
 找妇人阿特玛（Atma）对话，她在旅店附近晃悠
 进入下水道，在第三层杀死Radamenbt（罗德门特）
 
-任务奖励：杀死Radamenbt（罗德门特）得到技能书。
+任务奖励：杀死Radamenbt（罗德门特）得到技能书。该书任务绑定（仅当完成该任务可用，且只能使用一次），无法转卖转送
 回去找亚特玛对话，物品售价九折
 
 ### 2. The Horadric Staff 赫拉迪克的法杖
@@ -102,6 +102,8 @@ Diablo 会放火圈，会喷火，还会红电（火电属性）
 ### 1. Sige On Harrogath 哈洛加斯围城战
 拉苏克（Larzuk)让你杀死Shenk The Overseer，这家伙龟缩在血腥丘陵（Bloody Foothills）尽头处
 任务奖励：Larzuk能够为你的装备打孔
+任务打孔的规则是白色（灰色）装备为该装备当前物品等级下能出现的最大孔、蓝色装备随机1到2孔，其余品质装备1孔
+单机无限打孔：小号打通该任务，复制save文件夹中该号的所有文件，然后打完孔放共享仓库后删号，再将之前复制的文件复制回save可以无限打孔
 
 ### 2. Rescue On Mount Arreat高原拯救战
 夸尔卡克（Qual-Ke）叫你拯救十五名被困于冰冻高原（Frigid Highlands）的野蛮人战士（Barbarian），在Frigid Highlands找到牢笼，救出Barbarian
