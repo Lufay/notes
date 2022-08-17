@@ -1,4 +1,4 @@
-advanceded python scheduler，基于Quartz 的定时任务框架
+Advanced Python Scheduler，基于Quartz 的定时任务框架
 <https://apscheduler.readthedocs.io/en/latest/userguide.html#>
 
 支持三种调度任务：固定时间间隔，固定时间点（日期），Crontab 命令
@@ -82,7 +82,8 @@ def get_data(packled_data: str):
 APScheduler 有四种组件，分别是：调度器(scheduler)，作业存储(job store)，触发器(trigger)，执行器(executor)
 
 ## scheduler
-配置作业存储器和执行器，供调度器执行
+调度器是用户直接操作的界面
+可以配置作业存储器和执行器，供调度器执行使用（当然也都有默认值）
 其构造参数为调度器配置，既可以使用上面的全局配置作为gconfig参数（`apscheduler.`前缀会被忽略），也可以使用关键字参数作为当前配置（当前优于全局），参数的key 包括：
 + logger: 默认使用name = apscheduler.scheduler 的配置
 + timezone: 默认使用tzlocal.unix.get_localzone()
@@ -100,10 +101,10 @@ APScheduler 有四种组件，分别是：调度器(scheduler)，作业存储(jo
 + GeventScheduler : 程序中使用 gevent（高性能的Python并发框架）作为IO模型，和 GeventExecutor 配合使用。
 + TornadoScheduler : 程序中使用 Tornado（一个web框架）的IO模型，用 ioloop.add_timeout 完成定时唤醒。
 + TwistedScheduler : 配合 TwistedExecutor（事件驱动），用 reactor.callLater 完成定时唤醒。scrapy爬虫框架
-+ QtScheduler : 你的应用是一个 Qt 应用，需使用QTimer完成定时唤醒。
++ QtScheduler : 适用于构建 Qt 应用，需使用QTimer完成定时唤醒。
 
 ### 方法
-+ start(): BlockingScheduler 会阻塞
++ start(paused=False): 加载jobstore 中存储的任务，默认会启动执行，如果paused=True则只启动任务处于暂停状态。BlockingScheduler 会阻塞循环处理定时任务（把待执行的jobs从jobstore加载进来，而后找executor去执行），调度器启动后不能修改配置
 + shutdown(wait=True): 默认会等待当前所有任务都执行完毕自己再关闭，如果wait=False，则不会等待立即关闭
 + add_jobstore(jobstore, alias, **kwargs)：为scheduler配置一个作业存储器，并为之起一个别名。若jobstore 是一个字符串（别名），则kwargs 都是给这个作业存储器的构造参数
 + add_job(func, trigger, args=None, kwargs=None, id=None, name=None,
@@ -117,9 +118,9 @@ misfire_grace_time：一个整数，单位为秒，表示一个任务错过next_
 max_instances：该任务并行执行的最大实例数，默认是1个，即串行
 next_run_time：指定首次执行的时间（默认会按触发器找到最近的一个时间）
 replace_existing是当id 冲突时是否替换原任务；返回一个apscheduler.job.Job 实例
-+ get_jobs(): 获取所有的任务
++ get_jobs(): 获取所有的任务（可用指定存储器，前提是该存储器存储的任务已经被scheduler 加载进来）
 + get_job(job_id): 获取指定的任务
-+ modify_job(job_id, **change): 修改指定的任务（只能改变任务参数），有job 实例可以直接操作其job 实例方法
++ modify_job(job_id, **change): 修改指定的任务（只能改变任务参数，id除外），有job 实例可以直接操作其job 实例方法
 + reschedule_job(job_id, trigger=None, **trigger_args): 修改任务的触发器，有job 实例可以直接操作其job 实例方法
 + remove_all_jobs(): 移除所有任务
 + remove_job(job_id): 移除指定的任务，有job 实例可以直接操作其job 实例方法
@@ -133,13 +134,16 @@ replace_existing是当id 冲突时是否替换原任务；返回一个apschedule
 除了使用add_job 动态添加任务外，还可以使用@scheduler.scheduled_job(trigger, args=None, kwargs=None, id=None, ...) 装饰一个方法来进行静态添加任务（原来的register_job装饰器废弃）
 添加任务建议指定id，虽然不指定也会自动生成，但为了便于操作，最好还是自己指定
 
+若scheduler 未启动，则add_job 仅仅只是pending job，并不会开始计算next_run_time，仅当scheduler 启动后，才会保存到jobstore，并计算next_run_time
+如果计算不到next_run_time，就会认为任务调度结束，会将任务删除
+
 ## trigger
 描述任务的触发条件
 无状态的
 
 在scheduler 添加任务时同步配置
 
-共有3种调度器（另外，还有and 和 or）
+共有3种触发器，另外，还可以and 和 or 关系来组合多种触发方式
 
 ### date
 在指定时间点触发一次
@@ -166,6 +170,7 @@ seconds (int)	间隔多少秒
 start_date (datetime 或 str)	开始日期
 end_date (datetime 或 str)	结束日期
 timezone (datetime.tzinfo 或str)	时区
+jitter 每次触发添加一个随机浮动秒数，避免同时运行造成服务拥堵
 
 #### 示例
 ```py
@@ -186,7 +191,8 @@ minute (int 或 str)	分 (范围0-59)
 second (int 或 str)	秒 (范围0-59)
 start_date (datetime 或 str)	最早开始日期(包含)
 end_date (datetime 或 str)	最晚结束时间(包含)
-timezone (datetime.tzinfo 或str)	指定时区
+timezone (datetime.tzinfo 或str)	指定时区（默认使用scheduler 的timezone 设置）
+jitter 每次触发添加一个随机浮动秒数，避免同时运行造成服务拥堵
 
 其中前8个参数str 格式就支持了crontab 的范围表达式：
 `*` 每个时间单位
@@ -194,8 +200,8 @@ timezone (datetime.tzinfo 或str)	指定时区
 `a-b` 从a 到b 每个时间单位
 `a-b/n` 从a 到b 每n 个时间单位
 `a,b,c` a,b,c 可以是表达式，也可以是离散的数，表示并集，即满足其一即可
-`xth y` 仅用于day 参数，
-`last x` 仅用于day 参数，每月最后x 天
+`xth y` 仅用于day 参数，每月第x 个星期y
+`last x` 仅用于day 参数，每月最后一个星期x
 `last` 仅用于day 参数，每月最后一天
 
 #### 示例
@@ -204,16 +210,20 @@ scheduler.add_job(job4,"cron",hour='2', minute='35-37',args=['王涛'],id="job4"
 ```
 
 ## job store
-任务持久化，默认保存在内存，也可以保存在各种数据库中
+任务持久化，默认保存在内存（无状态的），也可以保存在各种数据库中
+注意：一个任务储存器不要共享给多个调度器，否则会导致状态混乱
 apscheduler.jobstores 这个包中包含了所有的任务存储器
+如果要使用'redis'，decode_responses=False 一定要保持默认值，否则读取会解码失败
 
 django_apscheduler.jobstores.DjangoJobStore: 将任务保存在django_apscheduler_djangojob
+
+由于任务存储器会序列化任务和参数（MemoryJobStore 除外），所以，任务必须是全局可用的，并且参数也必须是可序列化的
 
 ## executor
 提交指定的可调用对象到一个线程或者进程池来执行
 当作业完成时，执行器将会通知调度器
 
-最常用的是线程池（ThreadPoolExecutor）和进程池（ProcessPoolExecutor）
+最常用的是线程池（ThreadPoolExecutor，默认max_workers=10）和进程池（ProcessPoolExecutor，会序列化任务，所以任务必须是全局可用的）
 ```py
 from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 

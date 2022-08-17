@@ -3080,7 +3080,7 @@ open(file_name, access_mode = 'r', buffering=-1, encoding="utf-8")
 ```
 `file_name`是打开文件名的字符串（可使用绝对路径和相对路径）
 `access_mode`是打开模式，'r' 表示读取（默认，文件必须存在），'w' 表示覆写（没有则新建，有则清空原内容重写）， 'a' 表示追加（没有则新建）；可叠加的：'+' 表示读写（r+要求文件必须存在，w+若已存在会清空），’U’通用换行符支持（通常配合r和a，如果使用该选项打开文件，则在文件读入python时，无论原来的EOL是什么，都将替换为\n）， 'b'表示二进制访问（为了兼容非Unix的文本文件）
-buffering：0表示无缓冲，1表示行缓冲，更大的数表示指定的缓冲大小（大约字节数），负值表示使用系统默认缓冲机制（通常是全缓冲）。
+buffering：0表示无缓冲，1表示行缓冲（二进制模式无效），更大的数表示指定的缓冲大小（大约字节数），负值表示使用系统默认缓冲机制（io.DEFAULT_BUFFER_SIZE，通常是全缓冲）。
 如果 open() 成功，一个文件对象会被返回。
 
 Python 3.10 支持使用 encoding="locale" 来表示使用当前语言区域的编码格式
@@ -3340,29 +3340,54 @@ file.match(pattern) # 判断是否满足指定模式
 ## 3. subprocess 模块
 用于调用shell（为了代替os.system/`os.popen*`/`os.spawn*`/`popen2.*`/`commands.*`）
 该模块提供了一个类和三个简易函数
+对于Python3.5+一般推荐直接使用run 这个模块函数
+```py
+run(args, *,
+    input=None, capture_output=False, stdin=None, stdout=None, stderr=None,
+    shell=False, cwd=None, env=None, timeout=None, check=False,
+    encoding=None, errors=None, text=None, universal_newlines=None, **others)
+```
+args是一个字符串或序列（若文件名中包括空白符或转义字符则用序列格式更好），就是要执行的命令行内容
+input 必须是一个字节序列，不过如果指定了encoding 或errors 或者text=True，也可以是一个字符串。该参数会将stdin=PIPE，所以不能自己指定stdin了
+capture_output 若为True，则将stdout=PIPE 和 stderr=PIPE，所以就不能自己指定stdout 和stderr 了
+stdin、stdout、stderr可以指定命令的标准输入输出，可以使用常量PIPE（将创建与子进程的管道，可以进行输入和获得输出）、DEVNULL（使用os.devnull）、文件对象、文件描述符（一个整数）或None（从父进程继承）。（其中stderr也可以指定为常量STDOUT，则等价于2>&1）
+shell 若为True，则将使用shell 执行命令，能使用shell的管道、通配符、环境变量展开、`~`展开到HOME 目录等特性，此时args推荐使用字符串。否则则需要使用Python的glob, fnmatch, os.path.expandvars(), os.path.expanduser() 和 shutil 来实现。
+cwd 修改命令执行的当前目录，可以是字符串或路径对象
+env 可以指定一个字典，为新的进程设置环境变量（是替换而非新增）
+timeout 设置子进程的超时时间（单位秒），超时将杀死子进程后抛TimeoutExpired 异常
+check 若为True，则将检查命令返回状态码，若非0，则抛出CalledProcessError 异常，这个异常包含了参数，退出码，stdout和stderr
+默认文件对象都以二进制模式打开，除非指定了encoding 或errors 或者text=True，才以文本模式打开
+
+若命令完成，返回一个CompletedProcess 实例
++ args：run 的首个参数
++ returncode：子进程的退出状态码。一个负值 -N 表示子进程被信号 N 中断 (仅 POSIX).
++ stdout、stderr
++ check_returncode()：如果 returncode 非零, 抛出 CalledProcessError
 
 ### 3.1 Popen类
-```
+```py
 class Popen(
 	args,
-	bufsize=0, executable=None,
+	bufsize=-1, executable=None,
 	stdin=None, stdout=None, stderr=None,
 	preexec_fn=None, close_fds=False,
 	shell=False, cwd=None, env=None,
 	universal_newlines=False,
-	startupinfo=None, creationflags=0)
+	startupinfo=None, creationflags=0,
+    restore_signals=True, start_new_session=False, pass_fds=(), *, group=None, extra_groups=None, user=None, umask=- 1, encoding=None, errors=None, text=None, pipesize=- 1)
 ```
 args是一个字符串或序列，用以描述命令（因为它包含了args[0]即执行的命令）
-bufsize同open的buffering参数
+bufsize同open函数的buffering参数，是为stdin/stdout/stderr 管道文件提供的缓冲
 executable可以指定执行程序，比如可以指定某个具体的shell（若未指定，则由args[0]决定）
-stdin、stdout、stderr可以指定程序的输入输出，可以使用常量PIPE（将创建于子进程的管道，可以进行输入和获得输出），文件对象，文件描述符（一个整数）或None（从父进程继承）。（其中stderr也可以指定为常量STDOUT，则等价于2>&1）
-`preexec_fn`是一个可执行对象，它将在子进程启动时执行
+stdin、stdout、stderr 同run 函数参数
+`preexec_fn`是一个可执行对象，它将在子进程创建时执行（仅 POSIX）
 `close_fds`若为True，则在子进程执行前除0/1/2外的所有文件描述符都将被关闭
-shell若为True，则args通过shell执行。默认是通过os.execvp执行，即使args是一个字符串，也被视为只有一个元素的序列。
+shell若为True，则args通过shell执行，此时推荐使用字符串，在 POSIX 默认为 /bin/sh，在Windows则使用COMSPEC环境变量指定的shell。否则通过os.execvp执行，即使args是一个字符串，也被视为只有一个元素的序列。
 cwd可以指定子进程执行的工作目录
 env可以指定子进程的环境变量（默认从父进程继承），可以指定一个str:str的字典
 `universal_newlines`若为True，则stdout、stderr都将被认为”t”打开，并且不再被Popen对象的communicate()方法更新。
 startupinfo、creationflags是Windows接口特定的参数
+restore_signals, start_new_session, pass_fds, group, extra_groups, user, umask 这些都是POSIX 专属参数
 
 #### 3.1.1 Popen对象的属性
 stdin、stdout、stderr，仅当设置为PIPE可获得，否则为None
@@ -3370,19 +3395,48 @@ pid子进程的进程id
 returncode：None表示进程还没结束，负值-N表示子进程已被信号N终止，其他是子进程的正常返回值
 
 #### 3.1.2 Popen对象的方法
-+ poll()：返回当前returncode
-+ wait()：等待子进程结束，返回returncode
++ poll()：若子进程已终止，返回当前returncode，否则返回None
++ wait(timeout=None)：等待子进程结束，返回returncode，若超时则抛TimeoutExpired。当子进程stdout=PIPE 或者 stderr=PIPE并产生了足以阻塞 OS 管道缓冲区的数据就会产生死锁。此函数使用busy loop 实现，可以使用 asyncio 模块进行异步等待
 + kill()：用SIGKILL杀死子进程
-+ terminate()：用SIGTERM结束进程
++ terminate()：用SIGTERM结束子进程
 + send_signal(sig)：给子进程发送一个信号量sig
-+ communicate(input=None)：input是一个字符串，可以将其发给子进程作为stdin（需要是PIPE），而后等待子进程结束，返回(stdout, stderr)的二元组（需要是PIPE）。注意：当数据量比较大时，不要用该方法。
++ communicate(input=None, timeout=None)：input是一个字符串/字节串（取决于管道打开模式），可以将其发给子进程作为stdin（需要是PIPE），而后等待子进程结束，返回(stdout, stderr)的二元组（需要是PIPE，内容为字符串/字节串，取决于管道打开模式）。若超时则抛TimeoutExpired，捕获后不会丢失任何输出。注意：当数据量比较大时，不要用该方法，因为内存里数据读取是缓冲的。
 
 ### 3.2 模块函数
-三个简易函数call、`check_call`、`check_output`
+三个简易函数call、`check_call`、`check_output`（Python3.5-使用）
 它们的参数和Popen的一致，都等待子进程执行结束
 call直接返回returncode
 `check_call`仅当0才返回，其他都抛出CalledProcessError异常，可以访问该异常对象的returncode属性获取返回值
 `check_output`如果正常返回（0）返回执行命令的输出；如果返回值非0，则抛出CalledProcessError异常，可以访问该异常对象的returncode属性获取返回值，output属性获得标准输出
+
+### 异常基类SubprocessError
+TimeoutExpired：
++ cmd：创建子进程的指令
++ timeout：超时秒数
++ output：子进程的输出
++ stdout、stderr
+
+CalledProcessError
++ returncode
++ cmd：创建子进程的指令
++ timeout：超时秒数
++ output：子进程的输出
++ stdout、stderr
+
+### 实例
+```sh
+output=$(dmesg | grep hda)
+```
+可以替换为
+```py
+p1 = Popen(["dmesg"], stdout=PIPE)
+p2 = Popen(["grep", "hda"], stdin=p1.stdout, stdout=PIPE)
+p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
+output = p2.communicate()[0]
+# 或
+output = check_output("dmesg | grep hda", shell=True)
+```
+shell 命令字符串的安全性需要自己保证，小心注入
 
 ## 4. tempfile 模块
 用于创建临时文件（os.tmpfile使用的是系统调用，而tempfile模块是基于python而且有更多的选项可以控制）
@@ -3671,11 +3725,12 @@ except ...:
 解释器使用函数处理未捕获的异常，即将异常信息打印到sys.stderr 而后退出，三个参数分别是异常类、异常实例和一个回溯对象
 
 ## 2. 抛异常
-raise SomeException, args, traceback
+`raise SomeException, args, traceback [from ex]`
 三个参数都是逆序可选的
 如果有SomeException参数，则它必须是一个字符串、类或实例
 如有args，可以是一个对象（通常是一个字符串指示错误的原因），也可以是一个元组（一个错误编号，一个错误字符串，一个错误的地址，等）
 如果有traceback，是一个用于exception-normally的traceback对象，当你想重新引发一次是，第三个参数很有用（区分当前和先前的位置）
+from ex 一般用于except 中捕获到一个ex 异常而后抛出另一个异常而建立关联（通过新异常的`__cause__` 属性），因为如果except 中抛出另一个异常没有建立关联则认为在处理异常中又触发了另一个异常（该异常的`__context__`会记录原异常）。ex 可以是一个异常类或异常实例或None（会设置异常的`__suppress_context__`=True，从而`__context__` 就不会记录原异常，那么异常栈就不会有原异常）。
 
 **注**：
 如果SomeException是一个实例，那么就不能用其他的参数

@@ -13,6 +13,8 @@ HTML 标签通常是成对出现的，比如 `<b>` 和 `</b>`
 + `<head>` 元素定义了 HTML 文档的头部
     - 样式 `<style>` 可以指定块级元素的样式
         属性 type（text/css）：块级元素可以用“元素名#name或id”来标识，属性用键值对放在{}中
+    - `<link rel="stylesheet" type="text/css" href="theme.css">` 可以链接外部的样式文件
+    - <link rel="preload" href="sample.js"> 也可以对js 文件进行预加载
 + `<body>` 元素定义了 HTML 文档的主体
     属性 bgcolor背景色，background指定背景图片的URL地址
 

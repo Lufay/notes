@@ -1,4 +1,4 @@
-# Js DOM
+# JavaScript
 [TOC]
 
 ### js 代码为什么受到吐槽
@@ -23,20 +23,60 @@
 
 ******
 
-## js 语法
+# js 语法
 js 是浏览器解释执行的脚本语言（实际上是浏览器中的 js 解释器）
+当然通过node 在服务端也可以解释执行
+
+## client（浏览器）
 于是js可以直接嵌入到HTML代码中，如：
-```
+```html
 <script>
     js code
 </script>
 ```
 当然也可以像css一样从外部导入：
-```
+```html
 <script type="text/javascript" src="file.js"></script>
 ```
 由于`type="text/javascript"`是默认值，因此可以省略
 最好是将该标签放在`<body>`的底部，已确保加载完静态内容再加载可能较慢的动态内容
+因为
+当浏览器加载 HTML 时遇到`<script>...</script>`标签，浏览器就不能继续构建 DOM。它必须立刻执行此脚本。对于外部脚本`<script src="..."></script>`也是一样的：浏览器必须等脚本下载完，并执行结束，之后才能继续处理剩余的页面。
+这会导致两个重要的问题：
+1. 脚本不能访问到位于它们下面的 DOM 元素
+2. 如果页面顶部有一个笨重的脚本，它会“阻塞页面”。在该脚本下载并执行结束前，用户都不能看到页面内容
+但放在`<body>`的底部，也有一个缺点，就是浏览器只有在下载了完整的 HTML 文档之后才会注意到该脚本（并且可以开始下载它）。对于长的 HTML 文档来说，这样可能会造成明显的延迟。
+有2种特性可用解决该问题：
+
+### defer 特性
+浏览器不要等待脚本。相反，浏览器将继续处理 HTML，构建 DOM。脚本会“在后台”下载，然后等 DOM 构建完成后，脚本才会执行。
+该特性HTML 4.01支持，并且只对外部脚本文件才有效，所以必须要有src 属性
+
+```html
+<script defer src="https://javascript.info/article/script-async-defer/long.js"></script>
+<script defer src="https://javascript.info/article/script-async-defer/small.js"></script>
+```
+具有 defer 特性的脚本总是要等到 DOM 解析完毕，但在 DOMContentLoaded 事件之前执行。
+并且执行顺序和其位置顺序一致，也就是long.js和small.js 同时下载并加载，但small.js 必须要等到long.js执行结束才会被执行
+
+### async 特性
+与defer 类似，不阻塞页面，差别是async 是独立的，没有位置依赖关系，它会异步下载，加载完成后立即执行（但执行脚本会阻塞页面渲染）
+该特性HTML5支持，仅适用于外部脚本，即必须有src 属性
+
+```html
+<script async src="https://javascript.info/article/script-async-defer/long.js"></script>
+<script async src="https://javascript.info/article/script-async-defer/small.js"></script>
+```
+
+对于动态脚本
+```js
+let script = document.createElement('script');
+script.src = "/article/script-async-defer/long.js";
+// script.async = false;
+document.body.append(script);
+```
+默认append 就是async 的，除非将async 置为 false，则变成defer
+
 
 另外还有一种伪协议调用（不推荐）
 ```
@@ -44,10 +84,11 @@ js 是浏览器解释执行的脚本语言（实际上是浏览器中的 js 解�
 ```
 func可以是一个已经定义的函数
 
-### 语言特性
+## 语言特性
+大小写敏感
 行末不必有分号分隔，除非一行写多条语句（但写上分号是一个良好的习惯，推荐）
 
-#### 注释
+### 注释
 支持 `//` 和 `/*...*/` 的注释
 （还可以使用HTML的`<!--`作为注释，但作用和`//`是一样的）
 
@@ -55,52 +96,77 @@ func可以是一个已经定义的函数
 `alert(var)`: 弹出式警告窗口
 `confirm(msg)`: 弹出式确认窗口，如果确认，返回true；否则返回false
 
-### 调试
+#### 调试
+`console.log(...args)`: 可以在控制台打印多个变量
 `console.dir(var)`: 在调试器的控制台打印出var。如果var是一个DOM对象，那么使用console.dirxml()效果更好
 `debugger;`: 该语句直接在代码中放入一个断点，并且可以放在条件语句中进行控制。
 
-### 变量
-#### 声明
-```
-var a, b, c;
+## 变量
+### 声明
+```js
+var a, b, c;    // 不推荐
+const d = {}    // ES6推荐1，必须初始化并绑定
+let e, f;       // ES6推荐2
 ```
 声明的变量是限定作用域的（函数级），而未声明的变量是全局的（整个脚本）
-标识符名除了一般的标识符规则外，还可以包含 $ 字符，大小写敏感
+标识符名除了一般的标识符规则外，还可以包含 $ 字符（一般用于DOM elements）
 JavaScript是一种弱类型语言，声明并不确定类型，类型由赋值时确定
 
-#### 类型
+var 的声明是原有的声明方式，拥有函数级作用域（不带任何标识是全局作用域），它有几个问题：
+1. 声明之前就可以使用该变量，但值是undefined（用到的是声明提升的特性，即var 声明会提升到函数体首）
+2. 对于同一个名字，可以多次声明，离使用位置最近的一处生效
+3. for 循环中var 声明的变量实际会被提升到函数首，所以在该语句块结束后，在函数中依然可以使用
+4. 若在全局作用域使用var 声明，则将成为window对象的属性
+let 声明是块作用域，不会声明提升
+1. 声明前使用会报错
+2. 不允许重复声明同一名字，否则报错
+3. 即使在在全局作用域声明，也不会成为window对象的属性
+const 也是块作用域，而且名字和对象会绑定，不允许改绑
+
+```js
+for (let i = 0; i<5; i++) {
+    setTimeout(() => {
+        console.log(i)
+    }, 0);
+}
+```
+如果使用var i 将得到5 5 5 5 5，而使用let 得到的是0 1 2 3 4
+因为var 会把i 提升为函数变量，所以内部匿名函数保存的就是就是这个函数变量，即退出循环的值；而let 是块级变量，每次迭代绑定的是不同的变量
+
+### 类型
 + 数值（Number）包括整数、浮点
 + 布尔（Boolean）只有true、false
-+ 字符串（String）单双引号均可
-+ 数组（Array）
-+ 对象（Object）
++ 字符串（String）单双引号均可，允许使用'\uxxxx' 表示一个字符(Unicode码点)
++ 数组（Array）例如`['a', 'b']`
++ 对象（Object）例如`{color: 'red', shape: 'Rectangle'}`
++ 映射（Map）key 可以是任意值，能保持插入顺序，例如new Map()
 + 空，只有null
 + 未定义，未赋值的变量，undefined
 
-##### 类型测试
+#### 类型测试
 `typeof a` 测试变量a的类型，返回一个字符串表示的类型名（number、boolean、string、undefined、function、object），但对于null，Array和Object返回的名都是object
 
 `null`是个单例对象，可以用===进行比较
 
 判断数组的方法有三种：
-```
+```js
 Object.prototype.toString.apply(arr) == '[object Array]'
 Object.prototype.toString.call(arr) == '[object Array]'
 ```
 或（跨页面传递的数组会判断失败）
-```
+```js
 arr.constructor == Array
 ```
 或（跨页面传递的数组会判断失败）
-```
+```js
 arr instanceof Array
 ```
 
-##### 布尔测试
+#### 布尔测试
 数值 0，空串，undefined，null进行布尔判断时都是false
 
 ### 数组
-```
+```js
 var arr1 = Array();
 var arr2 = Array(4);             //指定初始化大小
 var arr3 = Array('a', 2, false, arr2);
@@ -109,8 +175,13 @@ var arr4 = ['a', 2, false, arr2];      //上面的简写形式
 下标从0 开始，数组的长度通过其 length 属性获取
 支持混合类型，支持嵌套
 
+#### 方法
+push(...items): 数组尾添加元素，返回之后的数组长度
+
+map(func, )
+
 #### 关联数组
-```
+```js
 var arr = Array();
 arr["a"] = "aaa";
 ```
@@ -127,21 +198,64 @@ map()
 <http://www.runoob.com/jsref/jsref-obj-array.html>
 
 ### 对象
-```
+```js
 var obj = Object();
 obj.a = 'aaa';
 obj.b = 323;
 obj.c = false;
+obj['d'] = 1
+obj[Symbol('abc')] = 10
 
-var ojb2 = {property1:value1, property2:value2}   //简写形式
+var obj2 = {property1:value1, property2:value2}   //简写形式
+for (const property in obj2) {          // for-in 遍历会忽略Symbol key
+    console.log(`${property}: ${object[property]}`)
+}
 ```
 property和变量的命名规则相同，value可以是任何类型
 
-### 运算符
-+ 数值：支持`++`、`--`、`+=`
+Object 无法直接for-of遍历，需要Object.keys(o)/Object.values(o)/Object.entries(o) 转为一个可迭代实例
+但Object 可以使用for-in 遍历property，该遍历会延原型链由近及远的遍历所有继承的属性
+
+#### 原型链
+对象有一个`__proto__` 的属性，默认是Object.prototype，也可以自己指定为一个对象，当指定为一个对象以后，那么这个对象也拥有了`__proto__` 的属性，从而形成了一条原型链
+`Object.prototype.__proto__` === null，即没有原型
+
+### Map
+```js
+const map1 = new Map();
+for (const t of map1) {
+    console.log(t)  // t is [key, val]
+}
+```
+key 可以是任意类型，其相等比较相当于`===` 差别是NaN，key 比较认为相同，而`===` 认为不同
+
+#### 属性
+size
+
+#### 方法
+set(key, val): 覆写set
+get(key): 若不存在key，则返回undefined
+has(key): 是否存在
+delete(key): 返回是否删除成功
+clear(): 清空
+keys(): key的迭代器
+values(): val的迭代器
+entries(): [key, val] 的迭代
+
+#### 跟Object的区别
+1. Map 初始不包含任何key，而Object 初始就有prototype 属性
+2. Map 的key 可以是任意类型，Object 的key 必须是String 或Symbol
+3. Map 的顺序是和插入顺序一致的，Object 的顺序则是不一定的
+4. Object 没有size 属性
+5. Map 可以for-of直接遍历，Object 不能for-of直接遍历
+
+## 运算符
++ 赋值：支持增量赋值，例如`+=`等
++ 数值：支持`++`、`--`、`**`(乘方)
 + 字符串：使用 `\\` 转义，+ 进行字符串连接（可以直接和数值进行连接），也支持`+=`
-+ 关系：== / !=（等价判断，进行类型归一）=== / !==（全等判断，类型不同就false）、比较(4种)
-+ 逻辑：支持&&、||、!
++ 关系：== / !=（等价判断，比较前进行类型统一）=== / !==（全等判断，类型不同就false）、比较(4种)
++ 逻辑：支持&&、||、!、??
++ 位运算：`<<`、`>>`、`>>>`(无符号右移)、&、|、^(xor)
 + 三目：?:
 
 注意：
@@ -149,39 +263,97 @@ property和变量的命名规则相同，value可以是任何类型
 1. || 运算当左操作数的布尔判断为true，就返回左操作数；否则返回右操作数
     && 运算当左操作数的布尔判断为false，就返回左操作数；否则返回右操作数
 
-### 控制语句
+### 解包赋值
+```js
+const foo = ['one', 'two', 'three'];
+const [one, two, three] = foo;
+[a, ...rest] = foo  // rest 也是一个Array
+[a, ,b] = [1, 2, 3, 4, 5]   // a = 1, b = 3，长度不需要对齐，若左侧较多，则值为undefined
+[a=9, ,b] = [, 2, 3, 4, 5]  // a = 9, 当长度不足，或者undefined、null 时使用默认值，默认值可以是任意表达式，仅当启用默认值时才进行表达式计算
+
+const obj = { a: 1, b: 2};
+const { a, b } = obj;   // a = obj.a, b = obj.b
+({a: foo[1], b: foo[2]} = obj); // 赋值而非声明时，必须加括号
+
+const obj = { a: 1, b: { c: 2 } };
+const { a, b: { c: d } } = obj; // a = obj.a, d = ojb.b.c
+
+const { a, ...others } = { a: 1, b: 2, c: 3 };  // others 也是一个obj
+```
+数组解包的右侧不仅限于Array，只要支持可迭代协议，都可以对其进行解包
+
+## 控制语句
 同C
 if、while、do {} while、for
 
-### 函数
+### for of
+```js
+for (const element of array1) {
+  console.log(element);
+}
 ```
+只要支持可迭代协议的对象都可以进行迭代，内置的对象包括String,Array, array-like objects (e.g., arguments or NodeList), TypedArray, Map, Set
+
+## 函数
+```js
 function func_name(args) {
     //block
     return ret;
 }
 ```
-多个参数使用逗号分隔，在调用时不必给出全部参数，没有给出的参数将是undefined
+多个参数使用逗号分隔，在调用时不必给出全部参数，也可以给超出参数列表个数的参数，没有给出的参数将是undefined，超出部分可以使用arguments获取
+单入口单出口原则：单出口就是要确保函数只有一个return语句（当然除非这些return语句是为了避免陷入过深的逻辑嵌套）
+函数也是一个对象，它有prototype 属性，该属性默认就是Object()
 
-#### 单入口单出口原则
-单出口就是要确保函数只有一个return语句（当然除非这些return语句是为了避免陷入过深的逻辑嵌套）
-
-### 面向对象
-创建实例使用 new 运算符，访问成员使用`.`运算符
-#### 自定义对象
+### arguments
+这是函数体内的一个内置对象，它包含了当前函数所有的参数，是一个类似Array 的对象（不能改动/sort/forEach/map），可以通过callee 属性访问当前函数
+可以通过以下方式将其转换为一个array：
+```js
+Array.prototype.slice.call(arguments)   // 可以指定第二个参数n，表示从位置n开始的切片，n 支持负值，-1 是最后一个字符
+[].slice.call(arguments)
+Array.from(arguments)
+[...arguments]
 ```
+typeof arguments == object
+
+### 变长参数 & 解包调用
+```js
+function f(a, b, ...theArgs) {
+  // type of theArgs is Array
+}
+
+const arr = [1, 2, 3, 4, 5]
+f(...arr)   // Spread
+```
+跟arguments 不同的是，theArgs 是一个真正的array
+
+## 面向对象
+创建实例使用 new 运算符，访问成员使用`.`运算符
+
+`new C()`中new 运算符的作用：调用C() 函数，初始化 this = {}，然后将函数的prototype 赋给this`this.__proto__ = C.prototype`，执行其他初始化工作（也就是函数体），返回this
+这里C() 可以是任意函数，无论该函数是否return，如果被new 调用，都会忽略
+
+### 自定义对象
+```js
+function Person() {}
+
 var a = new Person;
+// a.__proto__ === Person.prototype
+// Person.prototype.constructor === Person
 a.age       // 访问成员
 ```
-#### 内建对象
+
+### 内建对象
 Array、Math、Date
-#### 宿主对象
+
+### 宿主对象
 由运行环境（如浏览器）提供的预定义对象（例如Form、Image、Element、document）
 
 
 
 ******
 
-## DOM
+# DOM
 DOM定义了访问HTML和XML文档的标准，与平台和语言无关的编程接口，允许程序动态地访问和更新文档的内容、结构和样式。
 DOM不专属于 js，可以通用于支持DOM的程序语言，它的作用也不仅仅限于处理网页，还可以处理任何一种标记语言
 **即：**它可以让拥有DOM API的任意一种语言处理任意一种标记语言
@@ -196,8 +368,8 @@ element.href
 element.innerHTML
 和各种事件属性
 
-### 元素对象
-#### 属性
+## 元素对象
+### 属性
 + childNodes，包含所有类型的子节点的数组
 + firstChild，childNodes[0]
 + lastChild，childNodes[childNodes.length-1]
@@ -209,7 +381,7 @@ element.innerHTML
 + nodeValue，获取和设置节点的值，元素节点为null/undefined，文本节点为内容，属性为属性值（读写）
 + innerHTML，元素节点的内部HTML文档（读写）
 
-#### 方法
+### 方法
 + getElementsByTagName("name")，返回对应标签元素的对象数组（有属性length可以获知长度），其中name支持 * 通配符，找不到返回空数组
 + getElementsByClassName("cname")，返回拥有这些class的对应标签元素的对象数组，其中cname可以指定多个class（且），class之间用空格分隔，顺序不重要，找不到返回空数组
 不一定完全支持，需用`if (node.getElementsByClassName)`进行测试
@@ -218,14 +390,14 @@ element.innerHTML
 + appendChild(node)，追加子节点
 + insertBefore(node, child)，在指定子节点child前插入新节点
 
-#### 事件
-##### 在HTML中注册事件（不推荐）
+### 事件
+#### 在HTML中注册事件（不推荐）
 ```
 <tag onevent="js codes">
 ```
 其中 js codes 中可以使用 event 这个事件对象，和 this表示当前的元素对象node
 
-##### 通过js代码绑定事件
+#### 通过js代码绑定事件
 ```
 node.onevent = function(evt) { js codes }
 ```
@@ -234,7 +406,7 @@ node.onevent = function(evt) { js codes }
 该函数被认为是node的方法，可以使用函数中可以使用this引用node
 可以通过重新赋值改变绑定事件，或赋值为null删除事件
 
-##### DOM方法
+#### DOM方法
 ```
 node.addEventListener(event, listener, useCapture=false)
 ```
@@ -263,13 +435,13 @@ useCapture，默认false表示在冒泡阶段触发，true表示在捕获阶段�
 + onunload：用户退出页面时
 
 
-##### DOM事件流
+#### DOM事件流
 在DOM Level 2 Events中，事件流包括三阶段：捕获阶段，目标阶段、冒泡阶段
 捕获阶段是从document结点到目标元素，触发各个元素绑定在捕获阶段的listener；
 冒泡阶段是从目标元素到document，触发各个元素绑定在冒泡阶段的listener；
 *注：IE8-不支持捕获阶段*
 
-##### 事件属性
+#### 事件属性
 全是只读
 type：返回事件名称（字符串）
 target：返回事件触发的目标元素
@@ -279,7 +451,7 @@ timeStamp：事件发生的事件戳（从 epoch 开始的毫秒数，也可能�
 cancelable：指示preventDefault方法是否可用
 relatedTarget：与事件目标节点相关的节点（例如鼠标离开事件的鼠标进入节点，focus事件的失去焦点节点等），如果没有则为null或undefined
 
-###### 键鼠事件对象属性
+##### 键鼠事件对象属性
 key：键盘按键的字符串
 which / keyCode：键盘按键的Unicode值
 altKey
@@ -292,7 +464,7 @@ clientY：当事件触发时，鼠标指针相对于浏览器页面当前窗口�
 screenX
 screenY：当事件触发时，鼠标指针相对于屏幕的坐标
 
-##### 事件方法
+#### 事件方法
 preventDefault()：不执行与事件关联的默认动作（在兼容IE的浏览器中，事件绑定的 js codes 最后如果`return false`，有同样效果）
 stopPropagation()：终止事件在传播过程的捕获、目标处理或起泡阶段进一步传播。调用该方法后，该节点上处理该事件的处理程序将被调用，事件不再被分派到其他节点。
 stopImmediatePropagation()：阻止剩余的事件处理函数的执行（但依然会执行事件关联的默认动作），并防止当前事件在DOM树上冒泡。
@@ -301,24 +473,24 @@ stopImmediatePropagation()：阻止剩余的事件处理函数的执行（但依
 如果拦截了标签的默认事件，比如a 标签，此时href 属性就没什么用处了，当然可以指定为"#"（内部空链接），不过基于平稳退化的考虑，还是将其指定为一个有效的URL，来确保即使 js 代码无效时也可以响应用户。
 
 
-### window
+## window
 对应浏览器窗口本身
-#### 方法
+### 方法
 + open(url, name, features)
     url: 新窗口打开页面的url，如果缺省则为空白页
     name: 新窗口的名字，可以在代码中通过该名字与新窗口进行通信
     features: 新窗口的各种属性（字符串，属性间用逗号分隔），例如`"width=320,height=480"`
 
-### window.document
+## window.document
 网页内容（只有当window加载完成后，该对象才是有效的）
-#### 方法
+### 方法
 + getElementById("id")，返回对应元素的对象，找不到返回null
 + createElement("name")，创建一个元素结点
 + createTextNode("text")，创建一个文本结点
 + `write("<h1>This is a heading</h1>");`，在页面加载过程中调用，可以插入内容，如果在页面加载完成后调用会覆盖整个文档。
 
-### window.location
-#### 属性
+## window.location
+### 属性
 + href：取得当前地址栏中的完整URL，可以通过赋值改变当前地址栏中的URL；
 + search：取得当前URL的参数部分，即“?”后面的部分（包括问号），可以通过赋值改变URL的参数部分；
 + hash：取得当前URL中包含的锚记，即“#”后面的部分（包括#），可以通过赋值改变URL的锚记部分;
@@ -328,19 +500,19 @@ stopImmediatePropagation()：阻止剩余的事件处理函数的执行（但依
 + pathname：取得当前URL中的路径信息，即域名与参数之间的部分，可以通过赋值改变当前URL的路径；
 + protocol：取得当前URL的协议部分，比如http:，https:等，可以通过赋值改变URL的协议部分；
 
-#### 方法
+### 方法
 + replace(url)：用传入的URL字符串替代当前的URL，该方法会将历史记录中的URL一并替换掉，也就是说，这个方法会覆盖之前的历史记录；
 + reload()：重新加载当前URL，相当于刷新；
 + assign(url)：加载传入的URL，该方法不会覆盖之前的历史记录；
 
-### window.history
+## window.history
 包含用户（在浏览器窗口中）访问过的 URL
 当访问一个页面时，将该页面插入到history的当前位置
 
-#### 属性
+### 属性
 length : 返回浏览器历史列表中的 URL 数量
 
-#### 方法
+### 方法
 + back()
 加载历史列表中的前一个 URL（如果存在）
 效果等价于点击后退按钮或调用 history.go(-1)
@@ -364,7 +536,7 @@ url 就是新插入history 的url，可以是绝对，也可以相对（不能�
 + replaceState
 修改当前的history条目
 
-#### 事件
+### 事件
 window.onpostate
 
 ```
