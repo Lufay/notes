@@ -1023,8 +1023,8 @@ len()函数实际上是调用对象类中的`__len__()`方法
 
 序列通用操作
 1. `+` 序列连接（类似的也支持`+=`运算）
-2. `* n` 重复 n 次进行连接（类似的也支持`*=`运算）
-*注意*：连接只能在同类型进行；并且拷贝n 次的都是引用
+2. `* n` 重复 n 次进行连接（类似的也支持`*=`运算）（重复的这n 次都是同一个对象的引用）
+*注意*：连接只能在同类型进行
 3. `[n]` 索引某个元素
 索引值n，正向从0递增，反向从 -1 递减——相当于加上len做偏移
 4. `[start:end:step]` 切分出子序列，前闭后开区间，表示将从序列中选取从索引为start开始的元素，每次步进step，不到索引为end的元素的这些元素组成一个新的序列
@@ -1270,7 +1270,7 @@ list()					[]
 list((1, 2, 3))			[1, 2, 3]（浅拷贝构造，即元素使用引用原容器元素）
 list("fjal")			['f', 'j', 'a', 'l']（可将其他可迭代对象转换为列表）
 
-##### 数字列表生成器
+###### 数字列表生成器
 ```
 range([start,] stop[, step])
 ```
@@ -1453,7 +1453,7 @@ frozenset只能使用frozenset(iterable) 进行构造
 | Hashable | `__hash__` |
 | Callable | `__call__` |
 
-##### namedtuple
+###### namedtuple
 生成一个命名元组类，通过该类构造的元组，可以类似访问属性的方式访问成员（而不必用索引），而且其很轻量，不比普通元组占用更多内存。
 生成函数：
 ```python
@@ -1474,7 +1474,7 @@ module 可以指定返回类型对象的`__module__`属性，缺省则为当前�
 
 使用namedtuple 可以很容易定义枚举常量
 
-##### deque
+###### deque
 双端队列类，支持常数时间，线程安全的双端操作
 ```
 deque([iterable[, maxlen]])
@@ -1497,7 +1497,7 @@ rotate(n)：如果n为正，则队列循环右移n 个位置；n为负则向左
 支持容器通用操作，可迭代，可pickle，支持reversed，可使用copy模块进行拷贝  
 支持索引，但不支持切片（访问中间位置的元素具有线性复杂度，因此不适合随机访问）
 
-##### defaultdict
+###### defaultdict
 带默认值生成器的字典（dict的子类）
 ```py
 defaultdict(default_factory=None[, ...])
@@ -1509,9 +1509,9 @@ default_factory默认值的行为和dict 一样，可以指定一个无参的函
 这是由于它实现了dict 的`__missing__(key)` 方法，并使用default_factory 获取默认值，然后调用setdefault 返回
 
 ##### OrderedDict
-有序字典（按插入顺序）（dict的子类，从Python3.7 dict 具有该特性，但更看重映射的空间效率、迭代速度、更新性能），其更看重重新排序的性能，因此很适合做LRU 缓存  
-**注意：若使用其关键字参数的构造器和update方法，在python3.6之前无法保证按参数顺序保存到OrderedDict中**  
-更新值并不影响顺序（除非修改`__setitem__`方法的实现）  
+有序字典（按插入顺序）（dict的子类）  
+**注意：对于使用关键字参数的构造器和update方法，其顺序将丢失，因为python使用dict 进行参数传递**  
+更新值并不影响顺序  
 和OrderedDict 进行等值比较顺序敏感，和其他Mapping 对象比较则顺序不敏感  
 额外支持的方法：  
 popitem(last=True)：默认弹出最后插入的kv二元组，last为False，则弹出最早插入的kv二元组  
@@ -1519,7 +1519,7 @@ move_to_end(key, last=True)：将指定的key 放到尾部（默认）或头部�
 还支持reversed()函数进行逆序
 Python3.9 支持`|`和`|=` 进行合并操作
 
-##### Counter
+###### Counter
 计数器类（dict的子类）
 ```
 Counter([iterable-or-mapping])
@@ -1560,18 +1560,26 @@ nlargest(n, iterable[, key])：返回迭代器中n 个最大的数组成的列�
 nsmallest(n, iterable[, key])：返回迭代器中n 个最小的数组成的列表，key 可以提供一个获取比较key 的函数  
 *注：nlargest 和nsmallest 仅当n 较小时比较有效，如果较大，使用sorted() 更有效，如果n == 1，则使用min 和max 更有效*
 
-## 2. 其他内建类型
-+ object：所有对象的基类
-+ type: 类型对象的基类，即type(object)，Python2 中继承自object 的new-style 类对象
-+ classobj：Python2 的经典（old style）类对象
-+ None: 单例，等价于 NULL，其bool(None) == False，str(None) == 'None'
-+ Ellipsis：单例，在 Python 3 中可以直接写`...`，其bool(Ellipsis) == True，str(Ellipsis) == 'Ellipsis'，可以用在类型annotation的Callable、Tuple中作为占位符，表示不确定的参数、不定长的 tuple，也可以替代pass 语句，在NumPy 中用于扩展切片能力
-+ file：文件
-+ 函数function/方法instancemethod
-+ 模块
+### 2. 其他内建类型
+类型type
+None（等价于 NULL）
+文件file
+函数function/方法instancemethod
+模块
+类classobj
+object()
 
-## 3. 内部类型
-### 切片（slice）
+### 3. 内部类型
+#### 代码
+代码对象是编译过的Python源代码片段，是可执行对象。通过调用内建函数compile()可以得到代码对象。代码对象可被exec命令或eval()内建函数执行。对象本身不含任何执行环境信息，在被执行时动态获得上下文。事实上，代码对象是函数的一个属性（函数还有其他属性，如函数名、文档字符串等）
+
+#### 帧（frame）
+帧对象表示Python的执行栈帧。包含了所有Python解释器所需的执行环境信息。每次函数调用就会产生一个新的帧。
+
+#### 跟踪记录（traceback）
+当异常发生时，一个含有该异常的堆栈跟踪信息的跟踪记录对象被创建。如果一个异常有其处理程序，处理程序就可以访问这个对象。
+
+#### 切片（slice）
 当使用切片语法时，将创建切片对象。切片语法包括：步进切片，多维切片，省略切片。
 步进切片的语法见上
 多维切片的语法是：seq[start1:end1, start2:end2]
@@ -1857,21 +1865,21 @@ next(iterator[, default])
     - all(iter)：如果可迭代对象iter为空，或所有元素x的bool(x)都为True，则返回True，否则返回False
     - sum(iter, init=0)：返回数值序列和init的总和（效果同reduce(operator.add, seq, init)）
     - max(iter, key=None)，min(iter, key=None)：key是一个函数返回一个用于比较的值，按该函数返回的值选出迭代对象中的最大和最小值。（此外，这两个函数还有一个可变参数版本：max(arg1, arg2, …, key=None)，min(arg1, arg2, …, key=None)
-    - reduce(func, iter[, init])：func是一个需要两个参数的函数对象，每次从iter中取出一个元素和上次func的结果作为本次func的参数，如果提供了init参数，则初始init作为上次func的结果，如果未提供init参数，则首次取iter的两个元素作为func的参数。这里func不能是None。*该函数在Python3 被移入到functools 模块中*
+    - reduce(func, iter[, init])：func是一个需要两个参数的函数对象，每次从iter中取出一个元素和上次func的结果作为本次func的参数，如果提供了init参数，则初始init作为上次func的结果，如果未提供init参数，则首次取iter的两个元素作为func的参数。这里func不能是None。
 
-#### 相关模块
+##### 相关模块
 itertools
 1. 无限迭代器
 	+ count(start=0, step=1)：无限版range: `start, start+step, start+2*step, start+3*stemp, ...`
-	+ cycle(iterable)：无限循环迭代
+	+ cycle(iterable)：无限循环迭代生成器
 	+ repeat(e, times=None): e * times 无限版
 1. 终止于最短的输入序列的迭代器
 	+ `chain(*iterables)` 和`chain.from_iterable(iterable)`: 二阶flat
 	+ groupby(iterable, key=None): 需要先把key 聚集（比如sorted）再调用本函数才有意义，即，它将已经聚集在一起的key 合并为一条记录(key, 聚集生成器) 的二元组
-	+ pairwise(iterable): iterable 两两结合为一个元素返回新的迭代器
+	+ pairwise(iterable): 返回新的迭代器`[(a0, a1), (a1, a2), (a2, a3), ...]`
 	+ map 升级
 		- `zip_longest(*iterables, fillvalue=None)`：和zip 相同，只不过返回的列表长度和这些序列中最长的一个相同，不足的用fillvalue 补充
-		- starmap(function, iterable)：相当于map(func, zip_longest(it1, it2, ...)), 即用iterable 的每个元素作为参数调用func
+		- starmap(function, iterable)：返回一个迭代对象, 每次迭代返回用iterable 的每个元素作为参数解包后调用func的返回值
 		- `accumulate(iterable, func=operator.add, *, initial=None)`: p=func(initial, a0), func(p, a1), func(p, a2), ...
 	+ filter 升级
 		- filterfalse(predicate, iterable): filter 的False 版
@@ -1879,7 +1887,7 @@ itertools
 		- dropwhile(predicate, iterable): 去掉满足predicate 的前导序列，返回一个生成器
 		- islice(iterable, stop) 和islice(iterable, start, stop, step=1)：相当于用range 产出（不支持负索引）的下标遍历iterable，返回一个生成器，可以使用它对生成器进行切片
 		- compress(data, selectors): (d for d, s in zip(data, selectors) if s)
-	+ tee(iterable, n=2): 返回一个n 元组，每个元素都是一个iterable 构成的生成器（非线程安全）（一旦使用该函数，原来的iterable 就不要使用了，因为它的动作都不会通知给tee 返回的生成器），由于很多生成器只能迭代一次，所以使用该函数，可以复制多份进行使用
+	+ tee(iterable, n=2): 返回一个n 元组，每个元素都是一个iterable 构成的生成器（非线程安全）（一旦使用该函数，原来的iterable 就不要使用了，因为它的动作都不会通知给tee 返回的生成器）
 1. 排列组合
 	+ `product(*iterables, repeat=1)`: iterables * repeat 后，每个iterable 取一个元组进行笛卡尔积（类似多层嵌套循环）返回一个生成器，每个元素时一个元组（每次迭代，最右侧元素最先步进）
 	+ permutations(iterable, r=None): 从iterable 取出r 个元素进行全排列
@@ -1887,7 +1895,7 @@ itertools
 	+ combinations_with_replacement(iterable, r): 从iterable 取出r 个（可重复）元素进行组合
 支持无限迭代的输入
 
-### 2.3 continue、break、pass
+#### 2.3 continue、break、pass
 continue语句：跳过循环中剩下语句，进行下次迭代（进行条件检查或调用next()）
 break语句：跳出循环
 pass语句：空语句的占位符
@@ -1903,7 +1911,7 @@ def func_name([args]):
 不支持函数重载，但可以通过type()确定参数类型来实现
 支持调用在前，定义在后
 函数调用时，小括号不可省略
-支持递归
+支持递归（[尾递归消除](https://github.com/hunterwilhelm/functional-recursion)）
 关键字参数：通过形参名来指定参数，可以不按顺序
 
 ### 1.1 参数
@@ -2067,43 +2075,9 @@ print dec(10)
 生成器可以抛出异常
 为了使生成器获得调用者给其的传值，yield 语句会返回一个值，该值就是调用者传入的值（如果调用者使用的是next() 未传值，则该返回值为None）。
 
-## 7. 泛型重载
-仅支持对第一个参数进行类型分派，当找不到准确匹配的类型，则按照继承树向上找一个匹配的类型，而被singledispatch 修饰的函数，则被认为object 类型，所以是一个兜底方法
-```py
-from functools import singledispatch
 
-@singledispatch
-def fun(arg, verbose=False):
-    if verbose:
-        print("Let me just say,", end=" ")
-    print(arg)
-
-@fun.register
-def _(arg: list, verbose=False):
-    if verbose:
-        print("Enumerate this:")
-    for i, elem in enumerate(arg):
-        print(i, elem)
-
-@fun.register(complex)      # 该装饰器返回装饰前的函数，所以可以重复叠多层
-def _(arg, verbose=False):
-    if verbose:
-        print("Better than complicated.", end=" ")
-    print(arg.real, arg.imag)
-
-def nothing(arg, verbose=False):
-    print("Nothing.")
-fun.register(type(None), nothing)
-```
-被装饰后的函数有以下方法：
-dispatch(type): 返回指定类型的函数对象
-registry 属性：所有已注册的`<class: func_obj>` 字典
-
-对类方法或实例方法，使用functools.singledispatchmethod 装饰（必须是最外装饰器）
-
-
-# 第六章. 对象和类
-## 1. 类定义
+## 第六章. 对象和类
+### 1. 类定义
 ```
 class ClassName(base_class, ...):
     "optional documentation string"
@@ -2214,20 +2188,11 @@ def f1(self, x, y):
 class C:
     f = f1
 ```
-在类外就只能定义单个实例的方法：
-```py
-c = C()
-c.f = f1    # 这种形式在调用时，还是得要指定对象
-c.f(c, 1, 2)
 
-c.ff = types.MethodType(f1, c) # 这种形式，就绑定了对象
-c.ff(1, 2)
-```
-
-### 4.2 魔术方法
-`__hash__`: 供hash() 调用，默认会根据实例ID 进行生成实现。注意：仅当实例不可变才可以重写该方法的实现，否则应`__hash__ = None` 以明确该类的实例不可哈希
-`__bool__`: 用于真值测试（python3 使用）以及 bool() 调用
-`__nonzero__`: 用于真值测试（python2 使用）可以使用`__nonzero__ = __bool__`
+#### 4.2 魔术方法
+`__hash__`: 供hash() 调用
+`__bool__`: 用于真值测试 以及 bool() 调用
+`__nonzero__`:
 
 `__str__`: 供str() 以及 format() 和 print() 调用
 `__repr__`: 供 repr() 调用，用于调试
@@ -3475,12 +3440,9 @@ pickle 和 marshal 模块
 
 序列化格式是Python特定的，与机器架构无关的。优点是没有外部标准的限制，可以跨平台使用，缺点是序列化结果无法用于非Python程序反序列化。
 pickle有三种序列化格式协议：
-0: ASCII表示，可读性好，但空间和时间性能都不好。（默认）
-1: 旧式的二进制格式，兼容旧版本的Python。
-2: Python 2.3引入的新的二进制格式，序列化新式的class更有效。
-3: Python 3.0引入，显式地支持 bytes 字节对象，Python 3.0-3.7 的默认协议（Python2 不支持）
-4: Python 3.4引入，支持存储非常大的对象，Python 3.8使用的默认协议
-5: Python 3.8引入，增加了对带外数据的支持
+0：ASCII表示，可读性好，但空间和时间性能都不好。（默认）
+1：旧式的二进制格式，兼容旧版本的Python。
+2：Python 2.3引入的新的二进制格式，序列化新式的class更有效。
 如果给的协议号为负或`pickle.HIGHEST_PROTOCOL`都表示使用最大的协议号。
 
 这两个模块只负责序列化，并不保证对数据源序列化时的安全性，并不处理持久化对象及其并发访问的问题。但也因此可以灵活的将其用于持久化文件、数据库、网络传输。
@@ -3488,7 +3450,10 @@ pickle有三种序列化格式协议：
 #### 6.1.2 对比
 marshal是更原始的序列化模块，其存在的目的主要是为了支持Python的.pyc文件。
 
-pickle比起优越在，pickle会跟踪已序列化的对象，因此可以处理循环引用和对象共享；pickle可以序列化自定义对象，而想要反序列化必须使用相同的类定义；pickle的序列化格式针对Python版本向后兼容，而marshal为了支持Python的.pyc文件并不保证向后兼容。
+pickle比其优越在于
++ pickle会跟踪已序列化的对象，因此可以处理循环引用和对象共享；
++ pickle可以序列化自定义对象，而想要反序列化必须使用相同的类定义；
++ pickle的序列化格式针对Python版本向后兼容，而marshal为了支持Python的.pyc文件并不保证向后兼容。
 cPickle是pickle的C实现版，比其快1000倍。它们有着相同接口，除了Pickler()和Unpickler()这两个类都作为函数来实现，因此，就不能通过继承该类实现自定义的反序列化。而且，它们序列化成的字节流也是可以互通的。
 
 #### 6.1.3 pickle
@@ -3499,8 +3464,8 @@ cPickle是pickle的C实现版，比其快1000倍。它们有着相同接口，�
 反序列化，等价于Unpickler(file).load()，file是一个必须有read(size)和readline()方法的类文件对象，该函数能自动识别序列化协议格式。
 此外，还有
 + dumps(obj[, protocol])
-+ loads(string)
-两个函数，用于直接序列化为字符串和从字符串中反序列化。
++ loads(data)
+两个函数，用于直接序列化为字符串和从字符串中反序列化（Python3 中为bytes 类型）
 
 pickle可以序列化的类型参考：<https://docs.python.org/2/library/pickle.html#what-can-be-pickled-and-unpickled>
 如果不能序列化，将抛出一个PicklingError异常。（但可能已经有数据写入file中了）
