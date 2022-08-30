@@ -1,4 +1,5 @@
 Advanced Python Scheduler，基于Quartz 的定时任务框架
+[git home](https://github.com/jcass77/django-apscheduler)
 <https://apscheduler.readthedocs.io/en/latest/userguide.html#>
 
 支持三种调度任务：固定时间间隔，固定时间点（日期），Crontab 命令

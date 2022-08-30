@@ -1,4 +1,3 @@
-# Go
 [官方文档](https://golang.org/doc/)
 [官方文档中文版](https://go-zh.org/doc/)
 [Go 指南](https://tour.go-zh.org/list)
@@ -7,7 +6,8 @@
 [An Introduction to Programming in Go](http://www.golang-book.com/books/intro)
 [TOC]
 
-## 概述
+# 概述
+先前，go代码文件都被组成成包(package)基于GOPATH进行管理，在1.11 版本引入module 概念后用以替换基于GOPATH 的管理方式
 简洁、设计一致性：避免过度的复杂性
 
 没有继承只有组合
@@ -15,8 +15,22 @@
 
 不允许定义变量导入包而不使用，但可以用`_`，表示丢弃返回
 
-## 开始
+# 开始
+设置环境变量GOROOT 为go 的安装目录（不是go 这个二进制的目录，而是bin 所在的目录）
+设置环境变量GOPATH 为工作空间目录
 版本查看`go version`
+
+查看环境变量默认值`go env [ENVAR]`，若指定变量名则查看单个，若不指定则查看全部
+可以使用`go env -w ENVAR=xxx` 修改环境变量默认值；也可以使用`go env -u ENVAR` 将修改的默认值进行重置
+例如设置GoProxy：
+```sh
+go env -w GOPROXY="https://goproxy.xxx.org|https://goproxy.cn|direct"
+go env -w GOPRIVATE="*.xxx.org,*.yyy.cn,git.zzz.com"
+go env -w GOSUMDB="sum.golang.google.cn"
+```
+Go 1.15 支持了使用 ｜ 分隔符来分隔多个 proxy server，这样一个 proxy 如果报错，会自动 fallback 到下一个
+GOPRIVATE 指定了不走官方proxy 的pattern
+
 
 go 命令下有一系列子命令：
 1. gofmt 代码格式化
@@ -24,36 +38,35 @@ go 命令下有一系列子命令：
 1. goimports 自动导入
 可以根据代码需要自动生成和删除import
 1. go get $gitPath
-自动下载go 项目并安装
+自动下载go 项目并安装（会安装到GOPATH指定的目录下）
 
-### REPL
+## REPL
 <https://github.com/motemen/gore>
 <https://github.com/d4l3k/go-pry>
 
-### 执行
-设置环境变量`GOPATH` 为工作空间
+## 执行
 直接使用`go run src.go` 就可以编译链接并执行该源文件
 也可以使用`go build src.go` 将该源文件编译为可执行文件（静态编译，不用担心动态库的版本依赖问题）
 
 main 这个包定义了一个独立的可执行程序，其中的main 函数就是这个程序的入口
 
-### 代码文本
+## 代码文本
 编译器会自动在特定的行末尾加分号，所以行末的分号是不必要的
 正因为于此，为避免错加分号，if/func 等的左大括号必须跟在行尾而不能独立成行，+/-/&&/|| 等二元连接符也必须在行尾，也不能另起一行
 而一行的多条语句需要用分号分隔
 
-### 注释
+## 注释
 `//` 行注释
 
-### 命令行参数
-#### os 包
+## 命令行参数
+### os 包
 解决跨平台的问题
 os.Args 是命令行参数的切片（类型是[]string）
 第一个元素是命令本身，而后是参数列表
 
-#### flag 包
-##### 命令行配置
-###### 绑定变量
+### flag 包
+#### 命令行配置
+##### 绑定变量
 ```go
 // 第一个参数是选项名，第二个是默认值，第三个是说明信息，通过返回值接收（对应类型的指针）
 ok := flag.Bool("ok", false, "is ok")
@@ -64,7 +77,7 @@ flag.BoolVar(&ok, "ok", false, "is ok")
 flag.StringVar(&name, "name", "123", "name")
 ```
 
-###### 设置usage
+##### 设置usage
 ```go
 flag.Usage = func () {
 	fmt.Fprintf(os.Stderr, `nginx version: nginx/1.10.0
@@ -77,7 +90,7 @@ Options:
 ```
 当使用-h 以及参数解析出错时调用
 
-##### 命令行解析
+#### 命令行解析
 `flag.Parse()`
 当遇到单独的一个`-`/`--`或不是`-`开始的命令行参数时，会停止解析（`-`会被当做非flag参数，而`--`会当做flag 和非flag 的分隔符）
 
@@ -87,7 +100,7 @@ NArg()：返回非flag 参数的个数
 Args()：返回所有非flag 参数
 Arg(i int)：返回指定位置的非flag 参数（i 从0 到NArg()-1）
 
-##### 支持的格式
+#### 支持的格式
 ```
 -h
 
@@ -101,7 +114,7 @@ Arg(i int)：返回指定位置的非flag 参数（i 从0 到NArg()-1）
 bool类型可以是1, 0, t, f, T, F, true, false, TRUE, FALSE, True, False
 Duration可以接受任何time.ParseDuration 能解析的类型
 
-##### 创建自定义flag
+#### 创建自定义flag
 实现flag.Value接口
 而后就可以通过如下方式配置该flag：`flag.Var(&flagVal, "name", "help message for flagname")`，该flag的类型和值由第一个参数表示
 
@@ -117,7 +130,7 @@ type Getter interface {
 }
 ```
 
-##### 其他函数
+#### 其他函数
 Set(name, value string)：设置已注册的flag的值
 Lookup(name string)：返回指定name 的Flag 指针
 `Visit(fn func(*Flag))`：按照字典顺序遍历用户设置的flag，并且对每个标签调用fn
@@ -132,15 +145,15 @@ type Flag struct {
 }
 ```
 
-#### 第三方包
+### 第三方包
 [command](https://github.com/polaris1119/command)
 [goptions](https://github.com/polaris1119/goptions)
 [urfave/cli](https://github.com/urfave/cli)
 [spf13/cobra](https://github.com/spf13/cobra)
 
 
-## 数据类型
-### 1. 基本数据类型
+# 数据类型
+## 1. 基本数据类型
 浮点类型： float32 (c中的float ), float64 ( c中的double ) 
 复数类型: complex64, complex128(go中特有的) 
 字符类型: rune(Unicode字符类型), byte(UTF-8字符类型) 
@@ -148,12 +161,12 @@ golang中只支持UTF-8以及Unicode的编码，而对于其他的编码并没�
 UTF-8的编码是用byte这种类型来定义的，Unicode是用rune来定义的。
 在字符串遍历的时候，如果使用range关键字，那么使用的是rune的形式来遍历的。而以数组取值的方式是byte的形式。
 
-### 字符串 string
+## 字符串 string
 多行字符串：反斜杠
 s1 + s2 字符串连接
 += 会产生一个新字符串回赋
 
-#### strings 包
+### strings 包
 Count(s, sep)：在字符串s 中查找sep 串出现次数
 Index(s, sep)：在字符串s 中查找sep 串首次出现的位置（找不到返回-1，sep 空串返回0）
 LastIndex(s, sep)：在字符串s 中查找sep 串最后一次出现的位置（找不到返回-1，sep 空串返回字符串长度）
@@ -164,7 +177,7 @@ ContainsRune(s, rune)：在字符串s 中查找是否含有rune 字符
 Join(strSeq, s)：用字符串s 把字符串序列strSeq 连接起来
 Replace(s, old, new, n)：将字符串s 中的old 串替换为new，最多替换n 次，若为-1，则全部替换
 
-#### strconv 包
+### strconv 包
 ParseBool(str)：将字符串转为布尔值（字符串1、t、T、true、True、TRUE 为true，字符串0、f、F、false、False、FALSE 为false）
 FormatBool(b)：将布尔值转为字符串"true" 或 "false"
 ParseFloat(str, size)：字符串转浮点数（size 指定32 还是64）返回float64
@@ -173,7 +186,7 @@ ParseUint(str, base, size)：字符串转无符号整数，返回uint64
 Atoi
 
 
-### 数组和slice
+## 数组和slice
 []string
 字符串数组
 
@@ -186,7 +199,7 @@ s[i] 访问单个元素
 s[m:n] 获取子切片（m 缺省为0，n 缺省为len(s)）
 
 
-#### 内建函数
+### 内建函数
 copy(rsp.BookCoupon, req.BookCoupon)
 把后一个复制给前一个
 
@@ -194,34 +207,34 @@ append(slice, ele...)
 向切片中添加元素（可以一次添加多个），并返回一个新的切片
 把第二个元素追加到第一个数组最后
 
-### map
+## map
 `map[string]*NodeInfo`
 字符串到NodeInfo指针的字典
 
-#### 内建函数
+### 内建函数
 value, ok := myMap["1234"]
 访问返回是2个值，后者表示是否找到
 
 delete(map容器，key值)
 删除字典中的一个元素
 
-### 类型转换
+## 类型转换
 T(x)
 如果T 比较长，可以加括号，即(T)(x)
 Go语言要求所有统一表达式的不同的类型之间必须做显示的类型转换
 普通类型变量向接口类型转换时是隐式的
 接口类型之间的转换要看接口定义的包容性：如果包容，更多方法的接口可以向更少方法的接口进行隐式转换，反之则需要类型断言
 
-## 运算符、表达式、语句
-### 运算符
+# 运算符、表达式、语句
+## 运算符
 每种数值或逻辑运算符都有对应的回赋运算符（例如+=）
 i++, i-- 是语句（赋值语句）而不是表达式，且只支持后缀
 
-### 表达式
+## 表达式
 表达式可以求值，可以赋给变量或作为参数传递
 
-### 语句
-#### 变量声明
+## 语句
+### 变量声明
 变量会在声明时进行初始化
 ```go
 var var_name type  // 自动初始化为默认值（类型零值，例如0 和""）
@@ -243,10 +256,10 @@ const (                     //iota被重设为0
         c = iota            //c=2
 )
 
-##### 多元赋值
+#### 多元赋值
 支持i , j = j, i
 
-#### 条件语句 if
+### 条件语句 if
 ```go
 if cond_expr {
 	code_block
@@ -261,7 +274,7 @@ if a:= 8; a > 2 {}
 1. 在if之后，条件语句之前可以添加变量初始化语句，使用 ; 间隔，该变量的作用域只在该条件的逻辑块中
 1. 在有返回值的函数中，不允许将“最终的” return 语句包含在 if...else... 结构中
 
-#### 选择语句 switch
+### 选择语句 switch
 ```go
 switch val_expr {
 	case val1:
@@ -287,7 +300,7 @@ switch {
 1. 不需要break，只有使用fallthrough 语句才会继续执行紧跟的下一个 case
 1. 可以不设定 switch 之后的表达式，而在case 中使用条件表达式，在此种情况下，整个 switch 结构与多个if...else... 的逻辑作用等同
 
-#### 循环语句 for
+### 循环语句 for
 1. 迭代式：`for init; cond; step {`
 1. 遍历式：`for index, val := range seq {`
 
@@ -308,12 +321,12 @@ for v := range ch {}	// 读取管道，当管道为空，会阻塞循环，除�
 1. 支持continue 和 break，还支持break TAG，直接跳出多层循环
 注意，这里的i，ele，k，v都是在遍历开始时新分配的空间，而后在遍历时不断将数组或字典的当前元素拷贝到这些空间中
 
-#### 跳转语句
+### 跳转语句
 goto label
 在这里，标签(label)可以是除去关键字任何纯文本
 
 
-## 函数
+# 函数
 ```go
 func func_name([params]) [(results)] {
 	// func_body
@@ -328,7 +341,7 @@ results 是返回值列表，逗号分隔，每个返回如果除了类型还写
 
 defer 的时机就是在这个赋值和真正返回之前执行的，如果有多个defer，则后进先出依次执行
 
-### 内建函数
+## 内建函数
 ```go
 func new(Type) *Type
 ```
@@ -342,7 +355,7 @@ type是分配空间的类型
 count是分配的单元
 capacity是预留的单元数
 
-## 类型扩展
+# 类型扩展
 类型重命名并扩展（下面扩展了len()方法）
 ```go
 type name string
@@ -409,8 +422,8 @@ p2, ok := p.(Person)		// 这种推断失败ok 为false，p2 为nil
 想要把实例对象赋值给接口变量，必须该对象实现了所有接口的方法（不能是对象指针），但无论是对象指针还是对象实现了所有接口的方法，就可以把对象指针赋值给接口变量。
 
 
-## IO
-### io 包
+# IO
+## io 包
 提供IO 的基本接口
 ```go
 type Reader interface {
@@ -437,7 +450,7 @@ io 包本身也有这两个接口的实现类型：
 实现了 Reader 的类型：LimitedReader、PipeReader、SectionReader
 实现了 Writer 的类型：PipeWriter
 
-### fmt 包
+## fmt 包
 + Print(...interface {})：打印多个值（相当于使用%v），返回(打印的字节数, error)
 + Println(...interface {})：打印多个值，空格分隔，带换行，返回(打印的字节数, error)
 + Printf(format, ...interface {})：按格式化字符串打印，返回(打印的字节数, error)
@@ -452,20 +465,20 @@ io 包本身也有这两个接口的实现类型：
 
 + Errorf(format, ...interface{})：返回格式化的error
 
-#### format
+### format
 `%[flag][width][.][precision]verb`
 width 缺省使用默认；precision 缺省，如果有. 为0，否则使用默认，其单位是Unicode code points
 如果width 和precision 指定为`*`，则其值也从参数获得，也可以使用`[i]` 来指定使用第i 个参数
 对于字符串和字节数组，precision 限制格式化的输入长度（截断格式化）
 对于浮点数，%g 的precision 指定的是有效数位数，其他指定的是小数位数
 
-##### flag
+#### flag
 `#`	使用Go 语法格式打印
 `+`	对于数字值始终打印正负号
 `-`	左对齐（默认右对齐）
 `0`	填充0（默认空格）
 
-##### varb
+#### varb
 varb 前可以指定`[i]`，来显式指定使用第i 个参数（后面如果不指定，则依次使用i+1, i+2, ...）
 + General
 %v	使用值的默认格式（如果struct 需要带field 名字使用%+v）
@@ -495,7 +508,7 @@ varb 前可以指定`[i]`，来显式指定使用第i 个参数（后面如果�
 %p	前缀0x 的16 进制表示
 %b, %d, %o, %x, %X 都可以使用，即将指针当整数进行格式化
 
-##### 说明
+#### 说明
 1. 对于复合类型的操作数，会递归打印
 1. 如果操作数实现了Formatter接口，会调用该接口的方法。Formatter提供了格式化的控制。
 1. 如果使用%#v，且操作数实现了GoStringer接口，会调用该接口。
@@ -527,14 +540,14 @@ type Scanner interface {
 }
 ```
 
-### bufio 包
-#### Reader
+## bufio 包
+### Reader
 实现了io.Reader 接口
 
 NewReader(rd io.Reader)：返回默认buffer 大小的Reader 指针
 NewReaderSize(rd io.Reader, size int)：返回指定buffer 大小Reader 指针（若size 小于16，会被改为16）
 
-##### 方法
+#### 方法
 Read(p []byte)：读数据到p，返回(读到的字节数n, error)（0 <= n <= len(p)，但遇到EOF 时，error 为 io.EOF），只要缓存还有字节未读就会只读缓存，而不会调用底层Read，如果缓存为空，而p 的长度又大于缓冲长度，就跳过缓冲，直接使用底层Read 读数据到p
 ReadByte()：返回读到的(byte, error)
 ReadRune()：读一个UTF-8 编码的Unicode 字符，返回读到的(rune, size int, error)，第二个返回值是字符的字节数，如果编码出错，则消耗一个字节，返回unicode.ReplacementChar (U+FFFD)
@@ -550,7 +563,7 @@ Discard(n int)：丢弃即将读的n 个字节（如果超出缓存则会调用�
 Peek(n int)：预取返回(即将读的n 个字节的切片, error)，但并不真的读（返回的是缓冲区引用，也就是说可以修改缓冲区，对后面的读操作有影响）。如果返回的字节数不是n，就有error，如果error 为ErrBufferFull，表示n 超过缓冲区大小
 WriteTo(io.Writer)：实现io.WriterTo 接口，不断读数据写入，直到没有数据或发生错误，返回(写入的字节数, error)
 
-#### SplitFunc
+### SplitFunc
 函数签名类型
 `type SplitFunc func(data []byte, atEOF bool) (advance int, token []byte, err error)`
 用于Scanner 对输入进行分词的函数
@@ -560,24 +573,24 @@ ScanRunes：每次一个UTF-8-encoded rune
 ScanLines：每次一行并去掉换行符
 ScanWords：每次一个空格分隔的词（空格可以通过unicode.IsSpace 设置）并去掉两边的空格
 
-#### Scanner
+### Scanner
 用SplitFunc 分词遍历，直到遇到EOF，IO error 和超长的分词（超出buffer）（能处理的最长分词长度为64k）
 NewScanner(r io.Reader)：返回Scanner 指针
 
-##### 方法
+#### 方法
 Split(SplitFunc)：设置一个分词函数，默认是ScanLines
 Scan()：前进一个分词，返回是否成功前进，若成功可以调用Text 或Bytes 获取分词，失败可以使用Err 获取错误（遇到EOF除外）
 Text()：返回当前string 分词（新分配的空间）
 Bytes()：返回当前[]byte 分词（未分配空间，使用指针指向）
 Err()
 
-#### Writer
+### Writer
 实现了io.Writer 接口
 
 NewWriter(w io.Writer)：返回默认buffer 大小（4096）的Writer 指针
 NewWriterSize(w io.Writer, size int)：返回指定buffer 大小Reader 指针
 
-##### 方法
+#### 方法
 Write(p []byte)：将p 中的内容写到缓冲区，返回(写的字节数n, error)，如果n < len(p) 就会返回错误说明
 WriteByte(c byte)：写一个字节
 WriteRune(r rune)：写一个Unicode code point，返回(size int, error)，size 是写入的字节数
@@ -593,7 +606,7 @@ ReadFrom(io.Reader)：实现io.ReaderFrom 接口，不断读数据直到 EOF 或
 如果写的字节数超出缓冲区，就不会缓存，直接调用底层w 进行Write**
 
 
-#### ReadWriter
+### ReadWriter
 实现了io.ReadWriter 接口
 ```go
 type ReadWriter interface {
@@ -605,15 +618,15 @@ type ReadWriter interface {
 `NewReadWriter(*Reader, *Writer)`：返回ReadWriter 的指针
 
 
-### io/ioutil 包
+## io/ioutil 包
 ioutil.Discard 支持io.Writer 接口
 
 
-## 并发编程
+# 并发编程
 轻量级线程goroutine
 go 函数调用
 
-### 管道
+## 管道
 类似消息队列
 var ch chan int
 一个类型为int 的channel
@@ -624,7 +637,7 @@ close(ch)	// 关闭将变成只读的管道
 无缓冲读写都会阻塞，即会挂起当前的goroutine，除非另一端已经准备好
 有缓冲，满才会堵塞写，空才会堵塞读
 
-#### select
+### select
 ```go
 select {
 	case chanStmt:
@@ -643,17 +656,37 @@ select 中管道出现问题并不会报错，只不过不会走该case
 由于`code_block` 中可以使用break 跳出select，所以当select 外面套一个for 循环时，break 是无法跳出for 循环，这里就必须使用带标签的break，标记外层循环后break 该标记
 
 
-## 包
+# 包 & 模块 & 库
 [参考](https://golang.org/pkg/)
-一个目录下的一个或多个go 文件组成，每个源文件都是以一条package 声明语句开始
+一个目录下的一个或多个go 文件组成，每个源文件都是以一条package 声明语句开始，通常包名和目录名一致，而生成可执行的包必须是`package main`
+同一个包内的所有标识都拥有可见性
+一个Go 库(repository)可以包含一个或多个模块（通常是一个）。一个模块(module)是多个相关联包的集合，在模块的根目录下有一个go.mod 文件会记录该模块下其他包的导入路径前缀，而模块外的导入就是模块路径前缀+包路径（标准库的包不需要模块路径前缀）。通常一个路径前缀就是repository 的路径去掉协议头（比如https://）
+[参考go-cmp](https://github.com/google/go-cmp)
 
-### 导入包
+## 创建一个模块
+`go mod init <module-prefix>`
+
+## 安装一个模块
+执行`go install [<module-prefix>]`，就会将该模块进行编译成二进制文件，然后放入指定目录（若GOBIN 环境变量设置，则放入该目录；若GOPATH 环境变量设置，则放入该目录的bin 下（通过`go env GOPATH` 可以查看该环境变量的默认值）
+若module-prefix 在GOPATH 的目录之下，则该命令可以在任意位置执行，否则则只能在模块的目录下执行（也就是go.mod所在的目录，当然在该目录下执行可以省略module-prefix）
+
+## 查看当前模块
+在模块的目录下（也就是go.mod所在的目录）执行：
+go list: 返回当前模块的module-prefix
+`go list -f '{{.Target}}'`: 返回当前模块的二进制目标
+
+## 更新模块依赖
+`go mod tidy` 可以自动扫描模块下的外部包的依赖，并下载，而后将其版本信息更新到go.mod 文件以及go.sum 文件
+外部包的依赖会自动下载到`$GOPATH/pkg/mod`下
+想要移除下载的模块可以使用`go clean -modcache`
+
+## 导入包
 ```go
-import "pkg_name"
+import "fmt"	// stdlib, no module-prefix
 // multi-import
 import (
-	"pkg1_name"
-	"pkg2_name"
+	"example/user/hello/morestr"	// module-prefix: example/user/hello, package: morestr
+	"github.com/google/go-cmp/cmp"	// module-prefix: github.com/google/go-cmp, package: cmp
 )
 ```
 
@@ -662,13 +695,13 @@ import (
 gofmt 工具会按字母顺序对导入的包进行排序
 
 
-## 测试
+# 测试
 import "testing"
 文件命名：`xxx_test.go`
 
 测试代码中也能定义init函数，init函数会在引入外部包、定义常量、声明变量之后被自动调用，可以在init函数里编写测试相关的初始化代码
 
-### 测试命令
+## 测试命令
 go test [options] [dir]
 dir 是测试包所在目录
 选项：
@@ -695,7 +728,7 @@ dir 是测试包所在目录
 -test.cpu 1,2,4 : 程序运行在哪些CPU上面，使用二进制的1所在位代表，和nginx的nginx_worker_cpu_affinity是一个道理
 -test.short : 将那些运行时间较长的测试用例运行时间缩短
 
-### 功能测试
+## 功能测试
 函数命名：
 ```go
 func TestXyz(t *Testing.T) {
@@ -714,7 +747,7 @@ func TestXyz(t *Testing.T) {
 }
 ```
 
-### 压力测试
+## 压力测试
 函数命名：
 ```go
 func BenchmarkXyz(b *testing.B) {
@@ -745,7 +778,7 @@ func BenchmarkXyz(b *testing.B) {
 `go tool pprof --web aa.test cpu.profile` 进入web 模式
 `go tool pprof --text mybin http://myserver:6060:/debug/pprof/profile`
 
-### 样例测试
+## 样例测试
 用来看运行中，输出的内容是否与预期的一样
 示例函数需要归属于某个 包/函数/类型/类型 的方法，具体命名规则如下：
 ```go
@@ -762,7 +795,7 @@ func ExampleT_M_suffix() { ... }
 ```
 go doc 工具会解析示例函数的函数体作为对应 包/函数/类型/类型的方法 的用法。
 
-### 用于测试的Main函数
+## 用于测试的Main函数
 ```go
 func TestMain(m *testing.M) {
 	// call flag.Parse() here if TestMain uses flags
@@ -770,7 +803,7 @@ func TestMain(m *testing.M) {
 }
 ```
 
-### setup or teardown
+## setup or teardown
 testing 并没有提供这样的函数，但可以通过Subtests 的方式来进行实现：
 ```go
 func TestFoo(t *testing.T) {
@@ -792,8 +825,8 @@ go test -run /A=1    # For all top-level tests, run subtests matching "A=1".
 
 如果想要一个全局的setup or teardown，可以使用TestMain，m 也有Run 方法
 
-### 测试工具
-#### 黑盒测试
+## 测试工具
+### 黑盒测试
 testing/quick包实现了帮助黑盒测试的实用函数 Check和CheckEqual。
 
 ```go
@@ -807,7 +840,7 @@ CheckEqual函数是比较给定的两个黑盒函数是否相等，函数原型�
 func CheckEqual(f, g interface{}, config *Config) (err error)
 ```
 
-#### IO 相关
+### IO 相关
 testing/iotest包中实现了常用的出错的Reader和Writer，可供我们在io相关的测试中使用。主要有：
 
 触发数据错误dataErrReader，通过DataErrReader()函数创建
@@ -818,7 +851,7 @@ testing/iotest包中实现了常用的出错的Reader和Writer，可供我们在
 读取时记录日志的readLogger，通过NewReadLogger()函数创建
 写入时记录日志的writeLogger，通过NewWriteLogger()函数创建
 
-#### HTTP测试
+### HTTP测试
 net/http/httptest包提供了HTTP相关代码的工具，我们的测试代码中可以创建一个临时的httptest.Server来测试发送HTTP请求的代码:
 ```go
 ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

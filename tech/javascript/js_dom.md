@@ -124,14 +124,21 @@ let 声明是块作用域，不会声明提升
 const 也是块作用域，而且名字和对象会绑定，不允许改绑
 
 ```js
-for (let i = 0; i<5; i++) {
+for (let i=0; i<5; i++) {
     setTimeout(() => {
         console.log(i)
     }, 0);
 }
+// 如果不支持ES6 就只能这样：
+for (var i=0; i<5; i++) {
+   (function(k){
+    setTimeout(function(){console.log(k)},1000)
+    })(i);
+}
 ```
 如果使用var i 将得到5 5 5 5 5，而使用let 得到的是0 1 2 3 4
 因为var 会把i 提升为函数变量，所以内部匿名函数保存的就是就是这个函数变量，即退出循环的值；而let 是块级变量，每次迭代绑定的是不同的变量
+而通过封装函数调用，则每次绑定的都是函数的参数k
 
 ### 类型
 + 数值（Number）包括整数、浮点
@@ -266,12 +273,16 @@ entries(): [key, val] 的迭代
 ### 解包赋值
 ```js
 const foo = ['one', 'two', 'three'];
+const big = ['four', 'five', ...foo]    // 解包扩展，扩展不限定是最后一个
+
 const [one, two, three] = foo;
 [a, ...rest] = foo  // rest 也是一个Array
 [a, ,b] = [1, 2, 3, 4, 5]   // a = 1, b = 3，长度不需要对齐，若左侧较多，则值为undefined
 [a=9, ,b] = [, 2, 3, 4, 5]  // a = 9, 当长度不足，或者undefined、null 时使用默认值，默认值可以是任意表达式，仅当启用默认值时才进行表达式计算
 
 const obj = { a: 1, b: 2};
+const bigO = {c:3, ...obj}    // 解包扩展，扩展不限定是最后一个
+
 const { a, b } = obj;   // a = obj.a, b = obj.b
 ({a: foo[1], b: foo[2]} = obj); // 赋值而非声明时，必须加括号
 
@@ -492,18 +503,21 @@ stopImmediatePropagation()：阻止剩余的事件处理函数的执行（但依
 ## window.location
 ### 属性
 + href：取得当前地址栏中的完整URL，可以通过赋值改变当前地址栏中的URL；
-+ search：取得当前URL的参数部分，即“?”后面的部分（包括问号），可以通过赋值改变URL的参数部分；
-+ hash：取得当前URL中包含的锚记，即“#”后面的部分（包括#），可以通过赋值改变URL的锚记部分;
++ protocol：取得当前URL的协议部分，比如http:，https:等，可以通过赋值改变URL的协议部分；
 + host：取得当前URL中的主机信息，包括端口号，可以通过赋值改变主机信息；
 + hostname：取得当前URL中的域名部分，不包括端口号，可以通过赋值改变域名；
 + port：取得当前URL中的端口号，可以通过赋值改变端口号；
-+ pathname：取得当前URL中的路径信息，即域名与参数之间的部分，可以通过赋值改变当前URL的路径；
-+ protocol：取得当前URL的协议部分，比如http:，https:等，可以通过赋值改变URL的协议部分；
++ origin: protocol+host，该属性只读
++ pathname：取得当前URL中的路径信息，即域名与参数之间的部分（包括开头的/），可以通过赋值改变当前URL的路径；
++ search：取得当前URL的参数部分，即“?”后面的部分（包括问号），可以通过赋值改变URL的参数部分；
++ hash：取得当前URL中包含的锚记，即“#”后面的部分（包括#），可以通过赋值改变URL的锚记部分;
+
 
 ### 方法
-+ replace(url)：用传入的URL字符串替代当前的URL，该方法会将历史记录中的URL一并替换掉，也就是说，这个方法会覆盖之前的历史记录；
-+ reload()：重新加载当前URL，相当于刷新；
 + assign(url)：加载传入的URL，该方法不会覆盖之前的历史记录；
++ replace(url)：加载传入的URL，该方法是用传入的URL字符串替代当前的URL，并且会将历史记录中的URL一并替换掉，也就是说，无法通过后退回到原URL；
++ reload()：重新加载当前URL，相当于刷新；
++ toString()：返回URL 字符串，跟href 一样
 
 ## window.history
 包含用户（在浏览器窗口中）访问过的 URL

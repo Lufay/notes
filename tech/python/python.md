@@ -4,6 +4,7 @@ Python
 [Python 3](https://docs.python.org/3/)
 [文档目录](https://docs.python.org/zh-cn/3/contents.html)
 [Python Cookbook 3rd Edition](https://python3-cookbook.readthedocs.io/zh_CN/latest/)
+[教程](https://blog.hszofficial.site/TutorialForPython/)
 [TOC]
 
 # 第一章. Python特性
@@ -1243,7 +1244,7 @@ s.substitute(lang='Python', howmany=3)，必须给出全部$变量的替换，�
 
 
 ##### 相关模块
-[re](http://www.cnblogs.com/huxi/archive/2010/07/04/1771073.html)          正则表达式
+[re](http://www.cnblogs.com/huxi/archive/2010/07/04/1771073.html)          正则表达式<https://docs.python.org/zh-cn/3/library/re.html>
 struct      字符串和二进制之间的转换
 StringIO/cStringIO      字符串缓冲对象，操作方法类似file对象（后者是C版本，更快一些，但不能被继承）
 base64      Base 16/32/64数据编解码
@@ -1264,6 +1265,7 @@ unicodedata Unicode数据库
 
 #### 1.2.2 列表
 列表（[a, b, c]）能保存任意数量任意类型的 Python 对象（有序）
+PEP8 运行最后一个元素后面带一个逗号
 
 ##### 构造函数
 list()					[]
@@ -1544,6 +1546,43 @@ c1 - c2：将每个计数对应相减
 c1 & c2：取每个计数的最小值  
 c1 | c2：取每个计数的最大值  
 **注意：返回结果会丢弃那些不大于0 的计数值**
+
+##### ChainMap（Python3.3+）
+多层映射结构，MutableMapping 的list，当查找时进行深度搜索，修改和删除仅仅操作第一层映射
+整体操作上，依然可以当做一个dict
+
+ChainMap(*maps): 可以使用0个或多个进行构造（0个将初始化一个空字典）
+
+###### 属性
+maps: 内部的映射列表，第一个就是第一层，该属性可写，也会会直接反应对应映射的更新
+parents: 等价于 ChainMap(*d.maps[1:])
+
+###### 方法
+new_child(m=None, **kwargs): m 默认相当于{}，然后m.update(kwargs)，该函数相当于返回ChainMap(m, *d.maps)
+
+##### UserDict/UserList/UserString
+这三个类用于子类化dict、list、str（其中UserList 子类必须重写一个接受0个或1个参数的构造器，这个参数是一个序列）
+都有一个data 属性，保留其常规类型的值（保留的是copy 而不是引用）
+
+之所以子类化这三个类，而不是dict、list、str，因为：
+```py
+class MyDict(dict):
+    def __setitem__(self, __k, __v):
+        return super().__setitem__(__k, [__v] * 2)
+
+class MyUserDict(UserDict):
+    def __setitem__(self, key, item) -> None:
+        return super().__setitem__(key, [item] * 2)
+
+d = MyDict(one=1)   # {'one': 1}
+d['two'] = 2        # {'one': 1, 'two': [2, 2]}
+d.update(three=3)   # {'one': 1, 'two': [2, 2], 'three': 3}
+
+d = MyUserDict(one=1)   # {'one': [1, 1]}
+d['two'] = 2            # {'one': [1, 1], 'two': [2, 2]}
+d.update(three=3)       # {'one': [1, 1], 'two': [2, 2], 'three': [3, 3]}
+```
+可以看到dict 的子类，构造和update 都不会调用`__setitem__`，语义并不一致；而UserDict 语义是一致的
 
 #### 1.2.7 heapq 模块
 堆队列，该实现是一个最小堆，即`heap[k] <= heap[2*k+1] and heap[k] <= heap[2*k+2]`，故最小的元素是 heap[0]
@@ -1835,7 +1874,7 @@ for循环的机制：
 1. 当捕获到StopIteration异常，循环结束（当全部数据取完后会抛出一个StopIteration异常，以告知迭代完成）
 
 + 可迭代对象是一个有`__iter__()`方法的对象，该方法返回这个可迭代对象的迭代器。
-+ 迭代器是一个有next()方法的对象（当然，通常迭代器本身也是可迭代对象，所以可以在`__iter__()`方法中返回自身）。
++ 迭代器是一个有`__next__()`方法的对象（当然，通常迭代器本身也是可迭代对象，所以可以在`__iter__()`方法中返回自身）。
 
 *注：迭代器只能单向遍历（不能回溯），而且不能复制，只能重新创建。*
 
@@ -2087,7 +2126,6 @@ class ClassName(base_class, ...):
 ```
 `base_class`声明基类，如果没有指定，则使用 object 作为基类（object是最基本的类型），支持多继承
 类文档字符串不会被继承，但类属性会被继承（除非覆盖定义）
-在多继承中，使用super(type[, obj]) 会根据`type.__mro__` 中指定的顺序查找标识符的实现，然后若obj 是实例对象，则super 将其转化为找到的先祖类实例；若是类对象，则super 将其转化为找到的先祖类的类对象；若不传obj 则返回一个找到的非绑定的类对象（调用方法需要自己传入self 或cls 作为第一个参数）
 
 静态成员属于类自身，实例属性可以在任何时候动态添加、修改和del（甚至在类的外部）
 Python3 支持在实例方法外声明实例属性，*注意：只是声明`var type`，不能使用`var = val`这种定义，因为前者是实例属性，后者就变成了类属性了*
@@ -2096,6 +2134,11 @@ Python3 支持在实例方法外声明实例属性，*注意：只是声明`var 
 和函数对象类似，在类定义完成时，就声明了一个类对象，所以类定义可以放在局部作用域
 
 一个py 文件就是一个模块空间，那么class 就是一个模块内的一块命名空间，也就是在class 内可以写可执行代码，该代码跟静态成员一样会在类被加载进来之后就会被执行和实例化
+
+super(type[, obj]) 方法
+如果obj 缺省，则返回的是一个未绑定的代理对象，而后可以使用`__get__(obj)`方法进行绑定
+绑定obj 就会根据`obj.__class__.__mro__`（也就是mro()方法，差别是属性返回的是tuple，方法返回的是list）的顺序链，找到type 的下一个，若obj 是实例对象，则返回的是obj 父类的代理实例；若是类对象，则返回的是obj 父类的代理类对象
+在Python3 中，如果两者都缺省，则type 就是当前代码位置的类，obj 是self，所以这种方式仅仅能用于拥有self 的方法内。除此之外，则并不限制其使用位置
 
 ## 2. 内置属性
 `__class__` 对象对应的类对象，也可以作为一个可调用对象使用（调用的是构造器）
@@ -2292,17 +2335,28 @@ private: 标识符使用双下划线 `__` 开头，实际上通过加上前缀`_
 protected: 
 
 ## 继承
-Python 支持多继承，所以就可能存在菱形继承结构。在解析继承结构时，Python 基于C3算法（按继承列表从左向右，0度剪枝），确保每个祖先类的构造函数只执行一次（不限于构造函数，所有函数调用都使用该规则），并且解析的结果（执行序列的类对象元组，元组的第一个元素一定是当前类对象，最后一个是object）也会存入类对象的`__mro__`属性（Method Resolution Order）中，例如
+使用super() 可以延mro() 的链找到最近的一个拥有指定方法的定义去执行。
+Python 支持多继承，所以就可能存在菱形继承结构。Python的多继承更像是一种 ChainMap 的结构，首个父类类是第一层，而后的父类是parents
+在解析继承结构时，Python 基于[C3算法](https://en.wikipedia.org/wiki/C3_linearization)（按继承列表从左向右，0度剪枝，深度优先），确保每个祖先类的构造函数只执行一次（不限于构造函数，所有函数调用都使用该规则），并且解析的结果（执行序列的类对象元组，元组的第一个元素一定是当前类对象，最后一个是object）也会存入类对象的`__mro__`属性（Method Resolution Order）中，例如
 ```py
 class A:
   def __init__(self):
     print("Enter A")
+    super().__init__()
     print("Leave A")
+  def get_name(self):
+    t = super()
+    if hasattr(t, 'get_name'):
+        return 'A' + t.get_name()
+    else:
+        return 'A'
 class B(A):
   def __init__(self):
     print("Enter B")
     super().__init__()
     print("Leave B")
+  def get_name(self):
+     return 'B' + super(B).__get__(self).get_name()
 class C(A):
   def __init__(self):
     print("Enter C")
@@ -2318,9 +2372,23 @@ class E(B, C, D):
     print("Enter E")
     super().__init__()
     print("Leave E")
-E()
+
+class F:
+    def __init__(self) -> None:
+       print('Enter F')
+       super().__init__()
+       print('Leave F')
+    def get_name(self):
+        return 'F'
+class G(B, F):
+    def __init__(self):
+        print('Enter G')
+        super().__init__()
+        print('Leave G')
+    def get_name(self):
+       return 'G' + super().get_name()
 ```
-执行结果为：
+E()执行结果为：
 Enter E
 Enter B
 Enter C
@@ -2331,6 +2399,13 @@ Leave D
 Leave C
 Leave B
 Leave E
+
+g.get_name()执行结果是GBAF
+由于深度优先，虽然A 跟F 没有任何直接关系，但在G 的mro 链中F 是在A 之后，所以需要A 中调用super 才可能调用到F；或者就需要在G 中显示调用super(A, self) 才能调用到F（或者直接用F.get_name(self) 进行直接调用）
+
+多继承通常只用在Mixin组件制作时，Mixin 是一组动作的集合，可以集成添加到另一个类中。通常Mixin 会对被添加的类（通常称为宿主）有一定的要求，这些要求就是协议(contract)，具体来说就是需要具有某些属性或方法，而且Mixin 和宿主之间除了协议不需要额外的关联。所以Mixin 应当显著声明其植入协议，以便于复用。
+Mixin最大的优势是使用者可以随时安插这些功能,并且可以在必要的时候覆写他们
+Mixin 类并不表示一个实体概念，而仅仅是一系列行为的组合，以便于重用，所以Mixin 类绝不实例化。为了明确指示该类的目的，通常这种类都使用Mixin 后缀
 
 ## 6. 元类
 它也是一个类，其实例是类对象，通过元类可以当创建类时能够自动地改变被创建的类
@@ -2349,7 +2424,7 @@ Leave E
 	1. 在执行`__new__` 方法，在方法中使用`type.__new__` 创建这个类型时，调用父类的`__init_subclass__(cls)` 方法，kwds 也会经由`__new__` 传给`__init_subclass__`（注意，object 的`__init_subclass__` 函数并不接受kwds 参数，所以这时`type.__new__` 调用不要带kwds）
 
 指定元类
-```
+```py
 class FooMeta(type):				# 元类继承自type 或type 的子类
 	def __new__(cls, name, bases, attrd):		# 目标类创建时调用（即类定义时，可以通过参数查看类定义的描述信息），这里的cls 是FooMeta
 		t = type.__new__(cls, name, bases, attrd)
@@ -2372,7 +2447,7 @@ class Simple1(object, metaclass=func_meta, other_opt=''):	# Python3 这样定义
 可以通过使用abc.ABCMeta 或其派生类作为元类，来使一个类变为抽象基类；或者也可以通过继承abc.ABC 来完成（抽象基类不能实例化，除非它的全部的抽象方法和特征属性均已被重载）
 抽象基类可以通过register(subclass) 方法注册它的抽象子类，这种继承关系不会出现在MRO中，但可以为issubclass() 识别
 register 一个一个的添加过于麻烦，可以在抽象基类中重载`__subclasshook__` 方法，用以自动判断一个类是否是其抽象子类
-```
+```py
 from abc import ABCMeta
 
 class MyABC(metaclass=ABCMeta):	# 方式1
@@ -2396,7 +2471,7 @@ assert isinstance((), MyABC)
 抽象基类可以用 @abc.abstractmethod 装饰器声明抽象方法和特征属性，表明一个方法必须被重载，这个方法可以拥有实现，也可以被派生类调用
 该装饰器仅仅影响常规继承所派生的子类；通过 ABC 的 register() 方法注册的“虚子类”不会受到影响
 当该装饰器需要和其他装饰器共同修饰一个函数时，本装饰器必须在最内层，例如：
-```
+```py
 class C(ABC):
     @abstractmethod
     def my_abstract_method(self, ...):
@@ -2733,7 +2808,7 @@ Python 3.x引入了nonlocal 关键字，和global 功能类似，用于声明一
 ## 4. 包
 包是带有`__init__.py` 文件的目录
 通过目录这种层次结构，可以实现包的层次关系（子目录带上`__init__.py` 文件就是一个子包）
-`__init__.py`的内容可以为空，一般用来进行包的某些初始化工作或设置`__all__`的值，`__all__`是在使用`from package-name import *`语句决定导出哪些模块，它由一个模块名字符串组成的列表
+`__init__.py`的内容可以为空，一般用来进行包的某些初始化工作或设置`__all__`的值，`__all__`是在使用`from package-name import *`语句决定导出哪些模块，它由一个模块名字符串组成的列表（也可以是import 进来的名字字符串）；若没有`__all__`，则该语句会导出模块内所有非下划线开头的成员
 `__init__.py` 文件会在包被首次导入时执行，当导入子包时，会从顶层到导入的子包，依次执行未加载的包的`__init__.py` 文件
 
 ### 导入包和使用包
