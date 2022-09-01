@@ -7,7 +7,7 @@
 [TOC]
 
 # 概述
-先前，go代码文件都被组成成包(package)基于GOPATH进行管理，在1.11 版本引入module 概念后用以替换基于GOPATH 的管理方式
+先前，go代码文件都被组成成包(package)基于GOPATH进行管理，在1.11 版本引入module 概念后用以替换基于GOPATH 的管理方式，支持多版本共存（1.13版本以下Go Module默认关闭，需要设置GO111MODULE=on 打开）
 简洁、设计一致性：避免过度的复杂性
 
 没有继承只有组合
@@ -17,7 +17,7 @@
 
 # 开始
 设置环境变量GOROOT 为go 的安装目录（不是go 这个二进制的目录，而是bin 所在的目录）
-设置环境变量GOPATH 为工作空间目录
+设置环境变量GOPATH 为工作空间目录（该环境变量可以是多个目录，下载默认下载到第一个，而查找包则会按顺序依次查找）
 版本查看`go version`
 
 查看环境变量默认值`go env [ENVAR]`，若指定变量名则查看单个，若不指定则查看全部
@@ -38,6 +38,7 @@ go 命令下有一系列子命令：
 1. goimports 自动导入
 可以根据代码需要自动生成和删除import
 1. go get $gitPath
+2. go get $module@v1.0.0
 自动下载go 项目并安装（会安装到GOPATH指定的目录下）
 
 ## REPL
@@ -679,6 +680,15 @@ go list: 返回当前模块的module-prefix
 `go mod tidy` 可以自动扫描模块下的外部包的依赖，并下载，而后将其版本信息更新到go.mod 文件以及go.sum 文件
 外部包的依赖会自动下载到`$GOPATH/pkg/mod`下
 想要移除下载的模块可以使用`go clean -modcache`
+
+由于go 默认使用https:// 协议下载外部包，而且下载过程中并不会提示输入username:password，所以可能会因此导致失败
+有几种方案
+1. 使用`GIT_TERMINAL_PROMPT=1`的环境变量设置，可以提示输入username:password
+2. 增加~/.gitconfig 配置项：
+```ini
+
+```
+3. 
 
 ## 导入包
 ```go
