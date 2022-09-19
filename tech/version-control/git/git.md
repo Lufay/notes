@@ -486,8 +486,10 @@ git config --global pull.rebase true
 
 ## 配置文件
 ### .git/config
+项目独立的配置，在项目根目录
 
 ### .gitignore
+用户级配置，在用户HOME 目录
 用于说明不需要版本控制的文件（Specifies intentionally untracked files to ignore）
 注意其英文表述，是忽略untracked的文件，也就是说一旦文件已经被tracked，那么就无法被忽略
 [生成网站](https://www.toptal.com/developers/gitignore)
@@ -500,6 +502,18 @@ git config --global pull.rebase true
 1. 可以使用`!`进行忽略排除
 1. 按行从上到下进行规则匹配的，意味着如果前面的规则匹配的范围更大，则后面的规则将不会生效
 
+### 钩子
+在特定事件发生之前或之后执行脚本
+默认的位置是`.git/hooks` 目录下（也可以修改core.hooksPath 配置更改目录），这里面预存了很多sample 文件（都拥有a+x权限），由于该位置是在执行git init 或git clone 时，从本地的模板文件夹拷贝到项目中的，所以钩子都是本地的，无法在多个clone 之间共享，所以一般还需要在.git 目录之外再进行维护
+只要将`.sample` 后缀去掉，该钩子就已经生效
+钩子就是一个可执行文件，所以并不限制使用的语言
+
+#### 钩子事件
++ pre-commit：git commit 前调用，可以使用--no-verify 绕过，无入参。若退出状态非0，则不会进行提交。
++ pre-merge-commit: git merge 调用，可以使用--no-verify选项绕过它，无入参。若脚本退出状态非0，则不会进行合入。如果合并冲突，则不会执行该钩子
++ prepare-commit-msg：在git commit 启动编辑器之前执行。有3个参数，1 是包含提交日志消息的文件的名称；2 提交消息的来源（message 表示使用-m/-F 选项；template 表示使用-t 选项或配置commit.template；merge 表示提交是合并或.git/MERGE_MSG文件；squash 是当.git/SQUASH_MSG文件存在；或者commit）若退出状态非0，则不会进行提交。
++ commit-msg: 由git commit和git merge调用，可以使用--no-verify选项绕过它。有一个参数，即保存建议的提交日志消息的文件的名称，允许钩子编辑消息文件。退出非零状态会导致命令中止。
++ 其他参考<https://www.cnblogs.com/jiaoshou/p/12222665.html>
 
 ## GitHub
 提供Git仓库托管服务，传输使用SSH加密，因此需要SSH Key：
