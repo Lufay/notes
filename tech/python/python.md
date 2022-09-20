@@ -2110,10 +2110,14 @@ print dec(10)
 从生成器角度，从第一次调用next() 函数，开始执行生成器函数代码，直到遇到yield 语句，该语句会挂起生成器的执行，保存函数状态，直到调用者再次调用next() 或send() 重新激活生成器，才恢复执行。
 
 ### 6.2 和生成器进行交互
-生成器的调用者可以通过send() 函数给生成器进行传值，可以通过close() 函数要求生成器退出（退出后再调用生成器的next() 方法将抛出StopIteration 异常）。
-生成器可以抛出异常
-为了使生成器获得调用者给其的传值，yield 语句会返回一个值，该值就是调用者传入的值（如果调用者使用的是next() 未传值，则该返回值为None）。
+生成器的调用者，可以通过生成器对象的方法和其交互：
++ send(v) 跟执行next() 函数类似，都返回生成器下一次yield 的值；不同的是send 的这个参数，会通过yield 语句的返回值传给生成器（若使用next() 函数，相当于send(None)，即yield 语句的返回值为None）
++ close() 要求生成器退出，将在yield 位置抛出GeneratorExit 异常，该异常不会抛到生成器之外，因此若捕获到该异常可以raise 重新抛出，也可以自然结束（包括return），唯独不能再yield，否则将引起RuntimeError。该方法没有返回值（None）。退出后再调用生成器的next() 方法将抛出StopIteration 异常
++ throw(Etype[, value[, traceback]]) 在生成器yield 位置抛Etype(value) 异常，若生成器捕获该异常，则继续执行到下一个yield 返回之，或者执行结束，抛出StopIteration 异常；若生成器没捕获，则将抛出Etype异常到该方法的调用处
 
+创建生成器之后，必须首先使用next() 或者send(None) 进行预热，才能调用其他方法，否则在进入生成器函数之前就会抛异常
+一旦生成器函数不是通过yield 退出，就无法再调用next() 方法了，否则将抛出StopIteration 异常
+换句话说，只有停在yield 处的生成器，才能使用上述方法进行交互，否则都将有异常
 
 ## 第六章. 对象和类
 ### 1. 类定义
@@ -3880,7 +3884,9 @@ with contextlib.ExitStack() as stack:
     stack.callback(func2, *args)    # 上下文结束时，逆序执行func2 -> func1
     do_something()
 ```
-
+contextmanager 会将上下文管理的区域内抛出的异常进行回收，重新在yield 语句位置进行抛出
+可以try-except 进行处理，然后正常退出抛StopIteration异常，该异常会被抑制（return True）
+也可以不做处理，则contextmanager 就会return False，将该异常抛出到with 块之外。
 
 
 # 运行时
@@ -3917,6 +3923,7 @@ getsource(obj): 返回obj定义的源文件文本
 getfile(obj): 返回obj定义的文件名（对于内置对象将抛TypeError）
 getdoc(obj)
 getcomments(obj)
+getgeneratorstate(gen): 获取生成器状态
 
 ### Signature & Parameter & BoundArguments
 signature(callable): 获取一个可调用对象的Signature 对象
