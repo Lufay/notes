@@ -218,7 +218,7 @@ Itoa(int_val): 返回str
 ## 数组和slice
 数组长度和类型不可变，长度必须是一个常量表达式，比如`[10]string` 是长度为10的字符串数组，`[3][5]int`是一个二维数组（即3个`[5]int`），可以多维
 并且是值类型拷贝（必须类型和长度相同才能相互赋值）
-初始化：`[5]string{"a", "b", "c"}` 未提供的值为空串
+初始化：`[5]string{"a", "b", "c"}` 未提供的值类型的零值（这里即为空串）
 
 切片slice（比如`[]int`）是对底层数组的一段引用，并且同时拥有头指针head、长度len 和容量cap 三个属性，所以它是一种动态数组，其长度可以动态变化，由于其结构仅仅是指针结构，所以具有引用拷贝的语义。
 获取切片的方式
@@ -244,6 +244,8 @@ append(slice, ele...)
 ## map
 `map[keyType]valType`
 kv无序字典结构，和切片一样，也具有引用拷贝的语义
+keyType 是任何可以使用 == 进行比较的数据类型，valType 可以是任意类型
+非线程安全
 
 初始化方式：
 1. make() 内置函数，可以指定初始化长度
@@ -255,6 +257,8 @@ value, ok := myMap["1234"]
 
 delete(map容器，key值)
 删除字典中的一个元素，只需要确保该key 值不是nil，不用关系key 值是否存在
+
+也可以使用len() 测量长度
 
 ## struct
 ```go
@@ -279,6 +283,7 @@ struct {
 
 
 ## 接口对象
+interface 的底层实现由两部分组成，一个是类型，一个值。只有当类型和值都是nil的时候，才等于nil。当将任何类型的变量（除了nil本身）赋值给接口时，都将其类型和值分别赋予这两部分，只有当将nil赋值给接口时，接口才真正是nil
 接口只包含方法签名，没有成员变量
 接口对象可以接受任何满足接口规约的对象来赋值，并且接口可以自动基于类型的非指针方法推导出指针方法（反之不行）
 接口一般都不使用指针，因为其可以承接任何类型，只要其实现了接口规约，因此，接口对象只能调用接口规约中的方法，而无法修改对象本身，即使承接的是指针
@@ -294,14 +299,17 @@ func (a *Integer) Less(b Integer) bool {
 }
 ```
 
-## 其他内建类型
-### 管道
+## 管道
 chan EType，定义形式类似于指针，这种是双向的管道，使用make 进行初始化
 chan<- EType，只写管道，用于接收一个管道变量（需要进行类型转换），并限定其行为
 <-chan EType，只读管道，用于接收一个管道变量（需要进行类型转换），并限定其行为
 
 管道的行为类似切片，赋值时具有引用拷贝的语义
 
+
+## 衍生内建对象
+### nil
+它不是类型，而是一个预定义对象，它本身是无类型的，仅当赋值给有类型变量才具有类型
 
 ### error
 ```go
@@ -359,6 +367,19 @@ var (
 var var_name = val  // 初始化，用val 进行类型推断
 var_name := val		// 短变量声明，只能在函数体内使用
 ```
+
+#### 类型默认零值
+bool    -> false
+numbers -> 0
+string  -> ""
+array -> `[零值...]`，用零值填充满的数组
+slices -> nil，也就相当于[]（len=0, cap=0）
+maps -> nil，也就相当于map[]（len=0）
+struct -> 结构中的每个成员的零值就是结构的零值
+functions -> nil
+pointers -> nil
+interfaces -> nil
+channels -> nil
 
 ### 常量&枚举定义
 可以指定，也可以不指定类型（无类型常量）
@@ -503,8 +524,8 @@ BaseType 可以是一种内建类型、匿名函数、struct组合结构、inter
 ```go
 t := new(Tname)
 t := &Tname{}	// 未进行显式初始化的变量都会被初始化为该类型的零值（false/0/空串）
-t := &Tname{1, "foo"}
-t := &Tname{id: 1, name: "foo"}
+t := &Tname{1, "foo"}	// 按序初始化必须提供所有field 的值
+t := &Tname{id: 1, name: "foo"}	// 可以缺省部分字段
 ```
 以上都是获取到该类型实例的指针
 习惯上，通常会定义一个`NewTname(...) *Tname` 的函数用来当做一个初始化函数
@@ -878,6 +899,13 @@ func do() {
 }
 ```
 
+#### Map
+Go1.9 引入线程安全的map，读取、插入、删除都保持常数级的时间复杂度
+其零值是一个空的 map
+
+
+#### WaitGroup
+
 #### sync/atomic 包
 func CompareAndSwapUint64(val *uint64, old, new uint64) (swapped bool)：比较和交换两个uint64类型数据
 
@@ -1191,21 +1219,6 @@ fmt.Printf("%d - %s", w.Code, w.Body.String())
 
 
 
-每种类型对应的零值：
-bool      -> false
-numbers -> 0
-string    -> ""
-
-pointers -> nil
-slices -> nil
-maps -> nil
-channels -> nil
-functions -> nil
-interfaces -> nil
-
-struct，则结构中的每个成员的零值就是结构的零值。
-slice有三个元素，分别是长度、容量、指向数组的指针
-interface的底层实现由两部分组成，一个是类型，一个值。只有当类型和值都是nil的时候，才等于nil。当将任何类型的变量（除了nil本身）赋值给接口时，都将其类型和值分别赋予这两部分，只有当将nil赋值给接口时，接口才真正是nil
 
 
 

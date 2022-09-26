@@ -63,6 +63,42 @@ ctrl+空格: 这个会和输入法切换冲突
 ### 配置launch.json文件
 在菜单选择*运行-添加配置*，然后选择要执行的语言，就会在项目根目录生成一个 .vscode 文件夹，其中就包含了launch.json 配置
 
+#### Go
+若想要vscode 识别go mod 的模式，必须打开的目录是go.mod 所在的目录
+
+调试需要dlv 的调试工具，可以使用命令面板中的"Go: install/update tools" 来安装，或者使用`go get github.com/go-delve/delve/cmd/dlv`（会装到$GOPATH/bin下），或者使用`GOBIN=/tmp/ go install github.com/go-delve/delve/cmd/dlv@master && mv /tmp/dlv $GOPATH/bin`
+支持基于启动程序（launch）的调试和基于运行进程（attach）的调试
+```json
+[
+  {
+      "name": "Attach to Process",
+      "type": "go",
+      "request": "attach",
+      "mode": "local",
+      "processId": 53575
+  },
+  {
+      "name": "Launch Package",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${relativeFile}"
+  },
+  {
+    "name": "Connect to server",
+    "type": "go",
+    "request": "attach",  // launch 对应program
+    "mode": "remote",
+    "remotePath": "{编译的项目路径}", // 不是进程当前的目录，也不是本地项目的代码目录，而是编译二进制的项目目录
+    "port": 2345,   // dlv server 启动的端口
+    "host": "192.168.56.12"
+  }
+]
+```
+
+远程调试可以开启一个dlv dap 服务器，然后可以attach 到对应的进程上
+`dlv --headless -l 0.0.0.0:2345 attach 7488 --api-version 2`
+
 
 ### Logpoints
 调试运行时可以打印日志消息到调试工作台（日志中可以使用{exp}来引用变量表达式，如同f-string）
