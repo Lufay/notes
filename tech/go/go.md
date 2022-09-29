@@ -140,7 +140,7 @@ type Value interface {
 
 type Getter interface {
     Value
-    Get() interface{}
+    Get() any
 }
 ```
 
@@ -175,7 +175,7 @@ type Flag struct {
 + 浮点类型：float32 (C中的float ), float64 (C中的double，默认推导) 
 + 复数类型: complex64, complex128（默认推导）
   + a+bi == complex(a, b); a == real(z); b == imag(z)
-+ 字符类型: rune（Unicode字符类型）, byte（UTF-8字符类型，即uint8）
++ 字符类型: rune（Unicode字符类型，即int32）, byte（UTF-8字符类型，即uint8）
 golang中只支持UTF-8以及Unicode的编码，而对于其他的编码并没有内置的编码转换（可以基于iconv库用Cgo包装一个）
 UTF-8的编码是用 byte 这种类型来定义的，Unicode是用 rune 来定义的。
 在字符串遍历的时候，如果使用range关键字，那么使用的是rune的形式来遍历的。而以数组取值的方式是byte的形式。
@@ -187,21 +187,86 @@ Sqrt(f): 对浮点数求开方
 ## 字符串 string
 不可变字符串，初始化后不能改写内容
 ch := str[0] 可以获取第一个字符(字节)，但不可写
-len(s) 获取字符串长度(字节数)
+len(s) 获取字符串长度(字节数)，在UTF8编码下，一个汉字对应三个字节，如果按unicode字符计算，可以使用utf8.RuneCountInString函数
 s1 + s2 字符串连接
 += 会产生一个新字符串回赋
 
 ### strings 包
 Count(s, sep)：在字符串s 中查找sep 串出现次数
 Index(s, sep)：在字符串s 中查找sep 串首次出现的位置（找不到返回-1，sep 空串返回0）
-LastIndex(s, sep)：在字符串s 中查找sep 串最后一次出现的位置（找不到返回-1，sep 空串返回字符串长度）
+IndexAny(s, chars)
+IndexByte(s, c)
 IndexRune(s, rune)：在字符串s 中查找rune 字符首次出现的位置（找不到返回-1）
+IndexFunc(s, f func(rune) bool)
+LastIndex(s, sep)：在字符串s 中查找sep 串最后一次出现的位置（找不到返回-1，sep 空串返回字符串长度）
+LastIndexAny(s, chars)
+LastIndexByte(s, c)
+LastIndexFunc(s, f func(rune) bool)
 Contains(s, substr)：在字符串s 中查找是否含有substr 串
 ContainsAny(s, chars)：在字符串s 中查找是否含有chars 串中的任一字符
 ContainsRune(s, rune)：在字符串s 中查找是否含有rune 字符
+HasPrefix(s, prefix)
+HasSuffix(s, suffix)
+
+ToLower(s)、ToTitle、ToUpper
+Cut(s, sep): 使用sep 将字符串s 前后两部分（按第一次出现sep 的位置）返回(before, after, found)，found 表示是否找到，若found=false，after=""
+Fields(s): 使用空白符对s 分割为切片（会去除开头结尾的空白符）
+FieldsFunc(s string, isSep func(rune) bool): 同上，差别是使用函数isSep 进行字符判定
 Split(s, sp): 使用sp 将字符串s 分割为多个字符串切片
+SplitN(s, sep, n): 切成n 块，若n 为负，则同上
+SplitAfter(s, sep): 同上，只不过每块都带着sep
+SplitAfterN(s, sep, n): 切成n 块，若n 为负，则同上
 Join(strSeq, sp)：用字符串sp 把字符串切片strSeq 连接起来
-Replace(s, old, new, n)：将字符串s 中的old 串替换为new，最多替换n 次，若为-1，则全部替换
+Repeat(s, count)：重复count 次进行连接
+Trim(s, cutset)、TrimLeft、TrimPrefix、TrimRight、TrimSuffix: 字符串s 收尾有cutset 中的字符都会被去除
+TrimFunc(s, f func(rune) bool)、TrimLeftFunc、TrimRightFunc: 函数f 返回true 都被移除
+TrimSpace(s): 去掉字符串收尾的空白符
+Replace(s, old, new, n)：将字符串s 中的old 串替换为new，最多替换n 次，若n为负，则全部替换
+ReplaceAll(s, old, new)
+Map(mapping func(rune) rune, s string): 用函数mapping 对字符串每个字符进行替换，如果函数返回负值，则移除该字符
+
+#### Builder
+用于高效追加内容的字符串
+零值就是空串
+
+##### 方法
+Cap()、Len()
+Grow(n): 容量+n 字节（n 不能为负）
+Reset(): 清空
+String(): 返回字符串
+
+Write(p []byte) (int, error): append返回len(p), nil
+WriteByte(c byte): append 返回nil
+WriteRune(r rune) (int, error): append返回len(r), nil
+WriteString(s string) (int, error): append返回len(s), nil
+
+#### Reader
+实现了io.Reader, io.ReaderAt, io.ByteReader, io.ByteScanner, io.RuneReader, io.RuneScanner, io.Seeker, and io.WriterTo 接口
+从内存读字符串，零值就是空串，可以使用`NewReader(s)` 初始化
+
+##### 方法
+Len()、Size()
+Reset(s string): 重置读取的字符串
+Read(b []byte) (n int, err error)
+ReadAt(b []byte, off int64) (n int, err error)
+ReadByte() (byte, error)
+ReadRune() (ch rune, size int, err error)
+Seek(offset int64, whence int) (int64, error)
+UnreadByte() error
+UnreadRune() error
+WriteTo(w io.Writer) (n int64, err error)
+
+#### Replacer
+多重替换，获取`NewReplacer(oldnew ...string)`，参数必须是偶数个字符串，一个old 对应一个new
+按序进行匹配命中，而且不会重复替换
+
+##### 方法
+Replace(s) 返回替换后的字符串
+WriteString(w io.Writer, s string): 将替换后的字符串写入w
+
+### unicode 包
+IsLetter(c rune)
+IsNumber(c rune)
 
 ### unicode/utf8、16、32 包
 提供unicode 和 各种数据格式的转换
@@ -218,7 +283,10 @@ Itoa(int_val): 返回str
 ## 数组和slice
 数组长度和类型不可变，长度必须是一个常量表达式，比如`[10]string` 是长度为10的字符串数组，`[3][5]int`是一个二维数组（即3个`[5]int`），可以多维
 并且是值类型拷贝（必须类型和长度相同才能相互赋值）
-初始化：`[5]string{"a", "b", "c"}` 未提供的值类型的零值（这里即为空串）
+初始化：
++ `[5]string{"a", "b", "c"}` 未提供的值类型的零值（这里即为空串）
++ `[...]string{"a", "b", "c"}`长度推断为3
++ `[5]string{1:"a", 3:"b"}` 指定索引初始化
 
 切片slice（比如`[]int`）是对底层数组的一段引用，并且同时拥有头指针head、长度len 和容量cap 三个属性，所以它是一种动态数组，其长度可以动态变化，由于其结构仅仅是指针结构，所以具有引用拷贝的语义。
 获取切片的方式
@@ -452,7 +520,7 @@ OUTER:
 
 
 for i, ele := range array {}	// 遍历字符串、数组
-for k, v := range map {}	// 遍历字典
+for k, v := range map {}	// 遍历字典，v 可以缺省
 for v := range ch {}	// 读取管道，当管道为空，会阻塞循环，除非管道被关闭
 ```
 1. 小括号可以无，大括号必须有
@@ -591,6 +659,7 @@ godoc 命令支持额外参数 -analysis ，能列出都有哪些类型实现了
 #### 空接口interface{}
 由于所有其它数据类型都实现了空接口
 所以这种类型可以认为是最基本的类型，即object
+该类型也可以直接写作any（`type any = interface{}`）
 
 #### 类型检测和断言
 可以通过类型检测来执行不同的逻辑：
@@ -628,7 +697,7 @@ type Writer interface {
 }
 ```
 os.File 同时实现了这两个接口（os.Stdin/Stdout/Stderr 是三个特殊的实例）
-strings.Reader 实现了 io.Reader
+strings.Reader, strings.Builder 分别实现了 io.Reader 和 io.Writer
 bufio.Reader/Writer 分别实现了 io.Reader 和 io.Writer
 bytes.Buffer 同时实现了 io.Reader 和 io.Writer
 bytes.Reader 实现了 io.Reader
@@ -644,19 +713,19 @@ io 包本身也有这两个接口的实现类型：
 实现了 Writer 的类型：PipeWriter
 
 ## fmt 包
-+ Print(...interface {})：打印多个值（相当于使用%v），返回(打印的字节数, error)
-+ Println(...interface {})：打印多个值，空格分隔，带换行，返回(打印的字节数, error)，对于struct 若实现了String() 方法，则调用之，否则，则逐个打印其成员
-+ Printf(format, ...interface {})：按格式化字符串打印，返回(打印的字节数, error)
++ Print(...any)：打印多个值（相当于使用%v），返回(打印的字节数, error)
++ Println(...any)：打印多个值，空格分隔，带换行，返回(打印的字节数, error)，对于struct 若实现了String() 方法，则调用之，否则，则逐个打印其成员
++ Printf(format, ...any)：按格式化字符串打印，返回(打印的字节数, error)
 + Sprint, Sprintln, Sprintf：返回格式化字符串
 + Fprint, Fprintln, Fprintf：第一个参数io.Writer，是输出目标
 
-+ Scan(...interface{})：从标准输入读入空格或换行分隔的参数，返回(读入参数格式，error)
-+ Scanln(...interface{})：从标准输入读入空格分隔的参数，返回(读入参数格式，error)，换行会终止读入，最后一个参数后面必须有换行或EOF
-+ Scanf(format, ...interface {})：从标准输入按format 读入参数（换行也要匹配）（如果使用%c 会读入一个rune，无论是否是一个空白符）
++ Scan(...any)：从标准输入读入空格或换行分隔的参数，返回(读入参数格式，error)
++ Scanln(...any)：从标准输入读入空格分隔的参数，返回(读入参数格式，error)，换行会终止读入，最后一个参数后面必须有换行或EOF
++ Scanf(format, ...any)：从标准输入按format 读入参数（换行也要匹配）（如果使用%c 会读入一个rune，无论是否是一个空白符）
 + Sscan, Sscanln, Sscanf：第一个参数是string
 + Fscan, Fscanln, Fscanf：第一个参数是io.Reader
 
-+ Errorf(format, ...interface{})：返回格式化的error
++ Errorf(format, ...any)：返回格式化的error
 
 ### format
 `%[flag][width][.][precision]verb`
@@ -872,22 +941,87 @@ go func() {
 select {
 	case <-ch:
 		// 超时前读取到数据
-	case <-timeout:
+	case <-timeout:	// 	更简单的可以使用 <-time.After(10 * time.Second)
 		// 超时返回
 }
 ```
 
 ## 锁 和 同步
 ### sync 包
+<https://pkg.go.dev/sync>
+该包定义的变量，一旦使用都不可拷贝
+
+接口Locker，方法是Lock() 和 Unlock()
+
 #### Mutex 互斥锁
+实现Locker 接口
 获取锁: `&sync.Mutex{}`
 其Lock() 和 Unlock() 方法可以保护共享资源
+go1.18 引入TryLock() 方法如果加锁失败，不会block 而是返回false
 
 #### RWMutex 读写锁
+实现Locker 接口
 其RLock() 获取到读锁，不会阻塞读，会阻塞写，对应的是RUnlock()
 Lock() 就是写锁（相当于组合了Mutex），对应的是Unlock()
+go1.18 引入TryLock()和TryRLock() 方法如果加锁失败，不会block 而是返回false
+
+RLocker() Locker: 方法返回一个实例在调用Locker 的Lock() 和 Unlock() 实际上调用的是RLock() 和 RUnlock()
+
+#### Cond 条件变量
+获取：`&sync.Cond{L: locker}` 或者 `sync.NewCond(l Locker)`
+
+##### 方法
+Wait(): 该方法会首先c.L.Unlock()，然后挂起当前goroutine，直到被唤醒（Signal或Broadcast），再c.L.Lock() 后返回。因此典型的用法如下
+Signal(): 唤醒一个等待在该条件变量上的goroutine
+Broadcast(): 唤醒所有等待在该条件变量上的goroutine
+
+```go
+c.L.Lock()
+for !condition {
+	c.Wait()
+}
+// process
+c.L.Unlock()
+```
+
+#### WaitGroup
+跟Java的CountDownLatch 类似，让一组goroutine 等一个计数器清零才被唤醒
+清零后并且没有wait的goroutine的WaitGroup 可以重复使用
+
+##### 方法
+Add(delta int): 增加计数器，delta当然可以使用负值，但计数器变为负值时，该方法会panic。所以该方法必须早于Done() 和 Wait()
+Done(): 计数器-1
+Wait(): 阻塞当前线程直到计数器归零 
+
+#### Map
+Go1.9 引入线程安全的map，读取、插入、删除都保持常数级的时间复杂度
+其零值是一个空的 map
+
+##### 方法
+Load(key): 返回(val, ok)，ok 表示是否存在，如果不存在val=nil
+Store(key, value): 保存指定k-v
+Delete(key): 删除指定key
+LoadOrStore(key, value): 返回(actual, loaded)，若key 存在，返回其val，loaded=true; 否则返回参数value 并保存，loaded=false
+LoadAndDelete(key): 返回(val, loaded)，loaded 表示是否存在，相当于pop
+Range(f func(key, value) bool): 使用函数f 遍历map，当函数返回false 则终止迭代
+
+#### Pool
+获取：Pool(New: func() any)
+使用池化实例，可以减少GC（GC 时，实例会从local 移入victim 避免销毁）
+池中的实例可以动态扩容缩容，因此，使用者应当假定池中实例均为初始态
+通常在池中放置统一类型的实例，因为Go 没有泛型，所以这里用any
+
+##### 方法
+Get() any: 从池中随机获取一个实例（会从池中移除），如果池中没有实例，则使用New 函数返回一个
+Put(x any): 将实例放回池中
 
 #### Once
+Do(f func()): 在多个goroutine 中仅执行一次f 函数
+注意：
+1. 这个函数和这个Once 变量是绑定的，换一个函数就需要新声明一个Once 变量
+2. 如果f 函数panic，则也视为已经完成f 调用，其他goroutine 不会再调用f 了
+
+
 ```go
 var once sync.Once
 func setup() {
@@ -899,9 +1033,6 @@ func do() {
 }
 ```
 
-#### Map
-Go1.9 引入线程安全的map，读取、插入、删除都保持常数级的时间复杂度
-其零值是一个空的 map
 
 
 #### WaitGroup
@@ -977,8 +1108,29 @@ Close() 关闭文件句柄
 WriteString(s)
 
 ### time 包
-Now(): 获取当前时间戳，可以使用t2.Sub(t1) 获取时间差
 Sleep(100 * time.Millisecond) 当前协程休眠，单位是1e-9 秒
+
+Now(): 获取当前时间对象Time
+Unix(timestamp, nanoseconds): 返回一个Time 对象，前者单位是秒，后者单位是1e-9 秒，最终结果是两者之和
+Since(t Time): 返回Duration 对象，表示当前时间和t 之间的时间差（t 是过去的时间点）
+Until(t Time): 返回Duration 对象，表示当前时间和t 之间的时间差（t 是未来的时间点）
+After(d Duration): 返回一个只读管道<-chan Time，在过完时间后，将当前时间放入管道中
+
+#### Time
+##### 方法
+Unix() int64: 返回时间戳（自 1970 年 1 月 1 日 UTC 以来经过的秒数）
+Sub(t Time): 返回Duration 对象，表示两者的时间差
+UTC(): 自身变为UTC 时间返回
+Local(): 自身变为本地时间返回
+Format(time.RFC3339): 按指定格式进行字符串化
+
+#### Date
+Date(year, month, day, hour, minute, second, ns, zoneinfo)
+其中month、zoneinfo 可以使用time 包中定义的常量（比如time.September、time.UTC）
+
+###### 方法
+Unix(): 秒级时间戳
+UnixNano(): 1e-9 秒级时间戳
 
 ### runtime 包
 Gosched(): 主动出让时间片给其他goroutine
