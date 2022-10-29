@@ -200,44 +200,10 @@ sort({<KEY>: 1})：排序，val的1表示升序，-1表示降序
 forEach(function(u) {})
 
 ##### 增删改
+###### 新增文档
+insertOne、insertMany
 `db.<collection_name>.insert(<document>)`
 插入文档，`<collection_name>`指定的集合名如果没有会自动创建，`<document>`是一个json格式的对象，也可以是上面定义的变量
-
-```js
-db.collection.remove(
-   <query>,
-   {
-     justOne: <boolean>,
-     writeConcern: <document>
-   }
-)
-```
-删除文档
-query：筛选条件，同上，如果给`{}`表示删除所有文档
-justOne：可选，是否只删除一个文档（默认false）
-writeConcern：可选，抛出异常的级别
-注：后两项可以直接作为位序参数传入
-
-```js
-db.<collection_name>.update(
-   <query>,
-   <update>,
-   {
-     upsert: <boolean>,
-     multi: <boolean>,
-     writeConcern: <document>
-   }
-)
-```
-更新文档
-query：筛选条件
-update：更新操作，例如`{$set:{'title':'MongoDB'}}`表示把title字段修改为MongoDB；`{$inc:{"count":1}}`
-upsert：可选，如果不存在更新的记录，是否改为插入（默认false，不插入）
-multi：可选，是否更新全部匹配记录（默认false，只更新匹配的第一条记录）
-writeConcern：可选，抛出异常的级别
-注：后三项可以直接作为位序参数传入，例如：
-`db.col.update({"count": {$gt: 15 } } , {$inc: {"count": 1} }, false, true);`
-
 ```js
 db.<collection_name>.save(
    <document>,
@@ -250,6 +216,84 @@ db.<collection_name>.save(
 document：一个json格式的对象，如果带有`"_id"`字段，则表示update操作，否则表示insert操作
 writeConcern：可选，抛出异常的级别
 
+###### 删除文档
+deleteOne, deleteMany, findOneAndDelete（remove 废弃）
+```js
+db.collection.remove(
+   <query>,
+   {
+     justOne: <boolean>,
+     writeConcern: <document>
+   }
+)
+```
+query：筛选条件，同上，如果给`{}`表示删除所有文档
+justOne：可选，是否只删除一个文档（默认false）
+writeConcern：可选，抛出异常的级别
+注：后两项可以直接作为位序参数传入
+
+###### 更新文档
+updateOne, updateMany, replaceOne, findAndModify, findOneAndUpdate, findOneAndReplace
+```js
+db.<collection_name>.update(
+   <query>,
+   <update>,
+   {
+     upsert: <boolean>,
+     multi: <boolean>,
+     writeConcern: <document>,
+     arrayFilters: [ { "elem.grade": { $gte: 85 } } ]
+   }
+)
+```
+
+query：筛选条件
+update：更新操作，例如`{$set:{'title':'MongoDB'}}`表示把title字段修改为MongoDB；`{$inc:{"count":1}}`
+upsert：可选，如果不存在更新的记录，是否改为插入（默认false，不插入）
+multi：可选，是否更新全部匹配记录（默认false，只更新匹配的第一条记录）
+writeConcern：可选，抛出异常的级别
+注：后三项可以直接作为位序参数传入，例如：
+`db.col.update({"count": {$gt: 15 } } , {$inc: {"count": 1} }, false, true);`
+
+`<update>` 支持的操作：
+```js
+{
+  $set:{
+    "tags.1": "rain gear",  // 设置数组第二个值
+    "ratings.0.rating": 2
+  },
+  $setOnInsert: { defaultQty: 100 },  // 仅当upsert: true 且执行插入时生效，若执行update 原有数据则不生效
+  $unset: { quantity: "", instock: "" }, // 删除字段
+  $inc: { quantity: -2, "metrics.orders": 1 },  // quantity 字段-2，后者+1
+  $mul: { price: NumberDecimal("1.25"), qty: 2 }, // 乘，还支持NumberInt、NumberLong
+  $min: { dateEntered: new Date("2013-09-25") },  // 将dateEntered 字段的时间和2013-09-25 比较，若后者更小，则更新
+  $max: { },        // 后者更大则更新
+  $rename: { 'nickname': 'alias', 'cell': 'mobile'}, // 字段改名
+  $currentDate: {
+    lastModified: true, // 设置lastModified为当前时间Date 类型
+    "cancellation.date": { $type: "timestamp" } // 设置该字段为Timestamp 类型
+  },
+
+  $addToSet: { letters: [ "c", "d" ] }, // 将[ "c", "d" ] 作为一个元素加入letters的数组中（去重），如果想要分开插入，则需要使用{$each: [ "c", "d" ]}
+  $pop: { scores: -1 },   // -1 去掉第一个元素，1 去掉最后一个元素
+  $pull: { fruits: { $in: [ "apples", "oranges" ] }, vegetables: "carrots"},   // 删除满足条件的数组元素
+  $pullAll: { scores: [ 0, 5 ] }, // 类似于上面的$in 
+  $push: {    // append 不去重
+    quizzes: {
+      $each: [ { wk: 5, score: 8 }, { wk: 6, score: 7 }, { wk: 7, score: 6 } ], // 批量插入
+      $position: 2, // 指定插入位置，默认插入到最后
+      $sort: { score: -1 }, $slice: 3                       // 排序（逆序） & 截取（前3，若为负数则是倒数几个）
+    }
+  }
+}
+```
+在`<update>` 中
++ 可以使用`arrayField.$`，表示`<query>` 匹配arrayField数组的第一个命中元素
++ 可以使用`arrayField.$[]`，表示arrayField数组的所有元素
++ 可以使用`arrayField.$[element]`，表示arrayField数组中匹配命中 arrayFilters 的元素，arrayFilters可以使用element 这个标识符
+
+###### bulkWrite
+
 ##### 聚合
 `db.<collection_name>.aggregate(AGGREGATE_OPERATION)`
 其中`AGGREGATE_OPERATION`可以是一个操作，也可以是多个操作组成的pipeline
@@ -257,7 +301,7 @@ writeConcern：可选，抛出异常的级别
 + 单一操作
 例如：`{$group: {_id: "$by_user", num_tutorial: {$sum: 1} } }`
 + pipeline
-```
+```js
 [
     { $match: { score : { $gt : 70, $lte : 90 } } },
     { $group: { _id: null, count: { $sum: 1 } } }
@@ -327,6 +371,46 @@ counts.emit：在map函数中emit被调用的次数，也就是所有集合中�
 counts.ouput：结果集合中的文档个数
 ok：是否成功，成功为1
 err：如果失败，这里可以有失败原因，不过从经验上来看，原因比较模糊，作用不大
+
+###### Updates with Aggregation Pipeline
+从4.2 版本开始支持第二个参数是list
+```js
+[
+  { $replaceRoot: { newRoot:
+      { $mergeObjects: [ { quiz1: 0, quiz2: 0, test1: 0, test2: 0 }, "$$ROOT" ] }
+  } },
+  { $set: { quizzes: { $concatArrays: [ "$quizzes", [ 8, 6 ]  ] }, modified: "$$NOW"}  },
+  { $addFields: { "tempsF": {
+        $map: {
+            input: "$tempsC",
+            as: "celsius",
+            in: { $add: [ { $multiply: ["$$celsius", 9/5 ] }, 32 ] }
+        }
+  } } }
+]
+```
+`$replaceRoot` 操作，是将newRoot 指定的字段（字段不存在会报错），展开到文档根；如果使用`$mergeObjects` 则可以将list 中的多个进行合并（后者覆盖前者）若字段不存在，视为{}，`$$ROOT`是一个内置变量，表示当前document
+`concatArrays` 操作，将多个数组进行连接，若字段指定的数组不存在则视为`[]`
+`$set` 操作，将modified 字段设置为当前时间（使用的是`$$NOW`内置变量）
+`$addFields` 操作，可以新增多个字段（`$set` 是其别名）
+`$map` 操作，input 指定操作的数组，as 指定每个元素的迭代子，in 指定计算结果
+
+```js
+[
+  { $set: { average : { $trunc: [ { $avg: "$tests" }, 0 ] }, modified: "$$NOW" } },
+  { $set: { grade: { $switch: {
+                        branches: [
+                            { case: { $gte: [ "$average", 90 ] }, then: "A" },
+                            { case: { $gte: [ "$average", 80 ] }, then: "B" },
+                            { case: { $gte: [ "$average", 70 ] }, then: "C" },
+                            { case: { $gte: [ "$average", 60 ] }, then: "D" }
+                        ],
+                        default: "F"
+  } } } }
+]
+```
+`$trunc` 操作，将第一个参数（数字）进行截断，0表示取整，正整数表示保留几位小数，负整数表示整数截断（比如-2 会将4567 截断为4500）
+`$switch` 操作，使用branches+default 进行条件分支
 
 ### Python pymongo
 ```py

@@ -1373,9 +1373,7 @@ get(key, default=None)方法：类似[key]，如果存在该key则返回value；
 key in d：判断key是否是字典的一个键
 `has_key(key)`方法：判断字典中是否有这个key（推荐使用in 运算符）
 keys()、values()、items()：返回所有key、value、(k,v)二元组的列表（Python3 返回的是一个view 对象，可以及时反映出原始dict 对象的变化，该对象可迭代、支持len 和in 操作）
-iterkeys()方法：同上，只不过返回的是一个迭代子，而不是列表
-itervalues()方法：同上，只不过返回的是一个迭代子，而不是列表
-iteritems()方法：同上，只不过返回的是一个迭代子，而不是列表
+~~iterkeys()/itervalues()/iteritems()方法：同上，只不过返回的是一个迭代子，而不是列表~~（Python3 废弃）
 update(dict)方法：将另一个字典dict合并到本词典中，冲突的键，则覆盖之
 Python3.5+ 支持`|` 和`|=`运算，`|` 相当于`{**dict_x, **dict_y}`，`|=` 相当于update() 方法（都是右值覆盖左值）
 del d[key]：将key对应的键值对从字典中删除，若key不存在则抛出KeyError
@@ -3607,7 +3605,7 @@ mode表示创建dbm文件的访问权限，默认是0666（可能被umask修改�
 #### 6.2.2 whichdb
 whichdb模块只有一个函数：
 whichdb(filename)：如果指定文件名的文件不存在，返回None；如果无法确定返回空串；否则返回确定具体dbm模块名的字符串，如下：
-dbhash（需要bsddb）：BSD的dbm接口，dbhash是统一的接口，bsddb则是Berkeley DB库的接口（2.6后已废弃）
+~~dbhash（需要bsddb）：BSD的dbm接口，dbhash是统一的接口，bsddb则是Berkeley DB库的接口~~（2.6后已废弃）
 gdbm：GNU的dbm接口，基于ndbm接口，但文件格式和dbm并不兼容。
 dbm：标准的Unix的ndbm接口（library属性，可以查看使用的库名），自动加.db扩展名
 dumbdbm：dbm接口的可移植实现（完全python实现，不需要外部库），自动加.dat或.dir扩展名
@@ -4213,6 +4211,8 @@ dialect：只读的
 ### Beautifulsoup 库
 第三方库，用于帮助解析Html/XML等内容
 [BeautifulSoup官网](http://www.crummy.com/software/BeautifulSoup/)
+<https://beautifulsoup.readthedocs.io/zh_CN/v4.4.0/>
+
 #### 安装
 ```
 pip install beautifulsoup4      # BeautifulSoup 是BeautifulSoup3 的包（pip 支持卸载）
