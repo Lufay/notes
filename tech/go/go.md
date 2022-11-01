@@ -4,6 +4,7 @@
 [Go语言圣经](https://www.gitbook.com/book/yar999/gopl-zh/details)
 [Go语言圣经(繁体)](https://www.gitbook.com/book/wizardforcel/gopl-zh/details)
 [An Introduction to Programming in Go](http://www.golang-book.com/books/intro)
+<https://github.com/golang/go/wiki/CodeReviewComments>
 [TOC]
 
 # 概述
@@ -71,8 +72,12 @@ go 命令下有一系列子命令：
 */
 ```
 
+## 打印
+print(args ...Type): 内建的方法，相当于fmt.Print
+println(args ...Type): 内建的方法，相当于fmt.Println
+
 ## 命令行参数
-### os 包
+### os.Args
 解决跨平台的问题
 os.Args 是命令行参数的切片（类型是[]string）
 第一个元素是命令本身，而后是参数列表
@@ -167,7 +172,7 @@ type Flag struct {
 
 
 # 数据类型
-## 1. 基本数据类型
+## 1. 数值与布尔类型
 + 整数类型：默认推导为平台相关类型，且各种类型无法隐式转换，无法直接比较
   + 平台相关: int、uint, uintptr
   + 确定长度: int8, int16, int32、 int64, uint16, uint32、 uint64
@@ -184,7 +189,7 @@ UTF-8的编码是用 byte 这种类型来定义的，Unicode是用 rune 来定�
 Sqrt(f): 对浮点数求开方
 
 
-## 字符串 string
+## 2. 字符串 string
 不可变字符串，初始化后不能改写内容
 ch := str[0] 可以获取第一个字符(字节)，但不可写
 len(s) 获取字符串长度(字节数)，在UTF8编码下，一个汉字对应三个字节，如果按unicode字符计算，可以使用utf8.RuneCountInString函数
@@ -280,7 +285,7 @@ ParseUint(str, base, size)：字符串转无符号整数，返回uint64
 Atoi(str): 字符串转整数，返回(int, error)
 Itoa(int_val): 返回str
 
-## 数组和slice
+## 3. 数组和 slice
 数组长度和类型不可变，长度必须是一个常量表达式，比如`[10]string` 是长度为10的字符串数组，`[3][5]int`是一个二维数组（即3个`[5]int`），可以多维
 并且是值类型拷贝（必须类型和长度相同才能相互赋值）
 初始化：
@@ -293,6 +298,7 @@ Itoa(int_val): 返回str
 1. 基于现有数组或切片：arr[m:n]，其中m 为起始索引缺省为0，n 为终止索引缺省为len(s)，最大可以取到cap(s)，不支持负索引。此种方式在数组空间足够的情况下，会直接操作该数组（即该数组就是底层存储），如果不够则会开辟新空间。
 2. 基于数组字面值：`[]string{"a", "b", "c"}` 即去掉长度进行初始化（会有一个匿名数组被创建，即底层存储）
 3. 使用make() 函数进行创建，元素均为0 值
+4. 如果不初始化，也可以直接使用，只不过len=cap=0
 
 ### 操作
 len(arr) 获取元素个数
@@ -301,20 +307,30 @@ arr[i] 访问单个元素，索引从0开始，不支持负索引
 
 
 ### 内建函数
-copy(dst, src)
-把后一个复制给前一个
-+ 如果是切片，则取两个最小长度进行复制
-
-append(slice, ele...)
-向切片中添加一个或多个元素，也可以是一个切片后面跟`...`表示将该切片展开为多个元素，返回一个新的切片
+append(slice, eles...)
+向切片中添加一个或多个元素，也可以是一个切片后面跟`...`表示将该切片展开为多个元素，返回一个新的切片（若slice 底层cap 足够容纳eles，则返回的就是slice，否则将新分配一个空间拷贝进去数据返回）
 不能对数组使用该函数
 
-## map
+copy(dst, src)
+把后一个复制给前一个，返回复制的元素个数
++ 如果是切片，则取两个最小长度进行复制
+
+```go
+new_s1 := append(s[:0], s[1:]...)
+copy(s, s[1:])
+
+new_s2 := s[:copy(s, s[1:])]	// 这样才能去掉尾部的多余元素
+```
+前两者对 s 的操作效果是一样的，都是后面的往前复制，并且他们都不会清理多出来的最后一个元素，也就是执行完上述操作，s 的len 和 cap 都不会变，只有内容会变化
+而new_s1 和new_s2 则是完全一样的都是基于s 底层存储的一个新的切片
+
+## 4. map
 `map[keyType]valType`
 kv无序字典结构，和切片一样，也具有引用拷贝的语义
-keyType 是任何可以使用 == 进行比较的数据类型，valType 可以是任意类型
+keyType 是comparable类型，valType 可以是任意类型
 非线程安全
 
+在未初始化之前，不能使用索引读写
 初始化方式：
 1. make() 内置函数，可以指定初始化长度
 2. 使用大括号：`{key1: value1, key2: value2,}` 最后一个元素后面可以保留一个逗号
@@ -328,7 +344,7 @@ delete(map容器，key值)
 
 也可以使用len() 测量长度
 
-## struct
+## 5. struct
 ```go
 struct {
 	e eType
@@ -338,23 +354,26 @@ struct {
 结构类型的定义就如同函数参数列表一样，名字-类型-顺序 三者组成了结构唯一性的标识，只要三者均相同就认为是相同类型，否则则不同（顺序之所以重要，是因为它决定了内存布局）
 结构类型变量之间的赋值也是值拷贝
 
-## 函数对象
+## 6. 函数对象
 匿名函数（没有指定函数名）可以作为变量赋值给变量
 其函数头就是该函数对象的类型（可以忽略参数和返回值的命名）
 函数对象和字符串有些类似，相互赋值具有整体的值拷贝语义
 
-## 指针
+## 7. 指针
 `*type` 就是一个type 类型的指针
 `*ptr` 可以获取指针内容，`&v` 可以获取变量的指针
 
 指针的意义在于可以在值拷贝的语义下，能够修改原对象
+结构体指针可以和结构体变量一样，直接调用属性和方法，而无须使用取内容操作`*`
 
-
-## 接口对象
-interface 的底层实现由两部分组成，一个是类型，一个值。只有当类型和值都是nil的时候，才等于nil。当将任何类型的变量（除了nil本身）赋值给接口时，都将其类型和值分别赋予这两部分，只有当将nil赋值给接口时，接口才真正是nil
-接口只包含方法签名，没有成员变量
+## 8. 接口对象
 接口对象可以接受任何满足接口规约的对象来赋值，并且接口可以自动基于类型的非指针方法推导出指针方法（反之不行）
 接口一般都不使用指针，因为其可以承接任何类型，只要其实现了接口规约，因此，接口对象只能调用接口规约中的方法，而无法修改对象本身，即使承接的是指针
+接口只包含方法签名，没有成员变量（接口也可以包含其他的接口和类型，表示类型规约）包含其他类型的接口只能用于泛型的类型规约中，不能定义变量
+因此，一个接口就是一个规则集，多行取交集（即必须同时满足每一行的要求），行内的多个类型可以使用`|` 取并集（这些类型不能是带方法的接口）。那么，一个空接口，就是一个没有任何约束的规则集，也就是任何类型都可以满足
+
+interface 的底层实现由两部分组成，一个是类型，一个值。只有当类型和值都是nil的时候，才等于nil。当将任何类型的变量（除了nil本身）赋值给接口时，都将其类型和值分别赋予这两部分，只有当将nil赋值给接口时，接口才真正是nil
+
 
 ```go
 type Integer int
@@ -367,7 +386,7 @@ func (a *Integer) Less(b Integer) bool {
 }
 ```
 
-## 管道
+## 9. 管道
 chan EType，定义形式类似于指针，这种是双向的管道，使用make 进行初始化
 chan<- EType，只写管道，用于接收一个管道变量（需要进行类型转换），并限定其行为
 <-chan EType，只读管道，用于接收一个管道变量（需要进行类型转换），并限定其行为
@@ -392,7 +411,7 @@ type error interface {
 func panic(interface{})
 func recover() interface{}
 ```
-panic 函数用于抛出异常，会终止正常的程序流程，仅执行已经注册的defer 函数，直至所属goroutine 终止
+panic 函数用于抛出异常，会终止正常的程序流程，仅执行已经注册的defer 函数，直至所属goroutine 终止，而一个goroutine 以panic 结束，会导致整个程序崩溃
 panic 抛出的异常信息（就是参数）可以使用recover 接收，因为异常处理流程，所以recover 一般在defer 的函数调用中使用
 
 ```go
@@ -485,13 +504,13 @@ switch val_expr {
 		code_block
 	case val2:
 		fallthrough
-	case val3, val4:
+	case val3, val4:	// 单个 case 中，可以出现多个结果选项
 		code_block
 	default:
 		code_block
 }
 
-switch {
+switch {	// 这里可以有一个初始化语句（用;结尾）
 	case cond_expr:
 		code_block
 	case cond_expr:
@@ -500,9 +519,8 @@ switch {
 ```
 1. 小括号可以无，大括号必须有
 1. 左花括号 { 不可另起一行
-1. 单个 case 中，可以出现多个结果选项
-1. 不需要break，只有使用fallthrough 语句才会继续执行紧跟的下一个 case
-1. 可以不设定 switch 之后的表达式，而在case 中使用条件表达式，在此种情况下，整个 switch 结构与多个if...else... 的逻辑作用等同
+2. 不需要break（不带标签的break没有任何作用），只有使用fallthrough 语句才会继续执行紧跟的下一个 case
+3. 可以不设定 switch 之后的表达式，而在case 中使用条件表达式，在此种情况下，整个 switch 结构与多个if...else... 的逻辑作用等同
 
 ### 循环语句 for
 1. 迭代式：`for init; cond; step {`
@@ -512,12 +530,10 @@ switch {
 for i := 0; i < 10; i++ {}
 for i,j := 0,len-1; i < j; i,j = i+1,j-1 {}	// 支持多重赋值，不支持以逗号为间隔的多个赋值语句
 for cond_expr {}	// 省去init 和stop，即while条件循环
+OUTER:
 for {		// 全部省去，无限循环
 	break OUTER
 }
-OUTER:
-// ...
-
 
 for i, ele := range array {}	// 遍历字符串、数组
 for k, v := range map {}	// 遍历字典，v 可以缺省
@@ -527,7 +543,7 @@ for v := range ch {}	// 读取管道，当管道为空，会阻塞循环，除�
 1. 左花括号 { 不可另起一行
 1. init 只能是短变量声明、赋值语句（含自增自减），函数调用
 1. 如果i, k 并不会用到，可以使用`_` 作为占位符（可以用于语法上需要变量名，但该变量并不会被用到）
-1. 支持continue 和 break，还支持break TAG，直接跳出多层循环
+1. 支持continue 和 break，还支持break TAG，直接跳出多层循环（标签TAG 必须定义在for、switch 和 select 的代码块上）
 注意，这里的i，ele，k，v都是在遍历开始时新分配的空间，而后在遍历时不断将数组或字典的当前元素拷贝到这些空间中
 
 ### 跳转语句
@@ -564,6 +580,7 @@ results 是返回值列表，支持多返回值，单个返回值可以不用加
 
 ## defer
 `defer 函数调用`
+函数调用的参数是在当前位置进行绑定的，而执行时机是在计算完成其所在函数的返回值表达式之后；但对于命名返回值而言，由于命名返回值直接引用接受变量，所以若函数调用中修改该命名返回的值是会生效的
 提供一种try-finally 机制，也就是一个上下文的回收
 如果有多个defer，则逆序执行，即后指定先执行
 
@@ -581,7 +598,7 @@ type是分配空间的类型
 count是分配的单元
 capacity是预留的单元数
 
-# 类型扩展
+# 类型派生
 ## 格式
 ### 定义类型
 `type Tname BaseType`
@@ -603,6 +620,23 @@ t := &Tname{id: 1, name: "foo"}	// 可以缺省部分字段
 func (obj Tname) method() {
 }
 ```
+对于一个类型，可以定义其值方法，也可以定义其指针方法
+1. 对于值方法，由于存在自动的指针方法推演，所以，值方法既可以使用变量本身调用，也可以使用变量指针调用
+2. 对于指针方法，一般只能使用指针进行调用，除非调用者是一个左值（即可以使用`&`取地址），那么左值也可以调用指针方法
+综上：
+1. 如果会修改调用者本身，必须使用指针方法
+3. 若struct 中包含不可拷贝成员（比如sync.Mutex等），必须使用指针方法
+2. 如果对象较大（值拷贝成本高），最好使用指针方法
+4. 对同一个类，最好不用混用两者
+5. 仅当调用者是不可变对象，或者本身就已经是指针（比如map/func/chan，以及不会扩缩容的slice）时，才推荐使用值方法
+
+### 类型别名
+`type TypeAlias = Type`
+给别名添加方法，会影响到源类型，这一点不同于类型扩展
+但是，编译器不允许给其他包的类型添加方法
+
+类型扩展本质上和源类型是两种类型，变量需要进行类型转换，才能使用
+类型别名则和源类型没有区别
 
 ## 例子
 ### 扩展内建类型
@@ -619,7 +653,7 @@ return len(n)
 ```go
 type handler func(name string) int
 func (h handler) add(name string) int {
-return h(name) + 10
+	return h(name) + 10
 }
 ```
 ### 定义结构体
@@ -632,7 +666,7 @@ type Person struct {
 func (p Person) Name() string {
 	return p.name
 }
-func (p *Person) GetAge( ) (int, error) {
+func (p *Person) GetAge() (int, error) {
 	return p.age, nil
 }
 ```
@@ -683,6 +717,51 @@ p2, ok := p.(Person)		// 这种推断失败则ok 为false，p2 为nil
 ```
 想要把实例对象赋值给接口变量，必须该对象实现了所有接口的方法（不能是对象指针），但无论是对象指针还是对象实现了所有接口的方法，就可以把对象指针赋值给接口变量。
 
+# 泛型
+go1.18 引入
+<https://segmentfault.com/a/1190000041634906>
+
+## 格式
+```go
+// 泛型函数
+func FuncName[T TypeSpec1, U TypeSpec2](a T, b U) { ... }
+FuncName(1, 2)	// 自动推断类型参数
+FuncName[int](1, 3)		// 显式指定类型参数
+// 泛型类型，源类型不能只是一个类型参数
+type Slice[T int | float32 | float64] []T
+// 泛型结构，不支持单纯的泛型方法，所有方法的类型参数必须放在结构上
+type Stack[T comparable] struct {
+	vals []T
+}
+func (s *Stack[T]) Method() T { ...}
+type WowStruct[T int | float32, S []T] struct {		// 类型参数可以相互引用
+    Data     S
+    MaxValue T
+    MinValue T
+}
+// 类型约束接口
+type MyInt interface {
+	int | int8 | int16 | int32 | int64
+}
+type MyInt interface {
+	~int8		// 不仅支持int8, 还支持int8的衍生类型
+	String() string // 还必须有一个方法
+}
+// 泛型接口
+type Differ[T any] interface {
+    fmt.Stringer
+    Diff(T) float64
+}
+```
+其中TypeSpec 就是对T 这个类型参数的一个约束，可以是一个类型或接口，也可以是使用`|` 进行组合（不能是带方法的接口，且各个类型不能有交集）
+多个泛型参数使用`,` 分隔，称为类型参数列表，类型参数列表和名字一起构成了新的类型名，所以泛型不支持匿名函数 和 匿名结构
+泛型使用`~`支持基于原生类型的派生（包括任意级派生），但`~` 后面只能是原生类型（可以是匿名结构，但不能是命名的结构类型），也不能是接口类型（无论是否命名）
+由于语法解析的问题，类型约束无法直接写指针类型，这种可以加上`interface{}` 保住指针，比如：`interface{*int|*float64}`
+另外，泛型类型定义的变量不同于接口变量，可以进行类型检测，只能使用反射或者将其传给接口变量才能根据不同类型进行不同操作。这样其实并不适合使用泛型。
+
+go 内置了2个泛型接口：
++ any 也就是interface{}
++ comparable 就是所有内置的可比较类型（指的是支持`==`, `!=`操作）
 
 # IO
 ## io 包
@@ -1033,12 +1112,32 @@ func do() {
 }
 ```
 
-
-
-#### WaitGroup
-
 #### sync/atomic 包
-func CompareAndSwapUint64(val *uint64, old, new uint64) (swapped bool)：比较和交换两个uint64类型数据
+##### 函数
++ AddT(a *t, d t) t: T 可以是Int32、Int64、Uint32、Uint64、Uintptr，对应的t 是int32、int64、uint32、uint64、uintptr
+  对于非浮点数，如果想要做减法，比如a-5，可以使用`AddUint32(&a, ^uint32(5-1))`
++ CompareAndSwapT(val *t, old, new t) (swapped bool)：T/t 除了上面的5种外，还有Pointer，对应unsafe.Pointer。若*val==old，则返回false，否则*val=new，返回true
++ LoadT(a *t) t: T/t 和CompareAndSwapT 一样有6种，用于原子读，类似Java's volatile variables
++ StoreT(a *t, val t) t: T/t 和LoadT 一样有6种，用于原子写，类似Java's volatile variables
++ SwapT(a *t, val t) t: T/t 和LoadT 一样有6种，原子的写入新值返回旧值
+
+##### Bool/Pointer[T]/Value
+atomic bool/*T，0值为false/nil
+Value 一旦Store，就不可复制
+
++ CompareAndSwap(old, new) (swapped bool)
++ Load() t
++ Store(val t)
++ Swap(new) old
+
+##### Int32/Int64/Uint32/Uint64/Uintptr
+atomic int32/int64/uint32/uint64/uintptr
+
++ Add(delta t) (new t)
++ CompareAndSwap(old, new) swapped
++ Load() t
++ Store(val t)
++ Swap(new) old
 
 # 包 & 模块 & 库
 [参考](https://golang.org/pkg/)
@@ -1099,13 +1198,26 @@ gofmt 工具会按字母顺序对导入的包进行排序
 
 ## 常用包
 ### os 包
-Open(fileName): 打开文件，返回(file, error)，file 是os.File
+Open(fileName): 打开文件，返回(file, error)，file 是os.File，若文件打开是吧，file 是nil
 Create(fileName): 创建文件，返回(file, error)
+Stat(fileName): 返回文件状态(stat, error), stat 是fs.FileInfo（io/fs包）
 
 #### File 对象
 ##### 方法
-Close() 关闭文件句柄
+Close() 关闭文件句柄，返回error
 WriteString(s)
+Readdirnames(n) file 必须是目录，返回目录下的文件名，最多返回n 个（若n<0，则返回全部），返回(fileNames, error)
+Stat(): 返回文件状态(stat, error), stat 是fs.FileInfo
+
+#### FileInfo 对象
+是fs.FileInfo 的别名
+
+##### 方法
+IsDir(): 文件是否是目录
+ModTime(): 文件修改时间
+Mode(): 返回fs.FileMode
+Name():
+Size(): 返回文件大小
 
 ### time 包
 Sleep(100 * time.Millisecond) 当前协程休眠，单位是1e-9 秒
