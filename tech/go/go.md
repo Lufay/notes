@@ -368,7 +368,7 @@ struct {
 
 ## 8. 接口对象
 接口对象可以接受任何满足接口规约的对象来赋值，并且接口可以自动基于类型的非指针方法推导出指针方法（反之不行）
-接口一般都不使用指针，因为其可以承接任何类型，只要其实现了接口规约，因此，接口对象只能调用接口规约中的方法，而无法修改对象本身，即使承接的是指针
+接口一般都不使用指针（仅当表示一个泛化的指针类型时使用），因为其可以承接任何类型，只要其实现了接口规约，因此，接口对象只能调用接口规约中的方法，而无法修改对象本身，即使承接的是指针
 接口只包含方法签名，没有成员变量（接口也可以包含其他的接口和类型，表示类型规约）包含其他类型的接口只能用于泛型的类型规约中，不能定义变量
 因此，一个接口就是一个规则集，多行取交集（即必须同时满足每一行的要求），行内的多个类型可以使用`|` 取并集（这些类型不能是带方法的接口）。那么，一个空接口，就是一个没有任何约束的规则集，也就是任何类型都可以满足
 
@@ -1220,13 +1220,57 @@ Name():
 Size(): 返回文件大小
 
 ### time 包
-Sleep(100 * time.Millisecond) 当前协程休眠，单位是1e-9 秒
+日期计算不闰秒
 
-Now(): 获取当前时间对象Time
-Unix(timestamp, nanoseconds): 返回一个Time 对象，前者单位是秒，后者单位是1e-9 秒，最终结果是两者之和
+#### 常量
+Layout: Time.Format and time.Parse 使用，包含了"月/日 时:分:秒PM '年 +时区"，例如"01/02 03:04:05PM '06 -0700"
+RFC3339: "2006-01-02T15:04:05Z07:00"
+如果要自定义格式，需要按下面的字段进行识别：
+Year: "2006" "06"
+Month: "Jan" "January" "01" "1"
+Day of the week: "Mon" "Monday"
+Day of the month: "2" "_2" "02"
+Day of the year: "__2" "002"（下划线是空格占位符）
+Hour: "15" "3" "03" (PM or AM)
+Minute: "4" "04"
+Second: "5" "05"（后面可以使用`,` 或`.` 跟多个0，表示毫秒
+AM/PM mark: "PM"
+zone offsets: "-0700" "-07:00" "-07" "-070000" "-07:00:00"（或者把符号换成Z）
+
+#### 函数
+Sleep(100 * time.Millisecond) 当前协程休眠，单位是1e-9 秒，0和负值会立即返回
+
+After(d Duration): 返回一个只读管道<-chan Time，在过完时间后，将当前时间放入管道中，相当于NewTimer(d).C，但底层的timer没有立即被gc 回收（所以最好使用NewTimer，当不使用时调用其Stop方法）
+Tick(d Duration): 返回一个只读管道<-chan Time，每过一个d 时间，就会将当前时间放入管道中。若d 为0和负值，则返回nil，相当于NewTicker(d).C，但底层的ticker 无法被gc
+
+#### Duration
+type Duration int64
+纳秒数的时间差
+
+常量：
+Nanosecond Duration = 1	// 1纳秒
+Microsecond: 1微妙
+Millisecond: 1毫秒
+Second: 1秒
+Minute
+Hour
+
+包函数：
 Since(t Time): 返回Duration 对象，表示当前时间和t 之间的时间差（t 是过去的时间点）
 Until(t Time): 返回Duration 对象，表示当前时间和t 之间的时间差（t 是未来的时间点）
-After(d Duration): 返回一个只读管道<-chan Time，在过完时间后，将当前时间放入管道中
+ParseDuration(s) (Duration, error): 解析字符串，有效的单位是"ns", "us", "ms", "s", "m", "h"，如"300ms", "-1.5h", "2h45m", 
+
+##### 方法
+Abs() Duration
+Nanoseconds() int64
+Microseconds() int64
+Milliseconds() int64
+Seconds() float64
+Minutes() float64: 返回浮点分钟数
+Hours()
+Round(m Duration) Duration: 以m 为一个单位，将当前对象进行舎入到该单位
+Truncate(m Duration) Duration: 以m 为一个单位，将当前对象进行截断到该单位
+String() string
 
 #### Time
 ##### 方法
@@ -1236,13 +1280,56 @@ UTC(): 自身变为UTC 时间返回
 Local(): 自身变为本地时间返回
 Format(time.RFC3339): 按指定格式进行字符串化
 
-#### Date
-Date(year, month, day, hour, minute, second, ns, zoneinfo)
-其中month、zoneinfo 可以使用time 包中定义的常量（比如time.September、time.UTC）
+#### Month
+type Month int
 
-###### 方法
-Unix(): 秒级时间戳
-UnixNano(): 1e-9 秒级时间戳
+常量
+```go
+const (
+	January Month = 1 + iota
+	February
+	March
+	April
+	May
+	June
+	July
+	August
+	September
+	October
+	November
+	December
+)
+```
+有String() string 方法
+
+#### Location
+表示timezone 和夏令时
+两个内置的*Location 变量是time.UTC 和time.Local
+```go
+secondsEastOfUTC := int((8 * time.Hour).Seconds())
+beijing := time.FixedZone("Beijing Time", secondsEastOfUTC)	// 固定时差timezone，第一个参数是name
+
+newYork, err := time.LoadLocation("America/New_York")	// 从timezone数据库加载，若字符串为空，默认为UTC
+```
+有String() string 方法
+
+
+
+#### Ticker
+```go
+type Ticker struct {
+	C <-chan Time // The channel on which the ticks are delivered.
+	// contains filtered or unexported fields
+}
+```
+
+构造：
+NewTicker(d Duration) *Ticker：返回一个定时器，定时器每隔一个d 时间间隔就会向C 中放入当前时间（C 容量为1，如果已满就不放入了）
+注意d 必须大于0
+
+##### 方法
+Reset(d Duration)：重置ticker，可以修改其间隔调整节律，d 必须大于0
+Stop()：停止ticker，但并没有关闭C，只是不继续写入了，可以使用Reset 方法进行重启
 
 ### runtime 包
 Gosched(): 主动出让时间片给其他goroutine
