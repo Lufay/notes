@@ -368,7 +368,7 @@ struct {
 
 ## 8. 接口对象
 接口对象可以接受任何满足接口规约的对象来赋值，并且接口可以自动基于类型的非指针方法推导出指针方法（反之不行）
-接口一般都不使用指针（仅当表示一个泛化的指针类型时使用），因为其可以承接任何类型，只要其实现了接口规约，因此，接口对象只能调用接口规约中的方法，而无法修改对象本身，即使承接的是指针
+接口一般都不使用指针（仅当表示一个泛化的*指针类型*时使用），因为其可以承接任何类型，只要其实现了接口规约，因此，接口对象只能调用接口规约中的方法，而无法修改对象本身，即使承接的是指针
 接口只包含方法签名，没有成员变量（接口也可以包含其他的接口和类型，表示类型规约）包含其他类型的接口只能用于泛型的类型规约中，不能定义变量
 因此，一个接口就是一个规则集，多行取交集（即必须同时满足每一行的要求），行内的多个类型可以使用`|` 取并集（这些类型不能是带方法的接口）。那么，一个空接口，就是一个没有任何约束的规则集，也就是任何类型都可以满足
 
@@ -404,9 +404,72 @@ type error interface {
 	Error() string
 }
 ```
-一般使用err 作为函数最后一个返回值，所以可以用其是否为nil 来判断返回是否出错
-可以使用`errors.New("msg")`创建一个error 实例
+一般使用err 作为函数最后一个返回值，通常使用其是否为nil 或者和已知的错误变量比较 来判断返回是否出错
+可以使用`errors.New("msg")`或者`fmt.Errorf()` 创建一个error 实例（每次返回的都是不同的实例，无论字符串是否相同）
 
+#### 错误处理分支
+```go
+// pkg A
+var (
+    ErrInvalidUnreadByte = errors.New("bufio: invalid use of UnreadByte")
+    ErrInvalidUnreadRune = errors.New("bufio: invalid use of UnreadRune")
+    ErrBufferFull        = errors.New("bufio: buffer full")
+    ErrNegativeCount     = errors.New("bufio: negative count")
+)
+// pkg B
+data, err := b.Peek(1)
+if err != nil {
+    switch err {
+    case bufio.ErrNegativeCount:
+        // ... ...
+        return
+    case bufio.ErrBufferFull:
+        // ... ...
+        return
+    case bufio.ErrInvalidUnreadByte:
+        // ... ...
+        return
+    default:
+        // ... ...
+        return
+    }
+}
+```
+
+#### 包装错误链
+```go
+var ErrSentinel = errors.New("the underlying sentinel error")
+err1 := fmt.Errorf("wrap sentinel: %w", ErrSentinel)		// 返回的错误具有Unwrap方法，并返回另一个error
+err2 := fmt.Errorf("wrap err1: %w", err1)
+
+err2 != ErrSentinel
+errors.Is(err2, ErrSentinel)		// true
+```
+这样就形成了err2 -> err1 -> ErrSentinel 的一个错误链
+
+#### 错误类型检视
+```go
+type MyError struct {
+    e string
+}
+
+func (e *MyError) Error() string {
+    return e.e
+}
+
+var err = &MyError{"MyError error demo"}
+err1 := fmt.Errorf("wrap err: %w", err)
+err2 := fmt.Errorf("wrap err1: %w", err1)
+var e *MyError
+if errors.As(err2, &e) {	// 若err2 的错误类型链中包含e 对应的类型，则把被包装的err 赋值给e
+	println("MyError is on the chain of err2")
+	println(e == err)                  
+	return                             
+}         
+```
+As 方法的第二个参数必须是指向实现了 error 的空指针类型或者接口
+
+#### panic & recover
 ```go
 func panic(interface{})
 func recover() interface{}
@@ -1221,27 +1284,90 @@ Size(): 返回文件大小
 
 ### time 包
 日期计算不闰秒
+wall clock：显示的时钟时间，受同步时间校准，可能出现时间回拨，所以时间并不一定单调增，用于时间显示
+monotonic clock：单调时钟，系统的计数时钟，一定是单调增的，用于时间衡量
 
 #### 常量
 Layout: Time.Format and time.Parse 使用，包含了"月/日 时:分:秒PM '年 +时区"，例如"01/02 03:04:05PM '06 -0700"
 RFC3339: "2006-01-02T15:04:05Z07:00"
 如果要自定义格式，需要按下面的字段进行识别：
-Year: "2006" "06"
 Month: "Jan" "January" "01" "1"
-Day of the week: "Mon" "Monday"
 Day of the month: "2" "_2" "02"
-Day of the year: "__2" "002"（下划线是空格占位符）
 Hour: "15" "3" "03" (PM or AM)
 Minute: "4" "04"
 Second: "5" "05"（后面可以使用`,` 或`.` 跟多个0，表示毫秒
-AM/PM mark: "PM"
+Year: "2006" "06"
 zone offsets: "-0700" "-07:00" "-07" "-070000" "-07:00:00"（或者把符号换成Z）
+Day of the week: "Mon" "Monday"
+Day of the year: "__2" "002"（下划线是空格占位符）
+AM/PM mark: "PM" "pm"
+location: MST
 
 #### 函数
 Sleep(100 * time.Millisecond) 当前协程休眠，单位是1e-9 秒，0和负值会立即返回
 
 After(d Duration): 返回一个只读管道<-chan Time，在过完时间后，将当前时间放入管道中，相当于NewTimer(d).C，但底层的timer没有立即被gc 回收（所以最好使用NewTimer，当不使用时调用其Stop方法）
 Tick(d Duration): 返回一个只读管道<-chan Time，每过一个d 时间，就会将当前时间放入管道中。若d 为0和负值，则返回nil，相当于NewTicker(d).C，但底层的ticker 无法被gc
+
+#### Time
+0值是0001-01-01T00:00:00UTC
+应当使用值传递，而非指针
+在进行==比较时，不仅比较wall clock 还会比较monotonic clock 和location，所以最好不要作为map 的key
+除GobDecode, UnmarshalBinary, UnmarshalJSON and UnmarshalText这些方法（会丢失夏令时信息，因为仅保存时差）外，其他方法都是并发安全的
+
+实现接口
+fmt.GoStringer
+gob.GobEncoder/GobDecoder
+encoding.BinaryMarshaler/BinaryUnmarshaler/TextMarshaler/TextUnmarshaler
+json.Marshaler/Unmarshaler
+
+包函数：
++ Now(): 获取当前时间对象Time
++ Date(year, month, day, hour, minute, second, ns, loc *Location) Time: 其中month、loc（不能为nil）可以使用time 包中定义的常量，如果超过范围，会自动进行计算转换
++ Parse(layout, value string) (Time, error): 使用layout 解析value，解析时没有提供值的部分，使用Time的默认值代替，但year=0；星期如果非法，将被忽略；2位的年份>=69是19xx，否则则是20xx；如果没有提供location信息，则默认使用UTC；自动识别碎秒
++ ParseInLocation(layout, value string, loc *Location) (Time, error): 按指定的loc 去解析
++ Unix(timestamp, nanoseconds): 返回一个Time 对象（该对象会换算到Local时区），前者单位是秒，后者单位是1e-9 秒，最终结果是两者之和（从1970.1.1UTC 开始的时间戳）
++ UnixMilli(msec int64) Time：毫秒时间戳
++ UnixMicro(usec int64) Time：微妙时间戳
+
+##### 方法
+Date() (year int, month Month, day int)
+Year() int
+Month() Month
+Day() int
+YearDay() int: 一年的第几天
+Weekday() Weekday
+ISOWeek() (year, week int)：一年的第几周（1~53），注意一年的前三天可能属于前一年的52或53周，一年的最后3天也可能属于后一年的第一周
+Clock() (hour, min, sec int)
+Hour() int
+Minute() int
+Second() int
+Nanosecond() int
+Location()
+Zone() (name string, offset int)
+Round(d Duration) Time: 以d 为单位按指定的时区进行舎入取整
+Truncate(d Duration) Time：以d 为单位按指定的时区进行截断取整
+
+Unix() int64: 返回时间戳（自 1970 年 1 月 1 日 UTC 以来经过的秒数）
+UnixMilli() int64：毫秒时间戳
+UnixMicro() int64: 微秒时间戳
+UnixNano(): 1e-9 秒级时间戳
+
+Add(d Duration) Time
+AddDate(years, months, days int) Time: 如果加的的月不含对应的日，则自动进位
+Sub(t Time): 返回Duration 对象，表示两者的时间差，若差值不在Duration 的值域，则返回最大或最小值
+Before(t Time) bool: 返回对象时间是否早于参数时间
+After(u Time) bool: 返回对象时间是否晚于参数时间
+Equal(u Time) bool: 是否是同一时间，会换算时区（==是纯等值比较）
+IsZero() bool: 是否0值
+
+UTC(): 自身变为UTC 时间返回
+Local(): 自身变为本地时间返回
+In(loc *Location): 自身变为指定的时区返回
+
+String() string：默认格式"2006-01-02 15:04:05.999999999 -0700 MST"，若读取monotonic clock，就会额外包含`m=±<value>`部分，单位为秒
+Format(layout string) string: 按指定格式进行字符串化，碎秒可以使用多个0或9表示占位（0表示强制长度，9表示结尾的0忽略）
+AppendFormat(b []byte, layout string) []byte: 在b 后追加该时间的一个格式化时间，返回一个新的切片
 
 #### Duration
 type Duration int64
@@ -1272,14 +1398,6 @@ Round(m Duration) Duration: 以m 为一个单位，将当前对象进行舎入�
 Truncate(m Duration) Duration: 以m 为一个单位，将当前对象进行截断到该单位
 String() string
 
-#### Time
-##### 方法
-Unix() int64: 返回时间戳（自 1970 年 1 月 1 日 UTC 以来经过的秒数）
-Sub(t Time): 返回Duration 对象，表示两者的时间差
-UTC(): 自身变为UTC 时间返回
-Local(): 自身变为本地时间返回
-Format(time.RFC3339): 按指定格式进行字符串化
-
 #### Month
 type Month int
 
@@ -1302,6 +1420,23 @@ const (
 ```
 有String() string 方法
 
+#### Weekday
+type Weekday int
+
+常量
+```go
+const (
+	Sunday Weekday = iota
+	Monday
+	Tuesday
+	Wednesday
+	Thursday
+	Friday
+	Saturday
+)
+```
+有String() string 方法
+
 #### Location
 表示timezone 和夏令时
 两个内置的*Location 变量是time.UTC 和time.Local
@@ -1309,11 +1444,25 @@ const (
 secondsEastOfUTC := int((8 * time.Hour).Seconds())
 beijing := time.FixedZone("Beijing Time", secondsEastOfUTC)	// 固定时差timezone，第一个参数是name
 
-newYork, err := time.LoadLocation("America/New_York")	// 从timezone数据库加载，若字符串为空，默认为UTC
+newYork, err := time.LoadLocation("Asia/Shanghai")	// 从timezone数据库加载，若字符串为空，默认为UTC
 ```
 有String() string 方法
 
+#### Timer
+```go
+type Timer struct {
+	C <-chan Time
+	// contains filtered or unexported fields
+}
+```
 
+构造：
+NewTimer(d Duration)：在d 时间之后将当前时间发到C 中
+AfterFunc(d Duration, f func())：在d 时间之后调用f
+
+##### 方法
+Reset(d Duration) bool：重置延时，若timer尚有效返回true，若timer超时或stop返回false，对于NewTimer 构造timer，只能在stop或超时且排空管道后才能重置；对于AfterFunc而言，返回true，意味着更新执行时间，而返回false，则以为这f 可能被再次调用，而且不保证再次调用是否会和前一次并行
+Stop() bool：成功结束返回true，若timer已超时或已停止，返回false，停止并不会关闭C
 
 #### Ticker
 ```go
