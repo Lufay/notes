@@ -53,7 +53,7 @@ shell 下默认的类型就是字符串，而引号仅仅是移除shell的meta�
 `${var:+newstr}`：如果变量非空，返回newstr，否则返回空串。如果去掉冒号，则仅当未定义返回空串  
 `${var#str}` 和 `${var##str}`：ltrim 操作，表示从字符串中去除匹配str的部分返回，str 可以使用通配符进行模糊匹配，前者是最少字符匹配模式，后者是贪婪模式  
 `${var%str}` 和 `${var%%str}`：rtrim 操作，同上  
-`${var/substr/newstr}` 和 `${var//substr/newstr}`：将字符串中的substr（可以使用通配符）替换为newstr，前者只替换一次，后者全部替换  
+`${var/substr/newstr}` 和 `${var//substr/newstr}`：将字符串中的substr（可以使用通配符）替换为newstr（如果包含引号，需要使用\进行转义），前者只替换一次，后者全部替换  
 `$((expression))` 和 `$[expression]`：expression是整数的算术表达式（变量var可以不带`$`进行引用），返回算术表达式计算的值  
 `$(cmd)` 和`` `cmd` ``：返回命令cmd 执行标准输出的字符串
 

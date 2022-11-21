@@ -539,7 +539,7 @@ modified_count：修改的文档条数
 upserted_count：upsert 的文档条数
 upserted_ids
 
-### 聚合
+##### 聚合
 ```
 collection.group(key, condition, initial, reduce, finalize=None, **kwargs)
 collection.aggregate(pipeline, **kwargs)
@@ -565,6 +565,43 @@ group 函数返回一个类似字典列表的对象，每个对象包括key 的p
 
 注：文档对象如果想要使用json.dumps() 函数进行序列化，必须`del doc['_id']`，因为ObjectId类型无法序列化
 不过可以使用`bson.json_util.dumps()`进行序列化（对应的反序列化方法是`bson.json_util.loads()`）
+
+### Go mongo.Client
+go get github.com/mongodb/mongo-go-driver/mongo
+
+#### 数据库
+```go
+import (
+	"context"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
+	"time"
+)
+
+ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))   // options ApplyURI 之后可以再SetMaxPoolSize(20)
+if err != nil {
+  log.Print(err)
+}
+collection := client.Database(database).Collection(collection)
+```
+#### 数据类型
+有四种struct可以定义操作的结构：bson.D{}、bson.E{}、bson.M{}、bson.A{}
+```go
+type A []interface{}  // bson array
+
+type M map[string]interface{} // bson doc 字段顺序无关
+
+type E struct {   // bson doc 字段
+   Key   string
+   Value interface{}
+}
+
+type D []E    // bson doc 字段顺序有关
+
+func (d D) Map() M
+```
 
 
 <http://www.cnblogs.com/cswuyg/p/4355948.html>

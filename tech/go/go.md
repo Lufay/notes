@@ -56,6 +56,8 @@ go 命令下有一系列子命令：
 也可以使用`go build src.go` 将该源文件编译为可执行文件（静态编译，不用担心动态库的版本依赖问题）
 
 `package main`这个包定义了一个独立的可执行程序，其中的main() 函数就是这个程序的入口，这个函数没有参数和返回值
+还有一个init() 函数，是这个包的初始化函数，它是在包加载并初始化全局变量后执行的（在main 之前），一个包内甚至一个文件内可以有多个init 函数，它们按序依次执行，而多个包的init 函数按import 顺序执行（无论是否使用`_` 进行别名），最后执行当前main 包的init 和main 函数。不过，一个包无论被多少次import，init 函数也都只执行一次
+main 和init 函数都是无法被显式调用的，不能作为参数，也没有入参和返回
 
 ## 代码文本
 如果包含非ANSI 字符，需要保存为UTF-8 编码
@@ -182,7 +184,7 @@ type Flag struct {
   + a+bi == complex(a, b); a == real(z); b == imag(z)
 + 字符类型: rune（Unicode字符类型，即int32）, byte（UTF-8字符类型，即uint8）
 golang中只支持UTF-8以及Unicode的编码，而对于其他的编码并没有内置的编码转换（可以基于iconv库用Cgo包装一个）
-UTF-8的编码是用 byte 这种类型来定义的，Unicode是用 rune 来定义的。
+UTF-8的编码是用 byte 这种类型来定义的，Unicode是用 rune 来定义的（单引号字符就是rune）。
 在字符串遍历的时候，如果使用range关键字，那么使用的是rune的形式来遍历的。而以数组取值的方式是byte的形式。
 
 ### math 包、math/cmplx 包
@@ -191,13 +193,22 @@ Sqrt(f): 对浮点数求开方
 
 ## 2. 字符串 string
 不可变字符串，初始化后不能改写内容
+"" 只是普通的单行字符串，而`` 则是多行字符串
 ch := str[0] 可以获取第一个字符(字节)，但不可写
 len(s) 获取字符串长度(字节数)，在UTF8编码下，一个汉字对应三个字节，如果按unicode字符计算，可以使用utf8.RuneCountInString函数
 s1 + s2 字符串连接
 += 会产生一个新字符串回赋
 
 ### strings 包
-Count(s, sep)：在字符串s 中查找sep 串出现次数
+EqualFold(s, t): 忽略大小写的更一般形式的相等
+Compare(a, b)：按字典序比较两个字符串，返回0: `a==b`; 1: `a>b`; 2: `a<b`
+
+Contains(s, substr)：在字符串s 中查找是否含有substr 串（若为substr 为空串返回true）
+ContainsAny(s, chars)：在字符串s 中查找是否含有chars 串中的任一字符（chars为空串，返回false）
+ContainsRune(s, rune)：在字符串s 中查找是否含有rune 字符
+HasPrefix(s, prefix)：prefix为空返回true
+HasSuffix(s, suffix)：suffix为空返回true
+Count(s, sep)：在字符串s 中查找sep 串不重叠的出现次数，若sep 为空，则返回字符数+1
 Index(s, sep)：在字符串s 中查找sep 串首次出现的位置（找不到返回-1，sep 空串返回0）
 IndexAny(s, chars)
 IndexByte(s, c)
@@ -207,20 +218,16 @@ LastIndex(s, sep)：在字符串s 中查找sep 串最后一次出现的位置（
 LastIndexAny(s, chars)
 LastIndexByte(s, c)
 LastIndexFunc(s, f func(rune) bool)
-Contains(s, substr)：在字符串s 中查找是否含有substr 串
-ContainsAny(s, chars)：在字符串s 中查找是否含有chars 串中的任一字符
-ContainsRune(s, rune)：在字符串s 中查找是否含有rune 字符
-HasPrefix(s, prefix)
-HasSuffix(s, suffix)
 
 ToLower(s)、ToTitle、ToUpper
+ToLowerSpecial(c unicode.SpecialCase, s)、ToTitleSpecial、ToUpperSpecial：只对指定的字符集进行转换
 Cut(s, sep): 使用sep 将字符串s 前后两部分（按第一次出现sep 的位置）返回(before, after, found)，found 表示是否找到，若found=false，after=""
-Fields(s): 使用空白符对s 分割为切片（会去除开头结尾的空白符）
+Fields(s): 使用空白符对s 分割为切片（会去除开头结尾的空白符，多个连续空白也会视为一个）
 FieldsFunc(s string, isSep func(rune) bool): 同上，差别是使用函数isSep 进行字符判定
 Split(s, sp): 使用sp 将字符串s 分割为多个字符串切片
-SplitN(s, sep, n): 切成n 块，若n 为负，则同上
-SplitAfter(s, sep): 同上，只不过每块都带着sep
-SplitAfterN(s, sep, n): 切成n 块，若n 为负，则同上
+SplitN(s, sep, n): 切成n 块，若n 为负，则同Split
+SplitAfter(s, sep): 同Split，只不过每块都带着sep
+SplitAfterN(s, sep, n): 切成n 块，若n 为负，则同SplitAfter
 Join(strSeq, sp)：用字符串sp 把字符串切片strSeq 连接起来
 Repeat(s, count)：重复count 次进行连接
 Trim(s, cutset)、TrimLeft、TrimPrefix、TrimRight、TrimSuffix: 字符串s 收尾有cutset 中的字符都会被去除
@@ -269,9 +276,98 @@ WriteTo(w io.Writer) (n int64, err error)
 Replace(s) 返回替换后的字符串
 WriteString(w io.Writer, s string): 将替换后的字符串写入w
 
+### bytes 包
+用于处理[]byte
+
+#### 函数
+Equal(a, b)：相同长度且相同内容，nil等价于空切片
+
+以下跟strings 包基本一致
+EqualFold(s, t)
+Compare(a, b)：按字典序比较两个切片，返回0: `a==b`; 1: `a>b`; 2: `a<b`
+
+Contains(b, sub []byte)
+ContainsAny(b []byte, chars string): b 切片中是否包含chars 中的UTF-8字节点位，若chars 为空，则返回false
+ContainsRune(b []byte, r rune)
+HasPrefix(s, prefix)：prefix为空返回true
+HasSuffix(s, suffix)：suffix为空返回true
+Count(s, sep)：若sep 为空，则返回s 的UTF-8 点位数+1
+Index(s, sep)
+IndexAny(s, chars): chars 的Unicode 码点中查找
+IndexByte(s, c)
+IndexRune(s, rune)
+IndexFunc(s, f func(rune) bool)
+LastIndex(s, sep)
+LastIndexAny(s, chars)
+LastIndexByte(s, c)
+LastIndexFunc(s, f func(rune) bool)
+
+ToLower(s)、ToTitle、ToUpper
+LowerSpecial(c unicode.SpecialCase, s)、ToTitleSpecial、ToUpperSpecial
+Cut(s, sep)
+Fields(s)
+FieldsFunc(s []byte, isSep func(rune) bool)
+Split(s, sp): 若sp 为空，则每个UTF-8 点位都被切分
+SplitN(s, sep, n)
+SplitAfter(s, sep)
+SplitAfterN
+Join(strSeq, sp)
+Repeat(s, count)
+Trim(s, cutset)、TrimLeft、TrimPrefix、TrimRight、TrimSuffix
+TrimFunc(s, f func(rune) bool)、TrimLeftFunc、TrimRightFunc
+TrimSpace(s)
+Replace(s, old, new, n)
+ReplaceAll(s, old, new)
+Map(mapping func(rune) rune, s)
+
+#### Buffer
+带有读写方法的可变大小字节缓存
+因此，实现了 io.Reader 和 io.Writer 接口
+
+构造
+可以直接定义变量使用，也可以使用new()
+NewBuffer(buf []byte)：使用buf 作为底层存储（不要再使用buf了）
+NewBufferString(s string): 使用字符串作为初始化内容
+
+##### 方法
+Len() int：返回未读部分的字节数
+Cap() int：返回底层存储字节切片的容量
+Grow(n int)：增加n 个字节的容量，n 不能为负
+Reset()：清空buffer，但容量不变
+Truncate(n int)：截断未读的内容
+Bytes() []byte：返回Len() 长度的字节切片，对该切片修改，会影响Buffer 后续的读操作
+String() string：返回未读的内容
+Next(n int) []byte：读取并返回下n个字节，如果不足n 则返回全部，返回的字节切片在下次调用读写方法之前可用
+
+ReadByte() (byte, error): 读取下一个字节，若没有返回io.EOF
+ReadRune() (r rune, size int, err error)：读取下一个UTF-8编码的Unicode码点字符，没有字节返回io.EOF
+ReadBytes(delim byte) (line []byte, err error): 读到delim 位置，返回切片包含delim，返回err 非nil，一定是没有读到delim
+ReadString(delim byte) (line string, err error): 同ReadBytes，只不过返回的是string
+ReadFrom(r io.Reader) (n int64, err error): 从r 中读直到EOF
+WriteByte(c byte)：将一个字节追加写入到buffer 中
+WriteRune(r rune) (n int, err error)：返回字节数
+WriteString(s string) (n int, err error)：将字符串s 写入buffer，返回s 的长度
+WriteTo(w io.Writer) (n int64, err error)：写入到w 直到buffer 排空或者遇到错误
+
+UnreadByte() error：将最近一次成功读操作的最后一个字节回退到未读状态，若最后一次读操作之后有写操作，或者最后一次读操作是失败的，或者最后一次读操作没有返回字节，该方法将报错
+UnreadRune() error：将最近一次ReadRune的最后一个rune 回退到未读状态，若最后一次操作不是ReadRune，则将报错
+
+#### Reader
+只读，支持seek
+实现io.Reader, io.ReaderAt, io.WriterTo, io.Seeker, io.ByteScanner, and io.RuneScanner 接口
+
+构造
+NewReader(b []byte)
+
+##### 方法
+Len() int：未读部分的字节数
+Reset(b []byte)：重置读b
+Size() int64: 底层字节切片的原始长度
+
 ### unicode 包
 IsLetter(c rune)
 IsNumber(c rune)
+IsSpace(c rune)
 
 ### unicode/utf8、16、32 包
 提供unicode 和 各种数据格式的转换
@@ -312,8 +408,7 @@ append(slice, eles...)
 不能对数组使用该函数
 
 copy(dst, src)
-把后一个复制给前一个，返回复制的元素个数
-+ 如果是切片，则取两个最小长度进行复制
+把后一个切片复制给前一个切片，返回复制的元素个数（两个切片，会取两者的最小长度）
 
 ```go
 new_s1 := append(s[:0], s[1:]...)
@@ -643,7 +738,8 @@ results 是返回值列表，支持多返回值，单个返回值可以不用加
 
 ## defer
 `defer 函数调用`
-函数调用的参数是在当前位置进行绑定的，而执行时机是在计算完成其所在函数的返回值表达式之后；但对于命名返回值而言，由于命名返回值直接引用接受变量，所以若函数调用中修改该命名返回的值是会生效的
+函数调用的参数是在当前位置进行绑定的（值拷贝），而执行时机是在计算完成其所在函数的返回值表达式之后；但对于命名返回值而言，由于命名返回值直接引用接受变量，所以若函数调用中修改该命名返回的值是会生效的
+一旦defer 被注册，除非os.Exit 退出，否则该函数必然会被调用
 提供一种try-finally 机制，也就是一个上下文的回收
 如果有多个defer，则逆序执行，即后指定先执行
 
@@ -831,28 +927,134 @@ go 内置了2个泛型接口：
 提供IO 的基本接口
 ```go
 type Reader interface {
-    Read(p []byte) (n int, err error)
+    Read(p []byte) (n int, err error)	// 读取最多len(p) 到p，返回实际读取的字节数，若没有数据返回，err 为io.EOF
 }
 
 type Writer interface {
-    Write(p []byte) (n int, err error)
+    Write(p []byte) (n int, err error)	// 将p 写入，返回写入的字节数
 }
+
+type ByteReader interface {
+	ReadByte() (byte, error)
+}
+
+type ByteScanner interface {
+	ByteReader
+	UnreadByte() error
+}
+
+type RuneReader interface {
+	ReadRune() (r rune, size int, err error)
+}
+
+type RuneScanner interface {
+	RuneReader
+	UnreadRune() error
+}
+
+type ReaderAt interface {
+	ReadAt(p []byte, off int64) (n int, err error)
+}
+
+type ReaderFrom interface {
+	ReadFrom(r Reader) (n int64, err error)
+}
+
+type ByteWriter interface {
+	WriteByte(c byte) error
+}
+
+type StringWriter interface {
+	WriteString(s string) (n int, err error)
+}
+
+type WriterAt interface {
+	WriteAt(p []byte, off int64) (n int, err error)
+}
+
+type WriterTo interface {
+	WriteTo(w Writer) (n int64, err error)
+}
+
+type Seeker interface {
+	Seek(offset int64, whence int) (int64, error)
+}
+
+type Closer interface {
+	Close() error
+}
+
+type ReadWriter interface {
+	Reader
+	Writer
+}
+
+type ReadCloser interface {
+	Reader
+	Closer
+}
+
+type WriteCloser interface {
+	Writer
+	Closer
+}
+
+type ReadSeeker interface {
+	Reader
+	Seeker
+}
+
+type WriteSeeker interface {
+	Writer
+	Seeker
+}
+
+type ReadWriteSeeker interface {
+	Reader
+	Writer
+	Seeker
+}
+
+type ReadWriteCloser interface {
+	Reader
+	Writer
+	Closer
+}
+
 ```
-os.File 同时实现了这两个接口（os.Stdin/Stdout/Stderr 是三个特殊的实例）
+os.File 同时实现了io.Reader 和 io.Writer两个接口（os.Stdin/Stdout/Stderr 是三个特殊的实例）
 strings.Reader, strings.Builder 分别实现了 io.Reader 和 io.Writer
-bufio.Reader/Writer 分别实现了 io.Reader 和 io.Writer
 bytes.Buffer 同时实现了 io.Reader 和 io.Writer
 bytes.Reader 实现了 io.Reader
+bufio.Reader/Writer 分别实现了 io.Reader 和 io.Writer
 compress/gzip.Reader/Writer 分别实现了 io.Reader 和 io.Writer
 crypto/cipher.StreamReader/StreamWriter 分别实现了 io.Reader 和 io.Writer
 crypto/tls.Conn 同时实现了 io.Reader 和 io.Writer
 encoding/csv.Reader/Writer 分别实现了 io.Reader 和 io.Writer
 mime/multipart.Part 实现了 io.Reader
-net/conn 分别实现了 io.Reader 和 io.Writer(Conn接口定义了Read/Write)
+net/conn 实现了 io.Reader 和 io.Writer(Conn接口定义了Read/Write)
 
 io 包本身也有这两个接口的实现类型：
 实现了 Reader 的类型：LimitedReader、PipeReader、SectionReader
 实现了 Writer 的类型：PipeWriter
+
+### 常量和变量
+SeekStart、SeekCurrent、SeekEnd
+EOF = errors.New("EOF")
+ErrUnexpectedEOF = errors.New("unexpected EOF")
+
+### 函数
+Copy(dst Writer, src Reader) (written int64, err error)：从src 拷贝到dst，直到EOF（err==nil）或者遇到错误（err!=nil且不是EOF），返回拷贝的字节数
+CopyN(dst Writer, src Reader, n int64) (written int64, err error)：拷贝前n 个字节
+WriteString(w Writer, s string) (n int, err error): 将s 写入到writer 中
+Pipe() (*PipeReader, *PipeWriter)：获取一个同步的内存管道，支持并行的读写操作，写之后会block 直到被消费掉，所以没有缓存
+ReadAll(r Reader) ([]byte, error)：读到EOF 或者遇到错误
+ReadAtLeast(r Reader, buf []byte, min int) (n int, err error)：读取至少min 个字节，如果不足，err!=nil（若没读到任何内容，err==EOF；若没读到min 个字节就EOF，err==ErrUnexpectedEOF；若buf 的长度小于min，err==ErrShortBuffer）如果读到min 个字节之后报错，err 也是nil
+ReadFull(r Reader, buf []byte) (n int, err error)：读取len(buf) 个字节，如果不足，err!=nil
+
+MultiReader(readers ...Reader) Reader: 返回的Reader 顺序读每个Reader，直到所有都EOF 或者有一个返回非nil、非EOF 的err
+TeeReader(r Reader, w Writer) Reader: 返回的Reader 就是r 只不过会先写入w
+MultiWriter(writers ...Writer) Writer: 返回的Writer 在进行写入时，会同时写入到每个Writer 中，如果有一个Writer 报错，就会报错
 
 ## fmt 包
 + Print(...any)：打印多个值（相当于使用%v），返回(打印的字节数, error)
@@ -862,7 +1064,7 @@ io 包本身也有这两个接口的实现类型：
 + Fprint, Fprintln, Fprintf：第一个参数io.Writer，是输出目标
 
 + Scan(...any)：从标准输入读入空格或换行分隔的参数，返回(读入参数格式，error)
-+ Scanln(...any)：从标准输入读入空格分隔的参数，返回(读入参数格式，error)，换行会终止读入，最后一个参数后面必须有换行或EOF
++ Scanln(...any)：从标准输入读入空格分隔的参数，返回(读入参数个数，error)，换行会终止读入，最后一个参数后面必须有换行或EOF（有单行最大长度，超出则会无法输入）
 + Scanf(format, ...any)：从标准输入按format 读入参数（换行也要匹配）（如果使用%c 会读入一个rune，无论是否是一个空白符）
 + Sscan, Sscanln, Sscanf：第一个参数是string
 + Fscan, Fscanln, Fscanf：第一个参数是io.Reader
@@ -1266,6 +1468,8 @@ Create(fileName): 创建文件，返回(file, error)
 Stat(fileName): 返回文件状态(stat, error), stat 是fs.FileInfo（io/fs包）
 
 #### File 对象
+实现了io.ReadWriteCloser接口
+
 ##### 方法
 Close() 关闭文件句柄，返回error
 WriteString(s)
