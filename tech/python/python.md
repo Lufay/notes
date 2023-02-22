@@ -1070,7 +1070,7 @@ bytearray(b'Hi!')       通过缓冲区协议复制现有的二进制数据
 
 ##### raw string
 引号前面使用r 前缀（u在r前）
-字符串中的所有字符都直接按照字面值给出，不存在转义或不能打印的字符（常用于构造正则表达式import re）。
+字符串中的所有字符都直接按照字面值给出，不存在转义或不能打印的字符（常用于构造正则表达式）。
 转义方法类同标准C，有点不同就是，如果"\"和后面无法匹配转义，则"\"将保留在字符串中。（使用ASCII码表示的字符，可以使用八进制如\134或十六进制如\x5C表示；使用Unicode表示的字符，可以使用\u1234表示）
 
 ##### 三引号字符串
@@ -1238,13 +1238,89 @@ string.upper(str)	返回str的大写字符串
 `string.join(str_seq, sep=' ')`	等价于`sep.join(str_seq)`
 
 ##### 字符串模板类（比字典格式化更简单的替换方式，不用指定格式化类型）
-例如：s = string.Template('There are ${howmany} ${lang} Quotation Symbols')
+例如：`s = string.Template('There are ${howmany} ${lang} Quotation Symbols')`
 s.substitute(lang='Python', howmany=3)，必须给出全部$变量的替换，否则将跑出KeyError异常
 `s.safe_substitute(lang='Python')`，可以不给出全部的$变量，仅作部分替换
 
+##### re 模块
+<https://docs.python.org/zh-cn/3/library/re.html>
+内置的正则工具，支持Perl 类似的正则
+支持Unicode 和 bytes 两种字符串，但不能混用
 
-##### 相关模块
-[re](http://www.cnblogs.com/huxi/archive/2010/07/04/1771073.html)          正则表达式<https://docs.python.org/zh-cn/3/library/re.html>
+该模块可以将正则字符串编译为正则对象，便于使用同一个正则表达式进行多次匹配；匹配的结果是一个匹配对象，可以检索结果，或者对字符串进行操作
+
+如果编译正则发现异常，可以通过异常的一下属性查看：
+msg：未格式化的错误消息
+pattern：正则表达式的模式串
+pos：编译失败的 pattern 的位置索引
+lineno：对应 pos (可以是 None) 的行号
+colno：对应 pos (可以是 None) 的列号
+
+###### 模块函数
++ compile(pattern, flags=re.NOFLAG): 返回一个正则对象。flags 可以使用re.A/I/L/M/S/X（优先级弱于正则表达式中内嵌的模式），以及它们可以使用`|` 进行组合
+    re.A: 只对Unicode样式有效，表示内置的字符类只匹配ASCII
+    re.I: 忽略大小写匹配
+    re.L: 只能对byte样式有效，由当前语言区域决定 \w, \W, \b, \B 和大小写敏感匹配（不推荐使用）
+    re.M: 多行模式（改变`^`和`$`的行为）
+    re.S: 让`.`特殊字符匹配任何字符，包括换行符
+    re.X: 更可读的正则表达式，忽略空白符，所以可以使用多行字符串，支持使用# 的行注释
++ search(pattern, string, flags=0): 不编译直接进行匹配，匹配成功返回匹配对象，失败返回None。它不必从string的开始位置开始匹配，而是找第一个匹配位置
++ match(pattern, string, flags=0): 不编译直接进行匹配，匹配成功返回匹配对象，失败返回None。pattern必须从string的开始位置开始匹配
++ fullmatch(pattern, string, flags=0): 不编译直接进行匹配，匹配成功返回匹配对象，失败返回None。pattern必须完整匹配string
++ findall(pattern, string, flags=0): 返回所有非重叠匹配，若没有分组或只有一个分组则返回字符串列表，若有多个分组则返回字符串元组列表。扫描从左到右按序返回，包含空匹配
++ finditer(pattern, string, flags=0): findall的返回迭代器版本，只不过每次迭代返回的是匹配对象
++ split(pattern, string, maxsplit=0, flags=0): 使用pattern匹配的字段分割string（空匹配如果不相邻也会分割字符串），若在 pattern 中有分组，则分组内容也会依次保留在结果列表中（如果是以分隔符开始或结尾时，则结果列表的开头或结尾就会多出一个空串）。若maxsplit不是0，则最多分割maxsplit 次
++ sub(pattern, repl, string, count=0, flags=0): 将匹配的部分使用repl进行替换，默认全部替换，也可以使用 count 指定次数。
+    repl 可以是字符串或函数
+    字符串可以使用转义字符和分组引用（需要使用raw 字符串，如果为了避免跟后续字符无法区分，就必须使用`\g<name>`或`\g<n>`来作为分组引用，这种无需raw字符串）；
+    函数则接受一个匹配对象参数返回替换后的字符串
++ subn(pattern, repl, string, count=0, flags=0): 跟sub 函数一样，只不过返回(替换后字符串, 替换次数) 二元组
++ escape(pattern): 将pattern 中的特殊字符转义返回，用于需要匹配大量正则特殊字符
+
+###### Pattern 对象
+属性
+pattern: 正则原始字符串
+flags：编译时指定的标记
+groups：正则中的分组数量
+groupindex：正则中命名分组的名字到序号的映射
+
+方法
++ search(string[, pos[, endpos]]): 比模块还是多了可以指定开始和结束搜索的位置，但`^`依然匹配的是原串的串首或行首，这是跟使用切片的不同
++ match(string[, pos[, endpos]]): Pattern 从 string 的pos 位置开始匹配
++ fullmatch(string[, pos[, endpos]]): Pattern 只匹配 string 的[pos, endpos]的内容
++ findall(string[, pos[, endpos]])
++ finditer(string[, pos[, endpos]])
++ split(string, maxsplit=0)
++ sub(repl, string, count=0)
++ subn(repl, string, count=0)
+
+###### Match 对象
+对象的布尔值始终为True
+
+属性
+re: 对应的正则对象
+string: 被匹配的字符串
+pos: 搜索的起始位置
+endpos: 搜索的结束位置
+lastindex: 最后一个匹配的group 索引（注意：不是group函数的最后一个索引，因为这里是以右括号为判断哪个是最后一个），如果没有捕获的分组，则返回None
+lastgroup: 最后一个匹配的分组的名字，如果未命名或没有捕获分组，则返回None
+
+方法
++ expand(template): 使用匹配的分组按照 template 生成字符串（template 中可以使用分组引用（需要raw）或`\g<name>`或`\g<n>`（无需raw）
++ group([group1, ...]): 返回指定分组匹配的字符串（多个返回元组），未指定则返回整体匹配的字符串（也就是0）。负数、超界、未知命名会抛IndexError。若没有捕获返回None；若一个分组被重复匹配，则返回最后一次匹配的内容。Match 对象支持`__getitem__` 所以可以直接用索引获取单一分组。
++ groups(default=None): 返回所有分组匹配的字符串元组，未匹配的分组使用default 作为默认值
++ groupdict(default=None): 返回所有命名分组匹配的字典（key 是分组名，val 是匹配到的字符串）
++ start(group=0)、end(group=0)、span(group=0): 返回指定分组匹配到字符串的开始、结束索引、以及两个索引的二元组。未匹配返回索引为-1，负数、超界、未知命名会抛IndexError。
+
+##### regex 模块
+功能更强大的正则库
+
+安装：`pip install regex`
+兼容re: `import regex as re`
+
+
+
+##### 其他相关模块
 struct      字符串和二进制之间的转换
 StringIO/cStringIO      字符串缓冲对象，操作方法类似file对象（后者是C版本，更快一些，但不能被继承）
 base64      Base 16/32/64数据编解码

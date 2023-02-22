@@ -14,8 +14,8 @@ cmd+p
 + 可以文件名后加 :line_num 可以直接定位到文件中的指定行
 
 ### 光标导航
-后退：cmd+-
-前进：cmd+shift+-
+后退：ctrl+-
+前进：ctrl+shift+-
 到指定的行：ctrl+g
 到指定的符号：cmd+shift+o（可以在@ 后面跟一个: 则下拉框会按符号类型进行分组）
 到全局的符号：cmd+t（在Markdown 文本中就是目录标题）
@@ -25,6 +25,7 @@ cmd+shift+p
 
 ## tab 操作
 cmd+\ 向右拆分屏
+cmd+opt+左右方向键 左右切换tab
 
 ## 编辑
 行复制：shift+alt+Up/Down

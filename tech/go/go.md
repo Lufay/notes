@@ -867,6 +867,7 @@ switch t := x.(type) {
 }
 ```
 这里的每个case 不能写多个类型，否则就服务完成类型的转换（即还是接口类型）
+也不能使用fallthrough
 
 类型断言 x.(T)
 接口类型断言到具体类型
@@ -1087,7 +1088,7 @@ width 缺省使用默认；precision 缺省，如果有. 为0，否则使用默�
 #### varb
 varb 前可以指定`[i]`，来显式指定使用第i 个参数（后面如果不指定，则依次使用i+1, i+2, ...）
 + General
-%v	使用值的默认格式（如果struct 需要带field 名字使用%+v）
+%v	使用值的默认格式（如果struct 需要带field 名字则使用%+v，如果还想额外输出struct名则使用%#v）
 %T	使用Go 语法格式打印类型
 + Boolean
 %t	true or false
@@ -1378,6 +1379,7 @@ func do() {
 ```
 
 #### sync/atomic 包
+其操作由底层硬件直接支持
 ##### 函数
 + AddT(a *t, d t) t: T 可以是Int32、Int64、Uint32、Uint64、Uintptr，对应的t 是int32、int64、uint32、uint64、uintptr
   对于非浮点数，如果想要做减法，比如a-5，可以使用`AddUint32(&a, ^uint32(5-1))`
