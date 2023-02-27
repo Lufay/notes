@@ -154,13 +154,18 @@ delimiiter ;
 ### 函数
 #### 字符串函数
 CHAR(x): 可以将整数x 转换为对应的字符，比如CHAR(13) 表示换行
+UPPER(str)/LOWER(str): 字符串大写/小写
 CONCAT(exp1, exp2,...): 连接，若有一个值为NULL，则返回NULL，MySQL 可以直接使用空格将多个字符串连接在一起
 CONCAT_WS(seperator, exp1, exp2,...): 使用分隔符连接，会忽略NULL的值
-replace(str, sub, rep): 将str 中的sub 替换为rep 返回
-length(str): 返回字符串所占的字节数。一个汉字或是中文符号是算三个字节,一个数字或字母或英文符号算一个字节。
+REPLACE(str, sub, rep): 将str 中的sub 替换为rep 返回
+LENGTH(str): 返回字符串所占的字节数。一个汉字或是中文符号是算三个字节,一个数字或字母或英文符号算一个字节。
 char_length: 返回字符串所占的字符数，不管汉字还是数字或者是字母或者符号(不分中英文)都算是一个字符。
-`instr`: 类似string.find，不区分大小写，找得到返回位序，找不到返回0
+INSTR(str, sub): 类似string.find，不区分大小写，找得到返回位序，找不到返回0
+SUBSTR(x, start[, length]): 子串
+LEFT(str, len) / RIGHT(str, len): 字符串左边、右边len个字符构成的子串
+TRIM(str) / LTRIM(str) / RTRIM(str): 去除左右两边的空格
 `substring_index(str, delim, idx)`: 若idx为正数，则返回str 中第idx个 delim 位置之前的子串；若idx 为负，则返回str 中倒数-idx 的delim 位置之后的子串
+find_in_set(str, strlist): strlist是一个字符串，里面多个值用`,`分割。若str 在strlist 中，则返回它是第几个，否则返回0，若有任何一个参数为null，则返回null
 
 #### 类型转换
 CAST(var AS INT): 转为指定的类型
