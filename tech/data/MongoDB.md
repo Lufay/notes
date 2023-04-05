@@ -1,4 +1,5 @@
 [官方文档](https://www.mongodb.com/docs/manual/)
+[中文文档](https://docs.mongoing.com/)
 [TOC]
 基于分布式文件存储的开源数据库系统
 

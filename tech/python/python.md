@@ -1366,8 +1366,8 @@ sort(cmp=None, key=None, reverse=False)：排序，cmp是一个类似cmp(x,y)的
 reverse()：反转序列
 del alist：销毁列表
 del alist[i]：删除列表的第i项（还可以删除一个切片）
-alist[1:3] = []：切片更新操作（等号右侧必须是一个可迭代对象），将指定切片替换为赋值的列表，例子所示为删除，[1:1]相当于在1的位置插入，其他相当于替换（区别[1:2]和[1]，前者的替换是扩展式的，即右侧的可迭代对象的元素替换切片元素；而后者单索引替换则是使用右侧的对象整体替换索引位置的元素）
-*注：并没有拷贝函数，所以浅拷贝可以使用c = a[:] 或c = list(a) 或copy.copy 函数*
+`alist[1:3] = []`：切片更新操作（等号右侧必须是一个可迭代对象），将指定切片替换为赋值的列表，例子所示为删除，`[1:1]`相当于在1的位置插入，其他相当于替换（区别`[1:2]`和`[1]`，前者的替换是扩展式的，即右侧的可迭代对象的元素替换切片元素；而后者单索引替换则是使用右侧的对象整体替换索引位置的元素）
+*注：并没有拷贝函数，所以浅拷贝可以使用`c = a[:]` 或c = list(a) 或copy.copy 函数*
 
 ##### 列表解析
 ```
@@ -1694,11 +1694,7 @@ object()
 当异常发生时，一个含有该异常的堆栈跟踪信息的跟踪记录对象被创建。如果一个异常有其处理程序，处理程序就可以访问这个对象。
 
 #### 切片（slice）
-当使用切片语法时，将创建切片对象。切片语法包括：步进切片，多维切片，省略切片。
-步进切片的语法见上
-多维切片的语法是：seq[start1:end1, start2:end2]
-省略切片的语法是seq[..., start1:end1]
-切片也可以使用内建函数slice()生成。
+可以使用内建函数`slice([start,] stop, [step])` 来创建一个切片对象，切片对象可以直接用在序列的索引上
 
 ### XRange
 当调用内建函数xrange()时，将生成一个XRange对象，该函数用于需要节省内存时或range()函数无法完成的超大数据集的场合，它只被用在for循环中，性能远高于range()。
@@ -2152,6 +2148,7 @@ def deco2(func):
 		retrun func(*args, **kwargs)
 	return wrapped_function
 ```
+wraps 实际上是调用了update_wrapper(new, old, assigned = WRAPPER_ASSIGNMENTS, updated = WRAPPER_UPDATES) 方法，WRAPPER_ASSIGNMENTS 是`('__module__', '__name__', '__qualname__', '__doc__', '__annotations__')` 这个元组，WRAPPER_UPDATES 是`('__dict__',)` 这个元组，也就是默认会把这些属性从old 覆写到new 上
 
 ### cache
 functools.cache 装饰器可以让函数针对不同的参数进行结果缓存，可以理解成一个字典（因此参数的必须都是可哈希的）
@@ -2246,7 +2243,7 @@ super(type[, obj]) 方法
 `__doc__` 类的文档字符串
 `__base__` 类的第一个父类
 `__bases__` 类所有父类构成的元组
-`__dict__` 实例属性构成的字典（仅包括当前对象已经初始化的，不包括类声明的属性和类的属性），改变该字典的内容会直接影响实例属性值
+`__dict__` 实例所有属性构成的字典（仅包括当前对象已经初始化的，不包括类声明的属性和类的属性，这些属于类对象，类对象的`__dict__`可以拿到类属性和方法），改变该字典的内容会直接影响实例属性值
 `__module__` 类定义所在的模块
 `__slots__` 限定实例的可用的属性名，其值可以是一个字符串可迭代对象，阻止自动为每个实例创建 `__dict__` 和 `__weakref__`（能显著节省空间和提高属性查找速度）。想要实例能够动态赋值，就需要在这个字符串可迭代对象中加入`'__dict__'`
 
@@ -2331,6 +2328,7 @@ def f1(self, x, y):
 class C:
     f = f1
 ```
+从这个例子可以看出，方法其实就是类自身的属性，只不过类型是函数对象
 
 #### 4.2 魔术方法
 `__hash__`: 供hash() 调用
@@ -2345,11 +2343,11 @@ class C:
 `__setitem__`: 按照索引赋值，也支持切片key
 `__getitem__` 按照索引获取值
 `__missing__` 在找不到指定的键时调用
-`__getattribute__`: x.name 的使用，也可以供getattr(obj, attr[, default]) 调用，这些调用都会直接进入该函数，除非通过super() 委托给同名方法，才会查看是否已经定义了指定的属性或方法
-`__getattr__`: x.name 的使用，也可以供getattr(obj, attr[, default]) 调用（若不存在attr指定的属性或方法，则返回default，否则会引发AttributeError，可以先用hasattr(obj, attr) 进行测试）若类已定义了指定的属性或方法，则直接使用之，该方法不再调用
+`__getattribute__`: x.name 的使用（包括对内置属性），也可以供getattr(obj, attr[, default]) 调用，这些调用都会直接进入该函数，除非通过super() 委托给同名方法，才会查看是否已经定义了指定的属性或方法 或者 抛AttributeError 但这种情况也会跳过定义的属性或方法，直接去调用`__getattr__`
+`__getattr__`: x.name 的使用，也可以供getattr(obj, attr[, default]) 调用（若不存在attr指定的属性或方法，则返回default，否则会引发AttributeError，可以先用hasattr(obj, attr) 进行测试）若类已定义了指定的属性或方法，则直接使用之，该方法不再调用（所以x.name 的查询顺序是`__getattribute__` -> 属性或方法 -> `__getattr__` -> 抛AttributeError）
 `__setattr__`: x.name 的赋值，也可以供setattr(obj, attr, val) 调用
 `__delattr__`: x.name 的删除，也可以供delattr(obj, attr) 调用
-`__get__`:描述器
+`__get__(self, ins, owner)`: 拥有该方法的类的实例就是描述器，描述器可以赋值给类对象的属性，那么当调用该属性时，就会调用描述器的对应方法。ins 就是调用描述器的实例，若使用类调用，则ins是None。owner 是类实例。该函数的返回值，也就作为调用该属性的返回值。
 `__set__`
 `__delete__`
 `__getstate__`: 供pickle.dumps 使用，返回一个可序列化对象，若未定义该方法，则使用`__dict__` 作为返回
@@ -2429,6 +2427,7 @@ b = B()
 type(B)        # <type ‘type’>
 type(b)        # <class ‘__main__.B’>
 ```
+当需要对类方法进行装饰时，classemethod 应该放在外层，内层装饰器返回的函数的参数中包括了cls 参数
 
 ## 5. 访问权限
 private: 标识符使用双下划线 `__` 开头，实际上通过加上前缀`_className`就可以访问得到这些隐藏标识符（这样可以避免先祖类或子类定义同名变量带来的冲突）
@@ -2823,19 +2822,24 @@ class Color(Flag):
 在该源文件中，
 变量`__name__`就是当前模块的名字。一般作为主模块直接执行的，`__name__`都是`__main__`，而被import的模块使用`__name__`则显示该模块的模块名。
 变量`__file__`是当前模块文件的路径（包含文件名，可能是一个相对路径）
+变量`__package__`是当前所在包的名字。若作为主模块直接执行，其为None
 
 ## 1. 导入模块
-```
+```py
+# 导入整个模块
 import module_name [as alias_name]
-
+# 导入模块中的某个标识符，但这种导入方式只能读取不能改写模块变量，想要改写只能导入整个模块
 from module_name import identifier1 [as alias_name1][, identifier2 [as alias_name1][, ...identifierN [as alias_nameN]]]
-
+# 导入当前所在包的标识（即定义在当前包的 __init__.py 中的）
+from . import pkg_idf
+# 导入父包的标识（每一个 . 就是向上一级）
+from .. import pkg_idf
+# 导入同级包中模块的标识
 from .module_name import identifier
+# 导入父级包中的标识
 from ..module_name import identifier
 ```
-第一句是导入整个模块
-第二句是导入模块中的某个标识符，但这种导入方式只能读取不能改写模块变量，想要改写只能使用第一句
-第三四句是相对路径导入，前者是同级导入，后者是上一级导入
+相对导入是使用`__name__` 确定当前模块的位置的，而`__name__ == '__main__'`时，是顶级模块，而无视其所处的模块位置，所以相对导入就可能失效
 
 sys.modules 变量是一个字典，它保存了已经加载的模块名和模块实例的映射关系，比如`sys.modules[__name__]`就是当前的模块实例
 
@@ -4070,12 +4074,13 @@ HTTP协议中，定义了八种方法来操作指定的资源：
 socket        网络文件访问
 
 ## urllib 和urllib2 模块
-urllib        通过URL建立到指定web服务器的网络连接
+通过URL建立到指定web服务器的网络连接
 
-### urllib2
-<https://docs.python.org/2/library/urllib2.html>
-用于打开URL 链接（通常是HTTP），包括了数字认证、重定向、cookies 等等
+[urllib2](https://docs.python.org/2/library/urllib2.html)
 Python3 合并为一个[urllib](https://docs.python.org/zh-cn/3/library/urllib.html)
+
+### urllib.request 模块
+用于打开URL 链接（通常是HTTP），包括了数字认证、重定向、cookies 等等
 
 #### 函数
 + urlopen(url, data=None[, timeout[, cafile[, capath[, cadefault[, context]]]]])
@@ -4138,6 +4143,17 @@ handler 基类
 当你获取一个URL 你使用的是一个opener（一个urllib2.OpenerDirector的实例），而该opener 可以使用它管理的Handler 针对特定的协议和请求进行处理。
 可以通过使用build_opener() 函数创建一个新的OpenerDirector实例，而后直接调用其open() 方法打开一个URL（当然也可以用install_opener() 函数安装后用urlopen 进行打开）
 
+### urllib.parse 模块
+用于 URL 解析和转码
+
+#### 函数
++ urlparse(url, scheme=''): 将url（scheme://netloc/path;params?query#fragment） 解析为(scheme, netloc, path, params, query, fragment)的named tuple，scheme 给出默认值。除了6元组中的名字，还可以访问这些成员：username、password、hostname、port（这些成员不存在则为None）
++ urlunparse(parts): 将包含6个元素的可迭代对象组合成为一个url
++ urlsplit(urlstring, scheme=''): 
++ parse_qs(qs, keep_blank_values=False, strict_parsing=False, encoding='utf-8', errors='replace'): 解析query 部分为一个字典，若解析失败，默认静默忽略，若strict_parsing=True，错误会抛ValueError，encoding 和errors 是用于解码和解码错误的处理方式。
++ parse.parse_qsl(qs, keep_blank_values=False, strict_parsing=False, encoding='utf-8', errors='replace'): 解析query 部分为一个二元组列表
+
+
 ## requests 模块
 ### 安装
 ```
@@ -4160,8 +4176,8 @@ kwargs 包括：
 
 
 post(url, data = {'key':'value'})
-+ data：可以是字符串（直接发出）、（提交表单）字典或二元组序列（当一个key 下有多个值使用这种）、文件对象（流式上传）、生成器或迭代器（分块传输）
-+ json: 可以自动将参数使用json.dumps 进行编码
++ data：可以是字符串（直接发出）、（提交表单，此时Content-Type会被设置为application/x-www-form-urlencoded）字典或二元组序列（当一个key 下有多个值使用这种）、文件对象（流式上传）、生成器或迭代器（分块传输）
++ json: 可以自动将参数使用json.dumps 进行编码，然后作为字符串发出（此时Content-Type会被设置为application/json）
 + files: 一个字典key 为'file'，value 为一个文件对象（最好用二进制模式打开）、二元组（文件名, 字符串）、四元组（文件名, 文件对象, 文件类型, 请求头）；或者一个二元组列表，二元组为(表单name, 文件信息)，其中文件信息为三元组（文件名、文件对象、文件类型）
 大文件requests 不支持，requests-toolbelt 是支持的
 

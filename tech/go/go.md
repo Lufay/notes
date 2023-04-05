@@ -374,7 +374,7 @@ IsSpace(c rune)
 
 ### strconv 包
 ParseBool(str)：将字符串转为布尔值（字符串1、t、T、true、True、TRUE 为true，字符串0、f、F、false、False、FALSE 为false）
-FormatBool(b)：将布尔值转为字符串"true" 或 "false"
+FormatBool(b)/FormatInt(i, base)/FormatUint(i, base)/FormatFloat(f, fmt, prec, bitSize)/FormatComplex(c, fmt, prec, bitSize)：将数值转为字符串"true" 或 "false" 等
 ParseFloat(str, size)：字符串转浮点数（size 指定32 还是64）返回float64
 ParseInt(str, base, size)：字符串转整数（base 是2 到36 进制，如果为0，则使用字符串前缀判断；size 是0:int, 8:int8, 16:int16, 32:int32, 64:int64）返回int64
 ParseUint(str, base, size)：字符串转无符号整数，返回uint64
@@ -1233,6 +1233,39 @@ ioutil.Discard 支持io.Writer 接口
 
 该包在go1.16 被弃用，函数被挪到io包和os包
 
+# 网络编程
+## net 包
+## net/http 包
+### 函数
+Get(url string): 返回resp, err
+Post(url, contentType string, body io.Reader): 返回resp, err。json 请求可以可以只用`application/json` 作为contentType
+PostForm(url string, data url.Values): 返回resp, err
+
+### Client
+包中有一个DefaultClient，如无特殊设置可以直接使用
+
+#### 方法
+Get(url string): 返回resp, err
+Post(url, contentType string, body io.Reader): 返回resp, err
+PostForm(url string, data url.Values): 返回resp, err
+Do(req): 返回resp, err。用req.Method 请求req.URL
+
+### Request
+#### 构造
+NewRequest(method, url string, body io.Reader): 返回req, err。使用context.Background() 作为ctx
+NewRequestWithContext(ctx context.Context, method, url string, body io.Reader): 返回req, err。method 可以使用GET/POST（http.MethodGet、MethodPost等） 等，若使用GET，body 可以是nil
+
+#### 成员
+Header：扩展自`map[string][]string` 的结构，支持Add、Set、Get、Values、Del、Write、Clone等方法
+
+### Response
+
+#### 成员
+Status：状态字符串
+StatusCode：状态码
+Header
+Body：io.ReadCloser，这是响应体，需要自行进行Close()
+Request: 生成该响应的*Request
 
 # 并发编程
 轻量级线程goroutine，可以轻松创建上百万个
@@ -1379,7 +1412,9 @@ func do() {
 ```
 
 #### sync/atomic 包
-其操作由底层硬件直接支持
+其操作由底层硬件直接支持，而Mutex 则是由操作系统实现，所以原子操作比Mutex 更轻量
+一般使用原子操作，都是假设值未被其他线程改动而进行的乐观自旋锁
+
 ##### 函数
 + AddT(a *t, d t) t: T 可以是Int32、Int64、Uint32、Uint64、Uintptr，对应的t 是int32、int64、uint32、uint64、uintptr
   对于非浮点数，如果想要做减法，比如a-5，可以使用`AddUint32(&a, ^uint32(5-1))`
@@ -1691,6 +1726,9 @@ Gosched(): 主动出让时间片给其他goroutine
 GOMAXPROCS(n): 调整goroutine 使用的核心数
 NumCPU(): 获取核心数
 
+### context 包
+WithTimeout(ctx, timeout): 封装ctx 带上超时时间返回一个新的context 和 cancel 函数。前者可以调用Done() 方法（返回一个管道）确认是否完成，后者可以`defer cancel()`，也可以手动调用取消
+
 ### encoding/json 包
 序列化：Marshal(&st) (bytes, error)
 参数是序列化结构的指针（该结构需要在成员type 后面标注"name" 也就是映射到json 的key）
@@ -1723,6 +1761,15 @@ import (
 cstr := C.CString("Hello, world.")
 C.puts(cstr)
 C.free(unsafe.Pointer(cstr))
+```
+
+unsafe.Pointer 可以绕过 Go 语言类型系统的检查，与任意的指针类型互相转换（必须确保两者具有相同的内存结构）。也就类似C 语言中的指针
+```go
+bytes := []byte{104, 101, 108, 108, 111}
+
+p := unsafe.Pointer(&bytes) //强制转换成unsafe.Pointer，编译器不会报错
+str := *(*string)(p) //然后强制转换成string类型的指针，再将这个指针的值当做string类型取出来
+fmt.Println(str)
 ```
 
 # 测试
