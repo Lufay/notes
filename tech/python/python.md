@@ -4087,7 +4087,7 @@ Python3 合并为一个[urllib](https://docs.python.org/zh-cn/3/library/urllib.h
 该函数的行为是构造了一个Request对象（无论是传入的还是构造的），经过编码，发到指定URL，并获得response的过程。该函数默认会自动处理重定向，而其他的错误（400-599的错误码）则需要自己处理。
 其中：
 url 可以是一个字符串或者Request 对象
-data 是一个字符串，表示传给server 的额外数据（此时为POST 请求），没有为None（此时为GET 请求）。data 的格式必须是application/x-www-form-urlencoded，可以使用urllib.urlencode() 函数将一个字典或二元组序列转化成该格式。
+data 是一个字符串，表示传给server 的额外数据（此时为POST 请求），没有为None（此时为GET 请求）。data 的格式必须是application/x-www-form-urlencoded，可以使用urlencode() 函数将一个字典或二元组序列转化成该格式。
 timeout 是请求超时时间（秒），仅用于HTTP, HTTPS 和FTP 连接，如果未指定，则使用全局的默认超时时间
 context 是ssl.SSLContext 实例
 cafile 和capath 用于提供HTTPS 请求的受信CA 证书集，前者指定一个单文件，后者指定一个目录
@@ -4149,9 +4149,17 @@ handler 基类
 #### 函数
 + urlparse(url, scheme=''): 将url（scheme://netloc/path;params?query#fragment） 解析为(scheme, netloc, path, params, query, fragment)的named tuple，scheme 给出默认值。除了6元组中的名字，还可以访问这些成员：username、password、hostname、port（这些成员不存在则为None）
 + urlunparse(parts): 将包含6个元素的可迭代对象组合成为一个url
-+ urlsplit(urlstring, scheme=''): 
-+ parse_qs(qs, keep_blank_values=False, strict_parsing=False, encoding='utf-8', errors='replace'): 解析query 部分为一个字典，若解析失败，默认静默忽略，若strict_parsing=True，错误会抛ValueError，encoding 和errors 是用于解码和解码错误的处理方式。
-+ parse.parse_qsl(qs, keep_blank_values=False, strict_parsing=False, encoding='utf-8', errors='replace'): 解析query 部分为一个二元组列表
++ urlsplit(urlstring, scheme=''): 将url（scheme://netloc/path?query#fragment） 解析为(scheme, netloc, path, query, fragment)的SplitResult 对象，scheme 给出默认值。除了5元组中的名字，还可以访问这些成员：username、password、hostname、port（这些成员不存在则为None）
++ urlunsplit(parts): urlsplit 的逆操作，可能与原URL有不同，但等价。也可以直接调用SplitResult 对象的geturl()方法
++ parse_qs(qs, keep_blank_values=False, strict_parsing=False, encoding='utf-8', errors='replace'): 解析query 部分（application/x-www-form-urlencoded 格式）为一个字典（val 是值列表），若解析失败，默认静默忽略，若strict_parsing=True，错误会抛ValueError，encoding 和errors 是用于解码和解码错误的处理方式。
++ parse_qsl(qs, keep_blank_values=False, strict_parsing=False, encoding='utf-8', errors='replace'): 解析query 部分为一个二元组列表
++ urlencode(query, doseq=False, safe='', encoding=None, errors=None, quote_via=quote_plus): parse_qs 和 parse_qsl 的逆操作，可以用于生成request 的 data 参数（application/x-www-form-urlencoded 格式）
++ urljoin(base, url): 用url 部分替换base 中的内容，返回一个新的URL（一般会替换path 中的filename 部分，以及query、fragment部分）
++ urldefrag(url): 返回(pure_url, fragment)的named tuple，pure_url 是不含fragment 的部分，若没有fragment 则其为空串
++ quote(string, safe='/', encoding=None, errors=None): 用 %xx 转义符替换 string 中的特殊字符。 字母、数字和 '_.-~' 等字符一定不会被转码（safe参数可以额外指定）。默认只对路径部分进行转码。
++ quote_plus(string, safe='', encoding=None, errors=None): 还会使用加号来替换空格
++ unquote(string, encoding='utf-8', errors='replace'): 将 %xx 转义符替换为其单字符等价物
++ unquote_plus(string, encoding='utf-8', errors='replace'): 还会将加号替换为空格
 
 
 ## requests 模块
