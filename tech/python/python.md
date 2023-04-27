@@ -16,6 +16,7 @@ Python
 数据、行为、功能逻辑的封装
 Python 采用的是duck-typing（鸭子类型）的方式，即不依靠查找对象类型来确定其是否具有正确的接口，而是直接调用或使用其方法或属性。所以避免使用 type() 或 isinstance() 检测，而往往会采用 hasattr() 检测或是 EAFP 编程（假定对象满足指定的接口，而通过try-except 处理异常情况，与LBYL 风格先对，其是先检查是否满足条件在进行处理）
 针对hasattr() 检测比较笨拙的方式，ABC（abstract base class）引入了虚拟子类，即不需要显式继承，而能够被 isinstance() 和 issubclass() 所认可
+对应的getattr()，比直接使用`.`获取属性多了可以指定默认值，即当属性不存在时返回默认值
 
 ## 3. 函数式编程
 函数式编程使用一系列的函数解决问题。函数仅接受输入并产生输出，不包含任何能影响产生输出的内部状态。任何情况下，使用相同的参数调用函数始终能产生同样的结果。
@@ -554,6 +555,7 @@ b [line/func]	在line行或func函数入口设置断点（如果未给出位置�
 condition bnum [cond]	将bnum号断点设置条件cond
 cl [bnum]	清除指定断点，如果未给出断点号，则清除当前所有断点
 disable/enable bnum	将bnum号断点禁用/激活
+r       执行代码直到从当前函数返回
 s		单句步进
 n		单行步进
 c		（从中断）恢复执行
@@ -1696,17 +1698,9 @@ object()
 #### 切片（slice）
 可以使用内建函数`slice([start,] stop, [step])` 来创建一个切片对象，切片对象可以直接用在序列的索引上
 
-### XRange
+#### XRange
 当调用内建函数xrange()时，将生成一个XRange对象，该函数用于需要节省内存时或range()函数无法完成的超大数据集的场合，它只被用在for循环中，性能远高于range()。
 
-### 代码
-代码对象是编译过的Python源代码片段，是可执行对象。通过调用内建函数compile()可以得到代码对象。代码对象可被exec命令或eval()内建函数执行。对象本身不含任何执行环境信息，在被执行时动态获得上下文。事实上，代码对象是函数的一个属性（函数还有其他属性，如函数名、文档字符串等）
-
-### 帧（frame）
-帧对象表示Python的执行栈帧。包含了所有Python解释器所需的执行环境信息。每次函数调用就会产生一个新的帧。
-
-### 跟踪记录（traceback）
-当异常发生时，一个含有该异常的堆栈跟踪信息的跟踪记录对象被创建。如果一个异常有其处理程序，处理程序就可以访问这个对象。
 
 # 第四章. 运算符、表达式、语句
 ## 1 运算符和表达式
@@ -3285,13 +3279,13 @@ IOBase <- RawIOBase <- FileIO
                      <- StringIO
 
 ### StringIO
-内存中文本流
+内存中文本流，可以使用文件读写的接口（当做文本读写）
 StringIO(str)
 
 getvalue(): 返回一个包含缓冲区全部内容的 str
 
 ### BytesIO
-内存中二进制流
+内存中二进制流，可以使用文件读写的接口（当做二进制读写）
 BytesIO(bytes)
 
 getbuffer(): 返回一个对应于缓冲区内容的可读写视图而不必拷贝其数据
@@ -3867,6 +3861,16 @@ except ...:
 
 ### 1.4 sys.excepthook(type, value, traceback)
 解释器使用函数处理未捕获的异常，即将异常信息打印到sys.stderr 而后退出，三个参数分别是异常类、异常实例和一个回溯对象
+
+### traceback 模块
+print_exception(e, value=_s, tb=_s, limit=None, file=None): 打印异常堆栈信息，默认按由外到内（从调用方到被调用方）排列堆栈，如果指定limit 就仅展示栈顶前若干项；不指定file，则默认输出到sys.stderr
+print_exc(limit=None, file=None): 相当于print_exception(*sys.exc_info(), limit, file)
+print_tb(tb, limit=None, file=None): 只打印堆栈信息，不打印异常信息
+
+format_exception(e, value, tb) -> str
+format_exc() -> str
+format_exception_only(e) -> str: 只格式化异常，不返回堆栈信息
+format_tb(tb) -> str
 
 ## 2. 抛异常
 `raise SomeException, args, traceback [from ex]`
