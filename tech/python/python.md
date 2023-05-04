@@ -4161,7 +4161,7 @@ handler 基类
 + urljoin(base, url): 用url 部分替换base 中的内容，返回一个新的URL（一般会替换path 中的filename 部分，以及query、fragment部分）
 + urldefrag(url): 返回(pure_url, fragment)的named tuple，pure_url 是不含fragment 的部分，若没有fragment 则其为空串
 + quote(string, safe='/', encoding=None, errors=None): 用 %xx 转义符替换 string 中的特殊字符。 字母、数字和 '_.-~' 等字符一定不会被转码（safe参数可以额外指定）。默认只对路径部分进行转码。
-+ quote_plus(string, safe='', encoding=None, errors=None): 还会使用加号来替换空格
++ quote_plus(string, safe='', encoding=None, errors=None): 还会使用加号来替换空格，而且safe 为空
 + unquote(string, encoding='utf-8', errors='replace'): 将 %xx 转义符替换为其单字符等价物
 + unquote_plus(string, encoding='utf-8', errors='replace'): 还会将加号替换为空格
 
@@ -4211,16 +4211,16 @@ prepare(): 返回一个PreparedRequest 对象
 #### models.Response
 Requests 会自动为你解码 gzip 和 deflate 传输编码的响应数据。
 ##### 字段
-encoding: 可以设置text 的编码方式
-content: 响应内容（字节串）
-text: 响应内容（Unicode字符串），若未设置encoding 则使用`chardet` 根据HTTP headers 猜测编码方式
-raw: 返回一个urllib3.response.HTTPResponse 对象（请求方法必须stream=True）
-`status_code`: 响应状态码，内置了一个成功的状态码为requests.codes.ok
-ok: `status_code` < 400 为True，否则为False
-headers: 服务器响应头，一个字典
-cookies: RequestsCookieJar 类型，行为类似字典
-history: Response 对象的列表，按从最老到最近的请求进行排序，可以追踪重定向
-request: 获得请求对象
++ encoding: 默认根据请求头中的charset来猜测网页解码方式（若未指定则默认使用ISO-8859-1），可以手动设置从而改变text 的编码方式，也可以使用requests.utils.get_encodings_from_content 方法从内容猜测编码
++ content: 响应内容（字节串）
++ text: 响应内容（Unicode字符串），若未设置encoding 则使用`chardet` 根据HTTP headers 猜测编码方式
++ raw: 返回一个urllib3.response.HTTPResponse 对象（请求方法必须stream=True）
++ `status_code`: 响应状态码，内置了一个成功的状态码为requests.codes.ok
++ ok: `status_code` < 400 为True，否则为False
++ headers: 服务器响应头，一个字典
++ cookies: RequestsCookieJar 类型，行为类似字典
++ history: Response 对象的列表，按从最老到最近的请求进行排序，可以追踪重定向
++ request: 获得请求对象
 
 ##### 方法
 json(): 将响应内容用json 进行loads
