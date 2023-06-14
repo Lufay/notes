@@ -31,16 +31,19 @@ CREATE table <表名> (
 展示表信息：`show create table 'tablename'`
 显示：`describe 'tablename';`（可以缩写为desc，是对`SHOW columns from`的简略）
 修改表名：`rename table 原表名 to 新表名` 或`alter table <表名> RENAME TO <新表名>`;（不能有任何锁定表的事务）
+修改表类型: `ALTER TABLE <表名> ENGINE = <val>`
 删表：`DROP table 'tablename' [if exists 'tablename'];`
+清空表（慢，有日志）： `DELETE FROM '表名' WHERE 1`
+清空表（快，无日志）：`TRUNCATE TABLE '表名'`
+
 加列：`alter table <表名> ADD [COLUMN] <字段> <类型> <字段限定项> [FIRST|AFTER <col>];`（默认加到最后一列，FIRST加到第一列，AFTER可以指定在哪一列后）
 加索引：`alter table <表名> ADD INDEX <索引名> (<字段名1> [, <字段名2>, ...]), [ADD INDEX <索引名>(...)];`
 加字段限制：`alter table <表名> ADD <限制>(<字段名>)`
-删列、索引、限制：将上面的add变为DROP
-修改列：将上面的add变为`change <old_field_name> <new_field_name> <field_type>`
-仅改名：将上面的add变为`RENAME COLUMN <old_field_name> TO <new_field_name>`
-仅改类型和约束：将上面的add变为`MODIFY COLUMN <field_name> <type> <限制>`
-清空表（慢，有日志）： `DELETE FROM '表名' WHERE 1`
-清空表（快，无日志）：`TRUNCATE TABLE '表名'`
+删列、索引、限制：将上面的add变为DROP，可以写多列，用`,` 分隔
+修改列：将上面的add变为`change <old_col_name> <new_col_name> <col_type> [FIRST|AFTER <col>]`（还可以调整列顺序，可能比较慢）
+仅改名：将上面的add变为`RENAME COLUMN <old_col_name> TO <new_col_name>`
+仅改类型和约束：将上面的add变为`MODIFY [COLUMN] <col> <type> <限制> [FIRST|AFTER <col>]`（还可以调整列顺序，可能比较慢）
+仅改列的默认值：将上面的add变为`alter [COLUMN] <col> set default <val>`（删除默认值把set变为drop）
 
 #### 表和字段的限制项
 ```sql
@@ -53,6 +56,7 @@ check()
 auto_increment
 ```
 `primary key`相当于unique和not null
+如果未显式设置not null，则默认为null
 
 ### DML
 ```sql

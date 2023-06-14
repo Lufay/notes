@@ -89,8 +89,20 @@ Python 的主提示符( >>> )和次提示符( ... )，其功效类似于SHELL中
 
 ### 1.1 输出
 ```py
-print var1, var2, var3  # Python 2 print是关键字
-print(var1, var2, var3) # Python 3 print是一个正常的函数
+print var1, var2, var3  # Python 2 print是关键字，整体是一个语句，无法参与其他语句构造
+print(var1, var2, var3) # Python 3 print是一个正常的函数，返回None，可以参与到语句构造中；而且函数本身就是对象，所以可以对其进行改写：
+
+@contextlib.contextmanager
+def replace_print():
+    import builtins
+    _print = print # store the original print function
+    # or do something useful, e.g. store output to some file
+    builtins.print = lambda *args, **kwargs: _print('new printing', *args, **kwargs)
+    yield
+    builtins.print = _print
+    
+with replace_print():
+    # code here will invoke replaced print function
 ```
 其中var可以是字面值也可以是变量，用逗号分隔的各部分将显示为一个空格分隔，最后换行（Python3 可以通过sep=' ' 和end='\n' 参数来指定）
 如果不想要换行，可以在语句末尾加上一个逗号“,”即可。结果将是以空格收尾，而不是换行收尾。
@@ -929,10 +941,6 @@ int.from_bytes(bytes, byteorder, *, signed=False)：Python3.2
 Python3 移除该类型（整形统一为int）
 后缀l或L（也支持十进制、八进制、十六进制表示）
 
-构造函数
-long()              0L
-long("100", 5)      25L
-
 其宽度仅受限于用户计算机的虚拟内存大小，类似于 Java 中的 BigInteger 类型
 
 #### 1.1.3 bool（布尔值）
@@ -1320,20 +1328,57 @@ lastgroup: 最后一个匹配的分组的名字，如果未命名或没有捕获
 安装：`pip install regex`
 兼容re: `import regex as re`
 
+##### difflib 模块
+比较序列对象间的不同
 
+###### 模块函数
++ context_diff(a, b, fromfile='', tofile='', fromfiledate='', tofiledate='', n=3, lineterm='\n'): 比较两个字符串列表，返回一个diff 的generator
+  + fromfile, tofile, fromfiledate, tofiledate 都是为了指定表头
+  + 上下文行数由n 指定
+  + 默认返回的diff 字符串没有换行符，可以通过lineterm 来指定换行符
++ get_close_matches(word, possibilities, n=3, cutoff=0.6): 返回possibilities最佳“近似”匹配word构成的列表（按相似度得分排序，最相似的排在最前面）
+  + n 指定最多返回多少个近似匹配
+  + cutoff 是一个 [0, 1] 范围内的浮点数。 与 word 相似度得分未达到该值的候选匹配将被忽略。
+  + 
+
+###### SequenceMatcher 类
+核心类，可用于比较任何类型的序列对，只要序列元素可哈希
+基于Ratcliff-Obershelp 算法，默认使用启发式计算来自动将特定序列项视为垃圾（大量重复出现的文本片段），通常是分隔或定界符
+
+###### Differ
+用于比较文本序列，基于SequenceMatcher 完成比较和行内的近似匹配
+其返回通过行首的两个字符完成该行的特点：
+`- `: 序列 1 所独有
+`+ `: 序列 2 所独有
+`  `: 两序列共有
+`? `: 两序列都没有
+
+###### HtmlDiff
+可用于创建 HTML 表格（或包含表格的完整 HTML 文件）以并排地逐行显示文本比较
+
+构造
+HtmlDiff(tabsize=8, wrapcolumn=None, linejunk=None, charjunk=IS_CHARACTER_JUNK)
++ wrapcolumn 是一个可选关键字参数，指定行文本自动打断并换行的列位置，默认值为 None 表示不自动换行。
++ linejunk 和 charjunk 均是可选关键字参数，会传入 ndiff()
+
+方法
++ make_file(fromlines, tolines, fromdesc='', todesc='', context=False, numlines=5, *, charset='utf-8'): 比较 fromlines 和 tolines (字符串列表) 并返回一个字符串，表示一个完整 HTML 文件，其中包含各行差异的表格，行间与行外的更改将突出显示。
+  + fromdesc 和 todesc 均是可选关键字参数，指定来源/目标文件的列标题字符串。
+  + 当只要显示上下文差异时就将 context 设为 True（numlines 指定上下文行数），否则默认值 False 为显示完整文件。
++ make_table(fromlines, tolines, fromdesc='', todesc='', context=False, numlines=5): 比较 fromlines 和 tolines (字符串列表) 并返回一个字符串，表示一个包含各行差异的完整 HTML 表格，行间与行外的更改将突出显示。
+
+##### hashlib 模块
+多种不同安全哈希算法和信息摘要算法的API
+之前还有md5 模块可以进行MD5信息摘要，python3 移除，统一使用hashlib
 
 ##### 其他相关模块
 struct      字符串和二进制之间的转换
-StringIO/cStringIO      字符串缓冲对象，操作方法类似file对象（后者是C版本，更快一些，但不能被继承）
 base64      Base 16/32/64数据编解码
 baseascii       ASCII编解码
 uu          格式编解码
 codecs      解码器注册和基类
 crypt       进行单方面加密
-difflib     找出序列间的不同
-hashlib     多种不同安全哈希算法和信息摘要算法的API
 hma         HMAC信息鉴权算法
-md5         MD5信息摘要鉴权（python3 移除，使用hashlib）
 rotor       提供多平台的加解密服务
 sha         NIAT的安全哈希算法SHA
 rsa         RSA 数据加密。RSA 算法很慢。通常并不使用 RSA 算法直接加密用户数据，而是用它来加密对称加密系统中使用的共享秘钥，因为对称加密系统速度很快，适合用来加密大量数据。
@@ -1430,7 +1475,8 @@ tuple("fjal")		('f', 'j', 'a', 'l')（可将其他可迭代对象转换为元组
 例如：`x, y, z = 1, 2, 'a string'`，也即圆括号是可以被省略的。并且一个变量出现在右侧不会因左侧的变化而受影响，也就是其结果好像是同一计算好了右值构造了一个新的元组对象赋给左侧的各个对象。（这样就可以使用一条语句进行变量值交换）
 
 #### 1.2.4 字典
-字典（{ak:av, bk:bv, ck:cv}）保存无序的键值映射，几乎所有不可变类型（可哈希类型）都可以作为键，一般常用整数和字符串，值可以是任何类型。各个元素的键的类型都可以不同，同样值的类型也都可以不同
+字典（{ak:av, bk:bv, ck:cv}）保存无序的键值映射（Python3.6+，字典将保留构造和插入的顺序）
+几乎所有不可变类型（可哈希类型）都可以作为键，一般常用整数和字符串，值可以是任何类型。各个元素的键的类型都可以不同，同样值的类型也都可以不同
 
 ##### 构造函数
 dict()						{}
@@ -1443,6 +1489,7 @@ dict(d)				使用另一个字典构造，比copy方法慢
 ```
 { key_expr: value_expr for value in collection if condition }
 ```
+在Python3.6+ 中，生成的字典会保留它们在collection 中的顺序
 
 ##### 方法
 d[key] = value：有则改值，无则添加key:value（注：当aaa[key]不存在且作为右值时，则将抛出KeyError，不会添加）
@@ -1955,7 +2002,7 @@ else:             # 可选：迭代结束后执行，当break跳出则不执行
 #### for 实现机制 与 迭代器
 for循环的机制：
 1. 调用可迭代对象的`__iter__()`方法获得迭代器（通过iter()这个内建方法）
-1. 每次循环迭代调用迭代器的next()方法获得遍历的下一个数据
+1. 每次循环迭代调用迭代器的`__next__()`方法获得遍历的下一个数据（通过next()这个内建方法）
 1. 当捕获到StopIteration异常，循环结束（当全部数据取完后会抛出一个StopIteration异常，以告知迭代完成）
 
 + 可迭代对象是一个有`__iter__()`方法的对象，该方法返回这个可迭代对象的迭代器。
@@ -1963,7 +2010,7 @@ for循环的机制：
 
 *注：迭代器只能单向遍历（不能回溯），而且不能复制，只能重新创建。*
 
-序列、字典、集合、文件对象都是可迭代对象
+序列、字典、集合、文件对象、迭代器、生成器都是可迭代对象
 只不过序列和集合迭代的是成员；字典迭代的是key，因为可以通过key找到value；文件对象迭代的是行。
 
 > iter函数
@@ -1972,7 +2019,7 @@ iter(func, sentinel)，返回一个迭代器，它在迭代过程中不断调用
 
 > next函数
 next(iterator[, default])
-调用iterator的next()方法返回下一个元素，如果给定default 参数，则不抛StopIteration异常，改为返回default。
+调用iterator的`__next__()`方法返回下一个元素，如果给定default 参数，则不抛StopIteration异常，改为返回default。
 
 #### 与迭代有关的函数
 **注意：以下返回的迭代器，支持惰性计算，但不支持[]索引、len()计算长度、bool()判断空，并且只能迭代一次，无法重复使用**
@@ -2093,11 +2140,14 @@ def func(a, b, /, c, d, *, e, f):
 函数嵌套定义的作用是内部函数可以访问外部函数作用域内的变量，从而形成闭包
 
 ### 2.1 属性
-`func_name`：和`__name__`一样，函数名
-`func_doc`：和`__doc__`一样，函数的文档注释
-`func_closure`：用于存储每个自由变量。如果没有自由变量，则为None；否则其值是一个元组，元组的每个元素是cell类型，存储一个自由变量
-`func_defaults`：函数的默认值元组
-`func_code`：code 对象
+`func_name`：函数名（可写），Python3 是`__name__`
+`func_doc`：函数的文档注释（可写），Python3 是`__doc__`
+`func_module`: 函数所在的模块（可写），Python3 是`__module__`
+`func_defaults`：函数的默认值元组（可写），若没有默认值则返回None，Python3 是`__defaults__`
+`func_kwdefaults`: 函数的关键字参数默认值字典，Python3 是`__kwdefaults__`
+`func_globals`: 函数持有的全局变量的字典（只读），Python3 是`__globals__`
+`func_closure`：函数持有自由变量的元组（只读）元组的每个元素是cell类型，存储一个自由变量；如果没有自由变量，则为None，Python3 是`__closure__`
+`func_code`：函数的code 对象（可写），Python3 是`__code__`
 
 ### 2.2 闭包
 闭包是一个定义于函数内部的函数，且其引用了外部函数的局部变量（这些被引用的外层局部变量被称为自由变量）
@@ -2148,7 +2198,8 @@ wraps 实际上是调用了update_wrapper(new, old, assigned = WRAPPER_ASSIGNMEN
 functools.cache 装饰器可以让函数针对不同的参数进行结果缓存，可以理解成一个字典（因此参数的必须都是可哈希的）
 *注意：对于def func(a=1)，func()和func(1)会缓存两次*
 
-functools.cached_property 装饰器用于实例方法，和property 装饰器不同的是，property 的属性是只读的，而cached_property 则直接是可读写的，写入的值优先于缓存的值，可以通过del 删除属性值，使其重新缓存
+functools.cached_property 装饰器用于实例方法，和property 装饰器不同的是，property 装饰的属性是只读的（需要另外2个装饰器才能可写可删），而cached_property 则直接是可读写的，写入的值优先于缓存的值，可以通过del 删除属性值，使其重新缓存
+其原理是cached_property 将实例方法名（也就是一个类属性）做成了一个描述符，该描述符会将方法的返回值存到实例`__dict__`的方法名中，则此后再访问这个属性，就是直接获取到这个缓存值（写入也会直接写入到这个缓存值中，所以无需`__set__`方法，del 则是恰好将这个这个属性从实例的`__dict__`中删除，从而可以重新缓存，所以也无需`__delete__`方法），而描述器仍保存在类的`__dict__`中，那么当用类直接访问这个属性，是可以获取到这个描述符对象。
 
 functools.lru_cache(maxsize=128, typed=False) 装饰器比cache 多提供了容量上限的设置，当达到上限时使用LRU 算法进行替换
 被包装的函数有以下方法：
@@ -2193,8 +2244,8 @@ print dec(10)
 生成器可以看做迭代器的一个简易的实现（使用的是函数，而不是类），但更重要的是生成器可以实现协程。
 
 ### 6.1 生成器的执行
-从生成器函数调用者角度，调用生成器函数可以获得一个生成器（不会执行生成器函数的代码），生成器也是一个可迭代对象，可以调用生成器的next() 函数，以获得生成器函数下一次通过yield 返回的值，如果没有yield 语句或者遇到return 的话就抛出StopIteration 异常。
-从生成器角度，从第一次调用next() 函数，开始执行生成器函数代码，直到遇到yield 语句，该语句会挂起生成器的执行，保存函数状态，直到调用者再次调用next() 或send() 重新激活生成器，才恢复执行。
+从生成器函数调用者角度，调用生成器函数可以获得一个生成器（不会执行生成器函数的代码），生成器也是一个可迭代对象，可以调用生成器的next() 函数，以获得生成器函数下一次通过yield 返回的值，如果没有yield 语句或者遇到return 的话就抛出StopIteration 异常（return 的值就是这个异常的value）。
+从生成器角度，从第一次调用next() 函数（刚获取的生成器必须使用next 而不能使用send），开始执行生成器函数代码，直到遇到yield 语句，该语句会挂起生成器的执行，保存函数状态，直到调用者再次调用next() 或send() 重新激活生成器，才恢复执行。
 
 ### 6.2 和生成器进行交互
 生成器的调用者，可以通过生成器对象的方法和其交互：
@@ -2203,11 +2254,11 @@ print dec(10)
 + throw(Etype[, value[, traceback]]) 在生成器yield 位置抛Etype(value) 异常，若生成器捕获该异常，则继续执行到下一个yield 返回之，或者执行结束，抛出StopIteration 异常；若生成器没捕获，则将抛出Etype异常到该方法的调用处
 
 创建生成器之后，必须首先使用next() 或者send(None) 进行预热，才能调用其他方法，否则在进入生成器函数之前就会抛异常
-一旦生成器函数不是通过yield 退出，就无法再调用next() 方法了，否则将抛出StopIteration 异常
+一旦生成器函数不是通过yield 退出，就无法再调用next/send 方法了，否则将抛出StopIteration 异常
 换句话说，只有停在yield 处的生成器，才能使用上述方法进行交互，否则都将有异常
 
-## 第六章. 对象和类
-### 1. 类定义
+# 第六章. 对象和类
+## 1. 类定义
 ```
 class ClassName(base_class, ...):
     "optional documentation string"
@@ -2218,9 +2269,13 @@ class ClassName(base_class, ...):
 `base_class`声明基类，如果没有指定，则使用 object 作为基类（object是最基本的类型），支持多继承
 类文档字符串不会被继承，但类属性会被继承（除非覆盖定义）
 
-静态成员属于类自身，实例属性可以在任何时候动态添加、修改和del（甚至在类的外部）
-Python3 支持在实例方法外声明实例属性，*注意：只是声明`var type`，不能使用`var = val`这种定义，因为前者是实例属性，后者就变成了类属性了*
-当使用实例访问一个属性时，优先查找实例属性，若找不到定义，再访问同名的类属性；当用类访问一个属性，则直接访问的是类属性。这样，就导致了一种结果，那就是使用实例访问类属性无法进行修改，因为修改的语法会被认为定义了一个同名的实例属性，不过有点例外就是，若类属性时可变类型时，可以修改其内容，所以修改类属性只能使用类名调用
+属性可以在任何时候动态添加、修改和del（甚至在类的外部，动态添加要求该类必须有`__dict__`属性）
+定义在类域之下的是静态成员，属于类自身；定义在方法中，用self绑定的是实例属性
+
+当使用实例访问一个属性时，优先查找实例属性，若找不到定义，再访问同名的类属性，如果还没有，则延继承mro顺序向基类查找；
+当用类访问一个属性，则直接访问的是类属性，如果没有，则延继承mro顺序向基类查找。
+这样就导致了一种结果，那就是使用实例访问类属性无法进行修改，因为写属性的语法会被认为定义了一个同名的实例属性，所以修改类属性只能使用类调用（可以使用`self.__class__` 获取类）
+不过有点例外就是，若类属性时可变类型时，可以修改其内容
 
 和函数对象类似，在类定义完成时，就声明了一个类对象，所以类定义可以放在局部作用域
 
@@ -2232,13 +2287,15 @@ super(type[, obj]) 方法
 在Python3 中，如果两者都缺省，则type 就是当前代码位置的类，obj 是self，所以这种方式仅仅能用于拥有self 的方法内。除此之外，则并不限制其使用位置
 
 ## 2. 内置属性
-`__class__` 对象对应的类对象，也可以作为一个可调用对象使用（调用的是构造器）
-`__name__` 类的名字(字符串)
-`__doc__` 类的文档字符串
-`__base__` 类的第一个父类
-`__bases__` 类所有父类构成的元组
+`__class__` 实例对应的类对象，也可以作为一个可调用对象使用（调用的是构造器）
+`__name__` 对象的名字(字符串)
+`__qualname__` 对象的限定名（带有点分限定的名字）
+`__doc__` 对象的文档字符串
+`__base__` 对象的第一个父类
+`__bases__` 对象所有父类构成的元组
 `__dict__` 实例所有属性构成的字典（仅包括当前对象已经初始化的，不包括类声明的属性和类的属性，这些属于类对象，类对象的`__dict__`可以拿到类属性和方法），改变该字典的内容会直接影响实例属性值
-`__module__` 类定义所在的模块
+`__module__` 对象定义所在的模块
+`__annotations__` 对象类型注解的字典（对函数对象而言，就是参数和返回值的类型注解）
 `__slots__` 限定实例的可用的属性名，其值可以是一个字符串可迭代对象，阻止自动为每个实例创建 `__dict__` 和 `__weakref__`（能显著节省空间和提高属性查找速度）。想要实例能够动态赋值，就需要在这个字符串可迭代对象中加入`'__dict__'`
 
 ### 设置属性
@@ -2311,6 +2368,9 @@ super 函数会将 self 转化为FooChild 父类的对象
 3. 该函数中未捕获的异常会被忽略掉
 
 ## 4. 方法
+无论哪种方法，其本质上都是函数对象（保存在`__dict__`中，也可以通过`cls.method_name`或`obj.method_name.__func__`获取），差别只不过是可以使用可以被其所有者进行调用，而后将调用者(caller, 也即`obj.method.__self__` is obj) 绑定到函数对象的第一个参数上（静态方法比较例外，没做这种绑定，直接返回原始函数对象）
+而从类的角度来看，方法其实也还是类及其实例的属性，只不过这个属性被赋值为一个函数对象，所以方法的调用，还是先遵从属性查找机制（即x.name 的查询顺序是`__getattribute__` -> 数据描述器 -> 实例属性或方法（`obj.__dict__`） -> 非数据描述器 -> 类属性或方法（`cls.__dict__`） -> `__getattr__` -> 抛AttributeError），然后根据属性的类别，是函数对象则可以调用
+
 ### 4.1 实例方法
 实例方法也是一个函数对象，也可以保存为变量或使用参数传递（和普通的函数对象差别仅仅是第一个参数绑定了self对象而已）
 第一个参数都是self，它是对象实例的引用，对象的私有成员和类的静态成员都可以使用它引用，例如通过`self.__class__.__name__`可以得到类名
@@ -2324,7 +2384,7 @@ class C:
 ```
 从这个例子可以看出，方法其实就是类自身的属性，只不过类型是函数对象
 
-#### 4.2 魔术方法
+#### 魔术方法
 `__hash__`: 供hash() 调用
 `__bool__`: 用于真值测试 以及 bool() 调用
 `__nonzero__`:
@@ -2338,12 +2398,13 @@ class C:
 `__getitem__` 按照索引获取值
 `__missing__` 在找不到指定的键时调用
 `__getattribute__`: x.name 的使用（包括对内置属性），也可以供getattr(obj, attr[, default]) 调用，这些调用都会直接进入该函数，除非通过super() 委托给同名方法，才会查看是否已经定义了指定的属性或方法 或者 抛AttributeError 但这种情况也会跳过定义的属性或方法，直接去调用`__getattr__`
-`__getattr__`: x.name 的使用，也可以供getattr(obj, attr[, default]) 调用（若不存在attr指定的属性或方法，则返回default，否则会引发AttributeError，可以先用hasattr(obj, attr) 进行测试）若类已定义了指定的属性或方法，则直接使用之，该方法不再调用（所以x.name 的查询顺序是`__getattribute__` -> 属性或方法 -> `__getattr__` -> 抛AttributeError）
+`__getattr__`: x.name 的使用，也可以供getattr(obj, attr[, default]) 调用（若不存在attr指定的属性或方法，则返回default，否则会引发AttributeError，可以先用hasattr(obj, attr) 进行测试）若类已定义了指定的属性或方法，则直接使用之，该方法不再调用
 `__setattr__`: x.name 的赋值，也可以供setattr(obj, attr, val) 调用
 `__delattr__`: x.name 的删除，也可以供delattr(obj, attr) 调用
-`__get__(self, ins, owner)`: 拥有该方法的类的实例就是描述器，描述器可以赋值给类对象的属性，那么当调用该属性时，就会调用描述器的对应方法。ins 就是调用描述器的实例，若使用类调用，则ins是None。owner 是类实例。该函数的返回值，也就作为调用该属性的返回值。
-`__set__`
-`__delete__`
+`__set_name__(self, owner, name)`: 在类被创建完成时，会按次序逐个调用每个属性的该方法（通常用于描述器命名绑定）
+`__get__(self, ins, owner=None)`: 描述器读方法，当读该属性时，就会调用描述器的该方法，用其返回值作为读取的属性值。ins 是被描述的类的实例（若使用类调用，则ins是None），owner 是被描述的类对象；若是继承得到的描述器属性，ins/owner也是当前的实例和类（而不是定义属性的基类）。若有异常，请抛AttributeError 异常
+`__set__(self, ins, value)`: 描述器写方法，无需返回值。注意，没有owner 参数，也就意味着只能用被描述的类的实例调用，而不能用类对象调用（类对象调用会认为是常规的赋值行为）。
+`__delete__(self, ins)`: 描述器del方法，无需返回值。同上，没有owner 参数，只能用被描述的类的实例调用
 `__getstate__`: 供pickle.dumps 使用，返回一个可序列化对象，若未定义该方法，则使用`__dict__` 作为返回
 `__setstate__(state)`: 供pickle.loads 使用，将序列化出来的对象作为参数state，用于给self 赋值，若未定义该方法，则将state 赋值到`__dict__`
 `__getnewargs__`: 返回一个tuple，用于pickle.loads 传递给`__new__` 作为位置参数使用。如果定义了`__getnewargs_ex__`，则忽略该方法
@@ -2392,7 +2453,88 @@ class C:
 `__floor__` 供math.floor() 调用
 `__ceil__` 供math.ceil() 调用
 
-### 4.3 类方法 和 静态方法
+#### 描述器
+描述器类是一个具有`__get__`/`__set__`/`__delete__` 这些魔术方法其一的类（`__set_name__` 非必选）
+其实例（描述器）可以赋值给另一个类的属性
+
+若未定义`__get__`，则描述器属性将返回这个描述器对象，除非实例本身有该属性的定义
+若未定义`__set__`，则赋值行为将取消该属性的描述器特性
+若未定义`__delete__`，则del 行为将直接删除该类属性
+只定义了`__get__`称为非数据描述器，实例的`__dict__`优先于描述器调用；否则称为数据描述器，描述器调用优先于实例的`__dict__`
+只读属性需要在`__set__` 中抛AttributeError
+
+##### 应用
+ORM 中定义的字段规格，还有一些Validator 组件，都是使用描述器进行字段的`__set__`检查
+classmethod、staticmethod、property、cached_property 这些装饰器都是通过描述器实现的（前两者是只定义了`__get__`方法的描述器）
+我们用描述器，来实现一个类属性的装饰器，可以实现延迟获取、动态取值等特性
+```py
+class classproperty:        # 该装饰器非线程安全，如需线程安全需要加锁
+    def __init__(self, method_or_cached):
+        if callable(method_or_cached):
+            functools.update_wrapper(self, method_or_cached, updated=())
+            self.method = method_or_cached
+            self.cached = False
+        else:
+            self.cached = bool(method_or_cached)
+    
+    def __call__(self, method):
+        functools.update_wrapper(self, method, updated=())
+        self.method = method
+        return self
+
+    def __get__(self, ins, owner=None):
+        if owner is None:
+            owner = type(ins)
+        if not self.cached:
+            return self.method(owner)
+        if not hasattr(self, '_cache'):
+            self._cache = self.method(owner)
+        return self._cache
+
+    from collections import namedtuple
+    property_val = namedtuple('property_val', 'value cached')
+    def __set__(self, ins, value):
+        if isinstance(value, self.property_val):    # 这里是为了可以转换缓存状态
+            self.cached = bool(value.cached)
+            value = value.value
+        if callable(value):
+            functools.update_wrapper(self, value, updated=())
+            self.method = value
+        elif self.cached:
+            self._cache = value
+        else:
+            self.method = lambda c: value
+
+    def __delete__(self, ins):
+        if self.cached:
+            del self._cache
+
+    def __set_name__(self, owner, name):
+        self.__name__ = name
+        setattr(owner, f'_{name}_name', name)
+
+class Demo:
+    @classproperty      # 无参装饰不做缓冲，只做延迟动态；若有参装饰，还可以实现缓存功能
+    def engine(cls):
+        return load_engine(...)
+
+    @classmethod        # 3.9 <= version < 3.11 可以两者连用，classmethod 必须在外层
+    @property
+    def engine2(cls):
+        ...
+
+Demo.engine # 类访问属性，调用__get__
+demo.engine # 实例访问属性，调用__get__
+demo.engine = lambda c: load_another_engine()   # 切换加载方法，调用__set__
+del demo.engine # 清除缓存，下次重新加载
+
+Demo.engine = xxx   # 不会调用__set__，而是将类属性值更新，后续将失去描述器特效
+del Demo.engine # 不会调用__delete__，而是将engine 从vars(Demo) 中移除
+
+vars(Demo)[Demo._engine_name] # 通过这种方式可以获取到描述器实例，而不会触发__get__
+```
+
+### 4.2 类方法 和 静态方法
 需要通过装饰器，将方法进行转化
 ```py
 class A: # Python2 经典类，不能使用super；但在python3 中和新式类一样，默认继承object
@@ -2412,6 +2554,7 @@ class B(object): # 新式类
 def outer_cls(cls):
     pass
 A.c1_method = types.MethodType(outer_cls, A) # 在类外定义类方法
+obj.c2_method = types.MethodType(outer_cls, obj, A) # 也可以绑定实例方法，但该方法仅限于该实例
 
 a = A()
 type(A)        # <type ‘classobj’>
@@ -2500,6 +2643,13 @@ g.get_name()执行结果是GBAF
 Mixin最大的优势是使用者可以随时安插这些功能,并且可以在必要的时候覆写他们
 Mixin 类并不表示一个实体概念，而仅仅是一系列行为的组合，以便于重用，所以Mixin 类绝不实例化。为了明确指示该类的目的，通常这种类都使用Mixin 后缀
 
+### 方法重写
+使用 typing_extensions.override 装饰器，可以
++ 进行签名检查，确保重写的方法前面跟父类一致
++ 让编译器知道该方法的父子关联，当一者变化后，可以进行提示
+
+在多重继承中可以以一个父类作为参数，表示重载的是那个父类的方法
+
 ## 6. 元类
 它也是一个类，其实例是类对象，通过元类可以当创建类时能够自动地改变被创建的类
 它形式上就是一个可调用对象，接受类的描述信息(name, bases, attrd)，返回一个类对象
@@ -2561,7 +2711,7 @@ assert issubclass(tuple, MyABC)
 assert isinstance((), MyABC)
 ```
 
-抽象基类可以用 @abc.abstractmethod 装饰器声明抽象方法和特征属性，表明一个方法必须被重载，这个方法可以拥有实现，也可以被派生类调用
+抽象基类可以用 @abc.abstractmethod 装饰器声明抽象方法和特征属性，表明一个方法必须被重载（否则不能实例化，只能调用类方法或静态方法），这个方法可以拥有实现，也可以被派生类调用
 该装饰器仅仅影响常规继承所派生的子类；通过 ABC 的 register() 方法注册的“虚子类”不会受到影响
 当该装饰器需要和其他装饰器共同修饰一个函数时，本装饰器必须在最内层，例如：
 ```py
@@ -2595,7 +2745,6 @@ class C(ABC):
         ...
     x = property(_get_x, _set_x)
 ```
-（NotImplementedError）
 
 嵌套类
 
@@ -2604,7 +2753,7 @@ Python3.7 新增，辅助数据类的构造，[参考](https://docs.python.org/z
 数据对象类似于Java 的POJO 对象，类似于@Data 注解，它可以很好的替代namedtuple的功能。
 
 ### dataclass
-通过装饰器dataclass，使用简单的定义，就可以自动生成魔术方法。也可以自定义覆盖默认的方法
+通过装饰器dataclass，它解析`__annotations__`，来自动生成魔术方法。也可以自定义覆盖默认的方法
 ```py
 @dataclass
 class Person:
@@ -2835,7 +2984,7 @@ from ..module_name import identifier
 ```
 相对导入是使用`__name__` 确定当前模块的位置的，而`__name__ == '__main__'`时，是顶级模块，而无视其所处的模块位置，所以相对导入就可能失效
 
-sys.modules 变量是一个字典，它保存了已经加载的模块名和模块实例的映射关系，比如`sys.modules[__name__]`就是当前的模块实例
+sys.modules 变量是一个字典，它保存了已经加载的模块名和模块实例的映射关系，比如`sys.modules[__name__]`就是当前模块实例
 
 模块导入遵循作用域原则，模块顶层导入的有全局作用域，函数中导入的，是局部作用域
 首次导入模块会加载模块的代码，即会执行模块的顶层代码
@@ -3278,8 +3427,8 @@ IOBase <- RawIOBase <- FileIO
        <- TextIOBase <- TextIOWrapper
                      <- StringIO
 
-### StringIO
-内存中文本流，可以使用文件读写的接口（当做文本读写）
+### StringIO/cStringIO
+内存中文本流，可以使用文件读写的接口（当做文本读写）后者是C版本，更快一些，但不能被继承
 StringIO(str)
 
 getvalue(): 返回一个包含缓冲区全部内容的 str
@@ -3887,13 +4036,76 @@ from ex 一般用于except 中捕获到一个ex 异常而后抛出另一个异�
 如果args不是一个异常类的实例，那么它将作为SomeException类的实例化参数列表
 如果三个参数都没有，则引发当前代码块最近触发的一个异常，如果之前没有异常触发，会因为没有可以重新触发的异常而生成一个TypeError异常。
 
-## 3. 内置异常
-SystemExit 表示程序退出
-KeyoboardInterupt 表示Ctrl+C，用户中断
-
-BaseException 是所有异常的基类，Exception 是除 SystemExit 和 KeyoboardInterupt 之外所有异常的基类，StandardError是所有内建标准异常的基类，EnvironmentError是操作系统环境异常的基类
-
+## 3. 异常关系结构
 创建一个新的异常仅需要从一个异常类中派生一个子类
+
+内置异常继承树
+```
+BaseException 所有异常的基类
+ +-- SystemExit 表示程序退出，默认会被忽略
+ +-- KeyboardInterrupt 表示Ctrl+C，用户中断
+ +-- GeneratorExit 生成器已启动未结束前被销毁（比如显式del gen），可以在生成器中捕获该异常，用于生成器的善后处理
+ +-- Exception 常规异常基类（非控制类异常，即程序存在某种问题，Python2 中叫做StandardError）
+      +-- StopIteration 迭代器或生成器函数退出时抛出该异常，该异常有一个value 属性，就是生成器函数的返回值
+      +-- StopAsyncIteration
+      +-- ArithmeticError
+      |    +-- FloatingPointError
+      |    +-- OverflowError
+      |    +-- ZeroDivisionError
+      +-- AssertionError 断言失败的异常
+      +-- AttributeError 即 obj.attr获取属性异常
+      +-- BufferError
+      +-- EOFError
+      +-- ImportError
+      |    +-- ModuleNotFoundError
+      +-- LookupError
+      |    +-- IndexError
+      |    +-- KeyError
+      +-- MemoryError
+      +-- NameError
+      |    +-- UnboundLocalError
+      +-- OSError 操作系统环境异常的基类（Python3.3 之前叫做EnvironmentError）
+      |    +-- BlockingIOError
+      |    +-- ChildProcessError
+      |    +-- ConnectionError
+      |    |    +-- BrokenPipeError
+      |    |    +-- ConnectionAbortedError
+      |    |    +-- ConnectionRefusedError
+      |    |    +-- ConnectionResetError
+      |    +-- FileExistsError
+      |    +-- FileNotFoundError
+      |    +-- InterruptedError
+      |    +-- IsADirectoryError
+      |    +-- NotADirectoryError
+      |    +-- PermissionError
+      |    +-- ProcessLookupError
+      |    +-- TimeoutError
+      +-- ReferenceError
+      +-- RuntimeError
+      |    +-- NotImplementedError 抽象方法可以抛该异常，确保该方法必须被重写
+      |    +-- RecursionError
+      +-- SyntaxError
+      |    +-- IndentationError
+      |         +-- TabError
+      +-- SystemError
+      +-- TypeError
+      +-- ValueError
+      |    +-- UnicodeError
+      |         +-- UnicodeDecodeError
+      |         +-- UnicodeEncodeError
+      |         +-- UnicodeTranslateError
+      +-- Warning 警告类的基类
+           +-- UserWarning 函数 warn() 的默认类别
+           +-- DeprecationWarning 用于已弃用功能的警告（默认被忽略）；可以直接使用typing_extensions.deprecated(msg) 这个装饰器
+           +-- PendingDeprecationWarning 对于未来会被弃用的功能的警告（默认将被忽略）
+           +-- RuntimeWarning 用于有关可疑运行时功能的警告
+           +-- SyntaxWarning 用于可疑语法的警告
+           +-- FutureWarning 对于未来特性更改的警告
+           +-- ImportWarning 导入模块过程中触发的警告（默认被忽略）
+           +-- UnicodeWarning 与 Unicode 相关的警告
+           +-- BytesWarning 与 bytes 和 bytearray 相关的警告 (Python3)
+           +-- ResourceWarning 与资源使用相关的警告(Python3)
+```
 
 ## 4. 断言
 断言是一句必须布尔判断为真的判断，否则就触发AssertionError
@@ -3902,13 +4114,24 @@ expression是这个判断的表达式，arg提供给AssertionError作为参数�
 
 ## 5. 警告
 warnings 模块
-可以产生警告、过滤警告
+可以产生警告、过滤警告、或者转为异常
 
-警告类的基类Warning 直接从Exception 继承
+命令行也可以控制警告过滤器。可以在启动 Python 解释器的时候使用 -W 选项（格式：action:message:category:module:lineno，部分空缺则使用默认值）。
 
-警告会有一个默认的输出显示到 sys.stderr , 不过有钩子可以改变这个行为
+### 函数
++ warn(msg, category=None, stacklevel=1, source=None): 将category警告类（默认是UserWarning）和信息（可以是字符串，也可以是Warning类的一个子类实例，这时将忽略category参数）打到sys.stderr（默认，有钩子可以改变这个行为）
++ filterwarnings(action, message='', category=Warning, module='', lineno=0, append=False): 添加警告过滤规则（默认加到规则头部，append=True，则追加到尾部），message 和module 可以指定正则表达式（使用match匹配，message不区分大小写，module区分大小写）lineno=0 默认匹配所有行号，跟命令行`-W` 参数功能类似
++ simplefilter(action, category=Warning, lineno=0, append=False): 简易过滤，无需正则
++ resetwarnings(): 重置警告过滤规则（包括函数增加的和`-W`选项指定的）
++ showwarning(msg, category=None, filename, lineno, file=None, line=None): 警告消息输出到文件file（默认sys.stderr）line 是包含在警告消息中的一行源代码，如果未提供则尝试读取由 filename 和 lineno 指定的行；其默认实现通过调用 formatwarning() 格式化消息，它也可以由自定义
 
-命令行也可以控制警告过滤器。可以在启动 Python 解释器的时候使用 -W 选项。
+action 可以取以下值(str)：
+default: 同一位置的警告只输出一次
+always: 始终输出
+module: 一个模块的相同文本只输出一次
+once: 相同文本只输出一次
+error: 转为异常
+ignore
 
 ## 6. 资源自动释放
 ```py
@@ -3992,6 +4215,186 @@ contextmanager 会将上下文管理的区域内抛出的异常进行回收，�
 可以try-except 进行处理，然后正常退出抛StopIteration异常，该异常会被抑制（return True）
 也可以不做处理，则contextmanager 就会return False，将该异常抛出到with 块之外。
 
+# 类型注解
+可以辅助IDE 识别参数的类型进而给用户提示，以及进行静态代码检查
+运行时类型不符不会出现错误，可以使用三方模块mypy 来进行静态检查
+`var: type` 而不进行赋值，可以单独作为语句，该语句的作用仅仅是向`__annotations__` 中增加记录，而并没有实际的变量定义
+
+## typing 模块
+提供了进行注解的各种类型
+可以用于模块变量、类和实例成员、函数参数和返回值的类型限定
+
+若没有声明类型，默认是typing.Any
+
+### 常量限定
+```py
+from typing import Final, Literal
+
+RATE: Final = 3000  # 常量，不可修改
+
+MODE = Literal['r', 'rb', 'w', 'wb']
+def open_helper(file: str, mode: MODE) -> str:
+    # 限定mode 的取值，只能是上述4种
+```
+
+### 字符串
+typing.AnyStr
+
+### 容器
+```py
+from typing import List, Tuple, Dict, Set
+from typing import Sequence, Mapping, Hashable   # 序列、映射（k-v）、可哈希对象（也就是不可变对象，可以作为dict 的key 或set 的成员）
+from collections.abc import Sequence as Seq     # Python 3.9+ 可以使用
+
+def mix(scores: List[int], ages: Dict[str, int]) -> Tuple[int, int]:
+    # 上面返回的是二元组，可以使用Tuple[int, int, ...] 表示不定长元组
+    # 如果带有元素类型，Python 3.9 之前需要导入上面的包，之后就可以直接使用list, tuple, dict, set 进行注解
+
+
+from typing import Iterable, Iterator, Generator    # 可迭代对象、迭代器、生成器
+
+def func(a: Iterator[int], b: Iterable[float]) -> Generator[int, float, str]:
+    # Iterable 可迭代对象（Sequence, Mapping、迭代器、生成器都是），需要有__iter__ 方法（该方法理论上返回的就是其迭代器）
+    # Iterator 迭代器，需要有__iter__ 和__next__ 两个方法
+    # Generator 的三个参数类型分别是YieldType, SendType, ReturnType
+    sent = yield 0
+    while sent >= 0:
+        sent = yield round(sent)
+    return 'Done'
+```
+
+### 接口限定
+类似Go 的interface 的duck-typing
+```py
+from typing import Protocol
+
+# 定义接口
+class Proto(Protocol):
+    def foo(self) -> str: ...
+# 泛型接口
+class ProtoT(Protocol[T]):
+    def foo(self) -> T: ...
+
+# 匹配接口
+class A:
+    def foo(self):
+        return 'I am A'
+
+def yeah(a: Proto):
+    return f'yeah {a.foo()}'
+
+yeah(A())   # A 的实例符合接口协议
+```
+
+### 函数返回
+```py
+from typing import Optional, NoReturn
+
+# 可能返回None
+def foo(a: int = 0) -> Optional[str]:
+    if a == 1:
+        return 'Yeah'
+
+ # NoReturn 用于抛异常，而非返回None
+def exp() -> NoReturn:
+    raise RuntimeError('oh no')
+```
+
+### 可调用对象
+```py
+from typing import Callable
+
+def mix(func: Callable[[int, int], str]):
+    # Callable 是可调用类型，是参数和返回类型，缺省则表示Callable[..., Any]
+```
+
+### 混合类型
+Python 3.10 之前使用 `Union[list[int], tuple[int]]` 表示两者任一
+Python 3.10+ 支持 X|Y 形式，即`list[int]|tuple[int]`
+
+### 类型别名、类型派生
+```py
+vector = list[int]|tuple[int]  # vector 就是这个UnionType 的一个引用
+
+from typing import NewType
+new_vector = typing.NewType('NewA', list[int]|tuple[int])
+```
+NewType 会创建一个可调用对象，不同于类的继承，该对象没有bases，不过可以通过`__supertype__` 属性访问其基类型
+这个可调用对象实际上就是一个类型检查的过滤器，即`lambda x: x`，这里的x 必须是`__supertype__` 中的类型
+
+别名和派生的不同点，在于
+标注为别名的变量，就相当于原类型的标注，只不过换了一个简单的名字
+标注为派生的变量，是无法直接使用原类型给其赋值的，必须使用该NewType 的实例给该变量赋值
+
+### 泛型协变
+```py
+from typing import TypeVar, Generic
+
+# 泛型函数
+T = TypeVar('T', str, int) # 后两个参数是限制类型，也可以无限制
+
+def bar(a: T, b: T) -> List[T]:
+    # a 和 b 必须保持相同类型
+    
+# 泛型类
+class Queue(Generic[T]):
+ 	def __init__(self, l: List[T]):
+  	 	self.queue = l
+
+q = Queue([1, 2, 3])
+q = Queue[float]([1, 2, 3])
+```
+
+### 类型的类型
+```py
+from typing import Type
+
+class User: ... 
+class TeamUser(User): ... 
+def make_new_user(user_class: Type[User]) -> User:
+    # Type 参数可以指定一种基类，该变量可以是该基类或其子类的一个类对象
+    return user_class()  # 可以返回基类对象，也可以是派生类对象
+```
+
+### 自身引用
+```py
+# 3.11+
+from typing import Self
+class AA:
+    a: Self
+
+# 3.7+
+from __future__ import annotations
+class AA:
+    a: AA
+
+# 较老的版本可以使用 typing-extensions
+from typing_extensions import Self
+class AA:
+    a: Self
+```
+typing-extensions 这个三方模块，还包含了很多PEP 已批准，但还没进入标准库typing 的特性
+
+### 继承相关
+```py
+@final
+class Base:     # 类不可被继承
+    ...
+
+class Base:
+    @overload
+    def method(self) -> None: ...
+    @overload
+    def method(self, arg: int) -> int: ...
+    @final
+    def method(self, x=None):   # 方法不可被重写
+        ...
+```
+
+## mypy 模块
+`pip install mypy`
+
+
 
 # 运行时
 ## inspect
@@ -4059,9 +4462,391 @@ apply_defaults(): 将默认值应用于缺省参数上
 <https://docs.python.org/zh-cn/3/library/concurrency.html>
 
 ## threading 模块
+由于存在 全局解释器锁，同一时刻只有一个线程可以执行 Python 代码（虽然某些性能导向的库可能会去除此限制）
+
+### 常量
+TIMEOUT_MAX：阻塞函数（ Lock.acquire(), RLock.acquire(), Condition.wait(), ...）中形参 timeout 允许的最大值。
+
+### 模块函数
+current_thread()：返回当前对应调用者的控制线程的 Thread 对象。如果调用者的控制线程不是利用 threading 创建，会返回一个功能受限的虚拟线程对象。
+get_ident()：返回当前线程的 “线程标识符”，是一个非零的整数。线程标识符可能会在线程退出，新线程创建时被复用。
+get_native_id()：返回内核分配给当前线程的原生集成线程 ID。是一个非负整数。线程终结，在那之后该值可能会被 OS 回收再利用
+main_thread(): 返回主 Thread 对象。一般情况下，主线程是Python解释器开始时创建的线程。
+active_count()：返回当前存活的 Thread 对象的数量。 返回值与 enumerate() 所返回的列表长度一致。
+enumerate(): 返回当前所有存活的 Thread 对象的列表。包括守护线程以及 current_thread() 创建的空线程。 它不包括已终结的和尚未开始的线程。
+
+excepthook(args)：处理由 Thread.run() 引发的未捕获异常，会将异常信息打印到sys.stderr。args 参数具有以下属性:
+    exc_type: 异常类型
+    exc_value: 异常值，可以是 None.
+    exc_traceback: 异常回溯，可以是 None.
+    thread: 引发异常的线程，可以为 None。
+    可以重写该方法以自定义处理异常，如果想要恢复，可以使用`__excepthook__`
+
+### Thread 类
+Thread(group=None, target=None, name=None, args=(), kwargs={}, *, daemon=None)
++ group：保持None即可，为了日后扩展 ThreadGroup 类实现而保留
++ target：用于 run() 方法调用的可调用对象，默认是None，表示不需要调用任何方法
++ name：线程名，默认是"Thread-N" 的形式
++ args、kwargs 是target 调用的参数
++ daemon：默认继承当前线程的守护模式属性。当剩下的线程都是守护线程时，整个 Python 程序将会退出。所以守护线程在程序关闭时会突然关闭，因为他们的资源（例如已经打开的文档，数据库事务等等）可能没有被正确释放。
+
+继承该类，可以重写`__init__()` and run() 这两个方法
+重写`__init__()`，应首先调用基类构造器`Thread.__init__()`
+
+#### 属性
+name：线程名字符串，可读写
+daemon：一个布尔值，表示这个线程是否是一个守护线程，可以在start 之前修改
+ident：线程标识符，如果线程尚未开始则为 None，它是个非零整数
+native_id：线程 ID，由 OS (内核) 分配，是一个非负整数，线程未启动时为None
+
+#### 方法
+start()：启动该线程，该线程将执行run() 方法，一个线程对象最多只能被调用一次
+join(timeout=None)：阻塞当前线程（caller），直到该线程对象（callee）结束或超时（单位为秒的浮点数），该方法可以调用多次，总是返回None
+is_alive()：检查该线程是否存活（join 超时后，可以使用该方法判断指定线程是否存活），在run() 方法执行期间，为True
+
+### Timer 类
+是Thread 的子类，用于延迟一段时间的操作，start() 启动
+
+Timer(interval, function, args=None, kwargs=None): 延迟interval 秒执行function
+
+#### 方法
+cancel(): 可以在计时截止前终止任务
+
+### local 类
+线程本地数据，即每个线程都有一份副本数据，相互之间独立。由于模块级或类级数据是多线程共享的，所以就会存在多线性相互的影响，而local 类的实例会给每个线程开辟一个独立的空间，不会多线程共享。
+
+### 线程同步
+#### Lock 类
+一旦一个线程获得一个锁，会阻塞随后尝试获得锁的线程，直到它被释放
+
+其实例支持上下文管理协议，即
+```py
+with Lock() as t:   # 调用acquire
+    ...
+    # 结束调用release
+```
+
+##### 方法
+所有方法的执行都是原子性的
+acquire(blocking=True, timeout=-1)：默认阻塞直到获取到锁，并可以设置超时时间（单位为秒），返回是否成功获取到锁
+release()：释放锁，无返回值，由于锁跟获取该锁的线程不绑定，所以不限定该方法调用的线程
+locked()：返回该锁是否被锁定
+
+#### RLock 类
+重入锁：可以被同一个线程多次获取，该锁跟获锁线程绑定，且有"递归等级" 的概念
+
+也支持 上下文管理协议
+
+##### 方法
+acquire(blocking=True, timeout=- 1)：若获取成功，递归级别为1，而后该线程再次调用则递归级别+1，返回是否成功获取到锁
+release(): 释放锁，自减递归等级。如果减到零，则将锁重置为非锁定状态。由于存在线程绑定，所以必须是拥有锁的线程调用
+
+#### 信号量
+信号量，当计数器归零时等待，相当于带计数的锁
+
+信号量对象也支持 上下文管理协议
+
+##### Semaphore 类
+Semaphore(value=1)：value 是信号计数器初始值
+BoundedSemaphore(value=1)：可以保障计数器的值不会超过初始值value（不会过多release，超过会抛ValueError 异常）
+
+###### 方法
+acquire(blocking=True, timeout=None): 计数器值为正，则-1返回True；值为0，则将阻塞直到调用release 唤醒，唤醒后再执行-1返回True。未获取到信号量将返回False
+release(n=1): 计数器+n。被唤醒的线程次序不一定就是等待的顺序
+
+#### Barrier 类
+Barrier(parties, action=None, timeout=None): 至少要parties 个线程wait 后才能一起通过。action 可以指定一个可调用对象，在一起通过的中的一个线程中执行
+其实例可以多次使用，除非调用action 时异常，超时，或者重置对象时仍有线程在等待，都将进入损坏态，这时将抛BrokenBarrierError 异常
+
+##### 属性
+parties
+n_waiting: 此时正在等待的线程数
+broken: 是否是损坏态
+
+##### 方法
+wait(timeout=None): 这里的 timeout 参数优先于创建栅栏对象时提供的 timeout 参数。返回一个[0, parties-1]之间的数，每个线程返回的都不同，可以用于决定后续的不同动作
+reset(): 重置栅栏为默认的初始态，需要确保当前没有线程在等待
+abort(): 直接进入损坏态，若再调用wait 将抛BrokenBarrierError 异常
+
+### 线程通信
+#### Condition 类
+条件变量，本质上是一个等待队列，当条件不满足时，线程就加入队列进行等待，当条件满足后将被唤醒继续执行（避免了自旋循环检查）。
+正因为要操作这个共享的等待队列，所以无论wait/notify 都需要在互斥锁内进行。同时，由于wait 的线程阻塞在该互斥锁内了，为了能让另一个线程进入互斥锁进行notify，wait 会在排队睡眠之前释放该锁，并在被唤醒后，重新加锁。
+综上，wait 操作会原子性的执行：enquene - release操作，在经过休眠 - 唤醒之后，再原子性的执行lock - dequene操作；notify 则仅仅是将该等待队列上休眠的线程进行唤醒
+而且，需要确保notify 必须在对应的wait 之后执行，否则该等待队列上的线程将无人唤醒
+
+条件变量遵循 上下文管理协议
+```py
+cv = Condition(lock=None)   # lock 默认为空，将自动创建一个RLock 对象；也可以指定一个Lock 或者 RLock 对象作为关联的锁
+
+# 消费者
+with cv:    # 自动acquire 关联的锁
+    while not predicate():  # 这两行相当于cv.wait_for(predicate)
+        cv.wait()
+    get()
+    # 自动release 关联的锁
+# 生产者
+with cv:
+    make()
+    cv.notify()
+```
+
+##### 方法
++ acquire(*args): 调用关联锁的acquire 方法
++ release(): 调用关联锁的release 方法
++ wait(timeout=None): 进入等待队列，直到被唤醒或超时。该方法总是返回None
++ wait_for(predicate, timeout=None): predicate 是一个可调用对象，返回值可以被解释为布尔值，当为True时，才是真正的条件达成而退出等待（因为wait 因为超时退出，所以需要一个判断）。若超时，则返回False；否则返回predict 最后的返回值
++ notify(n=1): 唤醒n个等待队列上的线程（不保证一定是n个，具体实现可能多于n）
++ notify_all(): 唤醒所有等待队列上的线程
+
+##### 例子：实现读写锁
+该实现没有考虑优先排队，也就是说后到的读请求将和先到的写请求一起去抢锁，如果频繁的读请求，将可能导致写请求饥饿，反之亦然（之所以，写饥饿更严重是因为读写的申请和释放这4个方法都要去抢同一把锁，那么在频繁请求的情况下，就会阻塞一样多的申请请求和释放请求，这就导致读计数很难归0，从而阻塞写请求）。类似的实现可以参考<https://github.com/wuyfCR7/ReadWriteLock-For-Python/blob/master/rwlock.py>。
+也不具有blocking 和 timeout 的特性。特性比较丰富的库可以参考<https://github.com/elarivie/pyReaderWriterLock>，支持多种优先排队，支持写锁在锁定过程中降级为读锁
+```py
+class ReadWriteLock:
+    """ A lock object that allows many simultaneous "read locks", but
+    only one "write lock." """
+    
+    def __init__(self):
+        self._read_ready = threading.Condition()
+        self._readers = 0
+
+    def acquire_read(self):
+        """ Acquire a read lock. Blocks only if a thread has
+        acquired the write lock. """
+        with self._read_ready:
+            self._readers += 1
+
+    def release_read(self):
+        """ Release a read lock. """
+        with self._read_ready:
+            self._readers -= 1
+            if not self._readers:
+                self._read_ready.notify_all()
+
+    def acquire_write(self):
+        """ Acquire a write lock. Blocks until there are no
+        acquired read or write locks. """
+        self._read_ready.acquire()
+        while self._readers > 0:
+            self._read_ready.wait()
+
+    def release_write(self):
+        """ Release a write lock. """
+        self._read_ready.release()
+
+    @contextmanager
+    def rlock(self):
+        try:
+            self.acquire_read()
+            yield self
+        finally:
+            self.release_read()
+
+    @contextmanager
+    def wlock(self):
+        try:
+            self.acquire_write()
+            yield self
+        finally:
+            self.release_write()
+```
+
+#### Event 类
+红绿灯控制，简单的wait-notify_all 机制，不需要额外的锁
+
+##### 方法
+set(): 设置内部标识为true。所有正在等待这个事件的线程将被唤醒
+clear(): 设置内部标识为false。之后调用 wait() 方法的线程将会被阻塞
+wait(timeout=None): 阻塞线程直到内部变量为 true。超时单位为秒，除非超时，否则总返回True
+is_set(): 返回内部标识状态
 
 
 ## multiprocessing 模块
+三种启动进程的方法：
+1. spawn: 启动一个新的Python解释器进程（启动较慢），子进程仅仅从父进程继承足以满足run() 方法使用的资源。macOS 的默认方式
+2. fork: 父进程使用 os.fork() 来产生 Python 解释器分叉。父进程的所有资源都由子进程继承。只用于Unix
+3. forkserver: 选择该方式启动程序将启动服务器进程。每次需要新进程时，父进程就会连接到服务器并请求它分叉一个新进程。分叉服务器进程是单线程的，因此使用 os.fork() 是安全的。 没有不必要的资源被继承。
+在主模块（`__main__`）中调用set_start_method('spawn') 进行设置，而且只能调用一次
+或者可以调用get_context('spawn') 获取ctx 对象，该对象跟模块有相同的API，只不过不会影响到整个程序（不同启动方式的进程可能不兼容，创建的相应对象不能混用）
+
+在 Unix 上通过 spawn 和 forkserver 方式启动多进程会同时启动一个 资源追踪 进程，负责追踪当前程序的进程产生的、并且不再被使用的命名系统资源(如命名信号量以及 SharedMemory 对象)。当所有进程退出后，资源追踪会负责释放这些仍被追踪的的对象。通常情况下是不会有这种对象的，但是假如一个子进程被某个信号杀死，就可能存在这一类资源的“泄露”情况。（泄露的信号量以及共享内存不会被释放，直到下一次系统重启，对于这两类资源来说，这是一个比较大的问题，因为操作系统允许的命名信号量的数量是有限的，而共享内存也会占据主内存的一片空间）
+
+必须在主模块（`__main__`）中启动Process 和 Pool
+
+### 模块函数
+active_children(): 返回当前进程存活的子进程的列表
+cpu_count(): 返回系统的CPU数量。当前进程可以使用的CPU数量可以由 len(os.sched_getaffinity(0)) 方法获得。
+current_process(): 返回与当前进程相对应的 Process 对象
+parent_process(): 返回父进程 Process  对象。如果一个进程已经是主进程， parent_process 会返回 None
+get_all_start_methods(): 返回支持的启动方法的列表，该列表的首项即为默认选项（不同平台可能有差异）
+get_context(method=None): 返回一个 Context 对象。该对象具有和 multiprocessing 模块相同的API。默认上下文对象
+get_start_method(allow_none=False): 返回启动进程时使用的启动方法名。如果启动方法已经固定，并且 allow_none 被设置成 False ，那么启动方法将被固定为默认的启动方法，并且返回其方法名。如果启动方法没有设定，并且 allow_none 被设置成 True ，那么将返回 None
+set_executable(executable): 设置在启动子进程时使用的 Python 解释器路径。 ( 默认使用 sys.executable ) 
+set_start_method(method, force=False): 只能用在主模块，并且在`if __name__ == '__main__'` 之下，最多只能调用一次
+
+### Process 类
+跟Thread 一样的构造方式
+Process(group=None, target=None, name=None, args=(), kwargs={}, *, daemon=None)
+group 应始终为None，仅用于兼容Thread 接口
+
+继承该类，可以重写`__init__()` 和 run() 方法
+重写`__init__()`，应首先调用基类构造器`Process.__init__()`
+
+start() 、 join() 、 is_alive() 、 terminate() 和 exitcode 只能由创建进程对象的进程调用。
+
+#### 属性
+name：进程名，默认是`Process-N1:N2:...:Nk`，Nk 是其父亲的第 N 个孩子
+daemon：必须在start() 之前设置。默认初值继承父进程。进程退出时，会尝试终止其所有守护子进程。守护进程不允许创建子进程
+pid：进程ID，生成进程前为None
+exitcode：子进程的退出码。未结束时，为None；正常返回0，通过sys.exit(N) 退出的，即返回退出码N；未捕获异常退出，返回1；由信号N 终止的，返回-N
+authkey：进程的身份验证密钥（字节字符串）。multiprocessing 模块初始化时，主进程使用 os.urandom() 分配一个随机字符串。子进程会继承父进程的身份验证密钥，尽管可以通过将 authkey 设置为另一个字节字符串来更改。
+sentinel：系统对象的数字句柄。当进程结束时将变为 "ready"。如果要使用 multiprocessing.connection.wait() 一次等待多个事件，可以使用此值。（Unix 的select 模块）
+
+#### 方法
+start()：启动进程，该进程执行run() 方法，一个进程对象最多只能被调用一次
+join(timeout=None)：阻塞，直到该进程终止，或者timeout 秒后超时，都返回None，可以通过检查进程的exitcode 确定它是否终止。一个进程可以被join 多次
+is_alive()：进程是否还活着（从start() 到进程终止）
+close()：关闭 Process 对象，释放与之关联的所有资源。如果底层进程仍在运行，则会引发 ValueError
+kill()：终止进程。在Unix上使用 SIGKILL 信号
+terminate()：终止进程。在Unix上，这是使用 SIGTERM 信号完成的。注意，不会执行退出处理程序和finally子句等（可能损坏管道，或者由于没有释放锁而造成死锁）。进程的后代进程将不会被终止，即它们将简单地变成孤立的。
+
+### Pool 类
+```py
+with Pool(5) as p:
+    print(p.map(f, [1, 2, 3]))  # 会将可迭代对象中的每个元素放到一个进程中执行f(ele)，返回一个res 的list
+    pool.imap_unordered(f, range(10))   # 结果无序返回
+    pool.apply_async(f, (20,))  # 异步执行，返回的对象，可以使用get(timeout) 方法获取到结果
+```
+如果可迭代对象为空，则无参执行一次
+
+### 进程同步
+建议使用消息机制，而不是同步原语
+
+#### Lock/RLock/Semaphore/BoundedSemaphore/Barrier/Condition/Event 类
+同threading 的对应类
+
+##### 方法
+Lock/RLock/Semaphore/BoundedSemaphore.acquire(block=True, timeout=None): 第一个参数名跟threading 不同，当 timeout 是负数时，等价于timeout=0，默认值是一直等待
+
+#### 共享内存
+由于经过同步器包装过，所以进程和线程安全的。
+
+Value(typecode_or_type, *args, lock=True)
+Array(typecode_or_type, size_or_initializer, *, lock=True)
+
+```py
+num = Value('d', 0.0)       # typecode 跟array 模块 一致
+arr = Array('i', range(10))
+
+num.value   # 值内容
+len(arr)
+arr[i]  # 可索引
+arr[:]  # 可切片
+```
+
+#### 进程管理器
+返回一个服务进程，该进程保存Python对象并允许其他进程使用代理操作它们。
+支持类型： list 、 dict 、 Namespace 、 Lock 、 RLock 、 Semaphore 、 BoundedSemaphore 、 Condition 、 Event 、 Barrier 、 Queue 、 Value 和 Array 。
+可以通过网络进行进程共享，但比共享内存要慢
+```py
+with Manager() as manager:
+    d = manager.dict()
+    l = manager.list(range(10))
+```
+
+### 进程通信
+放入队列或管道的对象必须是可以pickle序列化的，因为后台线程会先将obj 序列化后，再通过底层管道进行传递
+
+如果一个进程在尝试使用 Queue 期间被 Process.terminate() 或 os.kill() 调用终止了，那么队列中的数据很可能被破坏。 这可能导致其他进程在尝试使用该队列时发生异常。
+
+#### Pipe 类
+r_conn, s_conn = Pipe(duplex=True)
+返回管道的两端，不同进程不能操作同一端，所以只能用于两个进程的通信
+默认是双工（双向），使用duplex=False，可以使r_conn 仅用于收，s_conn 仅用于发
+
+支持上下文管理协议
+
+##### 方法
+send(obj)
+recv(): 会一直阻塞直到接收到对象。 如果对端关闭了连接或者没有东西可接收，将抛出 EOFError 异常
+`send_bytes(buffer[, offset[, size]])`: 发送字节数组
+`recv_bytes([maxlength])`: 接收字节数据，返回字符串。在收到数据前一直阻塞，如果对端关闭或者没有数据可读取，将抛出 EOFError 异常；超长将抛出 OSError 并且该连接对象将不再可读
+`recv_bytes_into(buffer[, offset])`: buffer必须是可写的类字节数组对象，offset 指定写入位置，返回读入的字节数。在收到数据前一直阻塞，如果对端关闭或者没有数据可读取，将抛出 EOFError 异常；如果缓冲区太小，则将引发 BufferTooShort  异常，并且完整的消息将会存放在异常实例 e 的 `e.args[0]` 中。
+close()
+`poll([timeout])`: 返回连接对象中是否有可以读取的数据。未指定timeout 则不阻塞；timeout=None，则一直阻塞，否则为超时秒数
+
+#### Queue 类
+近似 queue.Queue 的克隆，可以用于多个生产者消费者通信，实现其除task_done() 和 join() 外的所有方法
+线程和进程安全的
+
+构造`Queue([maxsize])`
+
+##### 方法
+get(block=True, timeout=None): 出队，默认阻塞，直到有对象或超时，抛queue.Empty 异常
+get_nowait(): 相当于 get(False)
+put(obj, block=True, timeout=None): 入队，默认阻塞，直到有空槽位或超时，抛queue.Full 异常。如果队列已关闭，抛ValueError 
+put_nowait(obj): 相当于 put(obj, False)
+close(): 指示当前进程将不会再往队列中放入对象。一旦所有缓冲区中的数据被写入管道之后，后台的线程会退出。这个方法在队列被gc回收时会自动调用。
+join_thread(): 这个方法仅在调用了 close() 方法之后可用。这会阻塞当前进程，直到后台线程退出，确保所有缓冲区中的数据都被写入管道中。
+cancel_join_thread(): 防止 join_thread() 方法阻塞当前进程。这可能会导致已排入队列的数据丢失。
+empty(): 是否为空（多线程、多进程环境下不可靠）
+full(): 是否已满（多线程、多进程环境下不可靠）
+qsize(): 返回队列的大致长度（多线程、多进程环境下不可靠）
+
+#### SimpleQueue
+不同进程可以操作同一端的Pipe
+##### 方法
+put(item)
+get()
+empty()
+close()
+
+#### JoinableQueue
+Queue 的子类，额外添加了 task_done() 和 join() 方法
+
+##### 方法
+task_done(): 对于每次调用 get() 获取的任务，执行完成后**必须**调用 task_done() 告诉队列该任务已经处理完成，否则会造成计数信号量溢出
+join(): 阻塞至队列中所有的元素都被接收和处理完毕。
+
+### multiprocessing.sharedctypes 模块
+支持创建从共享内存分配的任意ctypes对象
+
+## concurrent.futures 模块
+### ProcessPoolExecutor
+比multiprocessing 模块的Pool 提供了更高层的接口（更可读）
+
+## 协程
+非抢占式或合作型多任务，并不存在并发，因此省去了锁和多线程竞争的开销
+
+### yield from
+`yield from Iterable` 相当于 `for i in Iterable: yield i`，不同的是后者是语句没有返回值，前者是表达式，其返回值就是StopIteration.value，也就是生成器函数的返回值
+具有该表达式的函数同样是生成器函数，只不过每次调用next/send 都会将请求转发给Iterable，直到其迭代返回
+
+### async-await
+在函数定义前加上async（即async def xxx），相当于将该函数包装成一个协程对象（在3.5之前，使用@asyncio.coroutine 装饰器），直接调用该函数，将返回这个协程对象（类似于生成器对象，不会立即执行函数体，需要特定的方式触发）
+
+`await Awaitable`，该表达式语句只能在async修饰的函数（协程对象函数）中使用。该语句是使这个可调度对象参与到事件循环的调度中
+协程对象的类Coroutine继承了Awaitable，此外，Future，Task对象也都是Awaitable
+事件循环：检索一个任务列表的所有任务，并执行所有未执行任务，直至所有任务执行完成。这些任务共享一个CPU核心，在进行IO 或者主动让出CPU时，进行任务切换和调度
+
+### asyncio 模块
+提供事件循环调度的工具
+
+#### 函数
+高层级API：
++ run(coro)：驱动协程函数执行，当有其他 asyncio 事件循环在同一线程中运行时，此函数不能被调用。此函数总是会创建一个新的事件循环并在结束时关闭之。
++ sleep(secends)
++ create_task(coro)：将协程coro进一步封装为Task（也是Awaitable），其中包含任务的各种状态，可以使用await 可以并发执行，返回async_task的result。在Python3.7 之前使用ensure_future(async_task)
++ wait_for(aw, timeout)：等待 aw 可等待对象 完成，返回一个协程对象。指定 timeout 秒数后超时，超时会取消async_task
++ wait(aws,timeout=None, return_when=ALL_COMPLETED)：（弃用，Python3.11将移除）可以将一组Awaitable组合为一个协程对象，这些aws可以并发执行，可以指定超时时间和返回情况，超时不会取消async_task。若使用await 执行，则返回(dones, pendings)，前者是已完成的任务集合（若async_tasks 是协程，则返回的时封装的task，若async_tasks 是task，则返回的就是原来的task）
++ gather(*aws)：并发执行，返回一个协程对象。若使用await 执行，则返回results
++ as_completed(aws, timeout=None)：返回一个协程的迭代器，遍历await 则会并发执行aws，当遇到最早执行完成的，就返回其结果，而后执行循环体，而后await 则等待下一个完成的，直到所有aws 都完成则结束。
++ shield(aw)：保护aw 不会被取消，返回一个Awaitable
+
+低层级API：
++ get_event_loop()：返回消息循环对象，可以调用run_until_complete(futrue)方法，进行任务调度，通过close方法结束消息循环
++ Future()：返回future对象也是一个Awaitable
 
 # 网络编程
 HTTP协议中，定义了八种方法来操作指定的资源：
