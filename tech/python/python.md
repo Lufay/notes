@@ -342,7 +342,7 @@ import keyword
 
 #### 2.3.2 内建标识符
 built-in系统保留字，可以把它们看成可用在任何一级 Python 代码的全局变量，表示特定的意义，一般不做他用，除非是在某些特定情况下进行重定义。
-built-in 是`__builtins__`模块的成员，在你的程序开始或在交互解释器中给出>>>提示之前，由解释器自动导入。
+built-in 是`__builtins__`模块（在python3中是`builtins`模块）的成员，在你的程序开始或在交互解释器中给出>>>提示之前，由解释器自动导入。
 
 #### 2.3.3 专用下划线标识符
 `_`：表示最后一个表达式的值（注意：有些表达式可能没有值，比如赋值、print）
@@ -893,9 +893,7 @@ cProfile：新，C实现，分析时间长
 # 第三章. 数据类型
 [内置类型](https://docs.python.org/zh-cn/3/library/stdtypes.html)
 
-## 1. 基本数据类型
-
-### 1.1 数值类型
+## 1. 数值类型
 这些类型都是不可变类型
 
 字面值可以在数字中加入下划线进行分隔：
@@ -908,7 +906,7 @@ flags = 0b_0011_1111_0100_1110
 flags = int('0b_1111_0000', 2)
 ```
 
-#### 1.1.1 int
+### 1.1 int
 + 二进制：0b 打头
 可以使用`bin()`将一个十进制数转换为二进制字符串（带有0b）
 + 十进制：1~9 开头
@@ -926,10 +924,10 @@ int("100", 5)   25 注：100为5进制表示（如果该表示非法则抛出Val
 
 ~~其宽度取决于环境，比如32位环境（机器和编译器）宽度为32位，只不过当计算溢出后，结果会自动转变为long~~
 
-##### 类方法
+#### 类方法
 int.from_bytes(bytes, byteorder, *, signed=False)：Python3.2
 
-##### 方法
+#### 方法
 + bit_length()：Python3.1，返回整数绝对值二进制表示的位数（不包括符号和先导的0），整数0返回0
 + bit_count()：Python3.10，返回整数绝对值二进制表示中 1 的个数
 + to_bytes(length, byteorder, *, signed=False)：Python3.2
@@ -937,13 +935,13 @@ int.from_bytes(bytes, byteorder, *, signed=False)：Python3.2
   + byteorder 是字节序（可以使用`sys.byteorder`获取主机的字节序），"big"表示高字节放在字节数组的开头，"little"表示低字节放在字节数组的开头；
   + signed 是否使用二的补码来表示整数，若负整数使用signed=False，将抛OverflowError
 
-#### 1.1.2 long
+### 1.2 long
 Python3 移除该类型（整形统一为int）
 后缀l或L（也支持十进制、八进制、十六进制表示）
 
 其宽度仅受限于用户计算机的虚拟内存大小，类似于 Java 中的 BigInteger 类型
 
-#### 1.1.3 bool（布尔值）
+### 1.3 bool（布尔值）
 只有两个实例：True（数值1）、False（数值0）
 是int的子类，但不能被继承
 
@@ -955,7 +953,7 @@ bool()          False
 对于内建类型：None，值为零的任何数字，空字符串、空列表、空元祖、空字典的布尔值都是False。其他都是True。
 对于自定义的类的实例，如果类实现了`__nonzero__()`方法（返回类型为int或bool），则返回其返回值，如果没有实现该方法，而实现了`__len__()`方法（返回类型为非负整数），则返回其返回值，否则都没有时，为True。
 
-#### 1.1.4 float（浮点数）
+### 1.4 float（浮点数）
 支持e和E的科学计数法
 
 构造函数：
@@ -965,7 +963,7 @@ float()         0.0
 占8个字节，遵守IEEE754规范（52M底/11E指/1S符）
 然而实际精度依赖于机器架构和编译Python解释器的编译器
 
-##### decimal
+#### decimal
 还有一种十进制浮点数decimal，比float有着更大的取值范围或精度，但不是内建类型：
 ```py
 import decimal
@@ -973,7 +971,7 @@ decimal.Decimal('1.1')  # 获得一个该类型的值
 ```
 为什么要有十进制浮点数呢，是因为float表示精度有限，而且是基于二进制的，因此即便`0.1` 这种简单的浮点数，实际上都有着精度误差，可以通过`decimal.Decimal(.1)`看到，而decimal可以构造出十进制上无误差的小数。于是，要构造这种小数就不能用浮点数来构造，而应该用字符串，即如上。同理，这种类型不能和float进行运算，可以和整数进行运算，因为和float进行运算会导致不精确的结果，污染decimal，而和整形数则不会。
 
-##### fractions.Fraction
+#### fractions.Fraction
 Python3 支持的分数运算
 实例是可哈希的，并应当被视为不可变对象
 ```py
@@ -993,7 +991,7 @@ as_integer_ratio(): 返回由两个整数组成的元组
 limit_denominator(max_denominator=1000000): 找到并返回一个 Fraction 使得其值最接近 self 并且分母不大于 max_denominator。
 支持math.floor() math.ceil() round(number[, ndigits])
 
-#### 1.1.5 complex（复数）
+### 1.5 complex（复数）
 使用j或J表示虚数的单位，实部real和虚部imag都是float
 不支持比较运算
 
@@ -1004,7 +1002,7 @@ complex(1.2, 4.5)       (1.2+4.5j)
 
 conjugate()方法：返回共轭复数
 
-#### 1.1.6 相关模块
+### 1.6 相关模块
 + numbers		[数字的抽象基类](https://docs.python.org/zh-cn/3/library/numbers.html)
 + math/cmath	标准C数学函数库，前者是常规运算，后者是复数运算
 + random		多种分布的伪随机数发生器
@@ -1022,7 +1020,7 @@ conjugate()方法：返回共轭复数
 第三方包：
 SciPy有最优化、线性代数、积分、插值、特殊函数、快速傅里叶变换、信号处理和图像处理、常微分方程求解和其他科学与工程中常用的计算。
 
-### 1.2 容器类型
+## 2. 容器类型
 + 可变类型：list、set、dict（key不可变，value可变）
 + 不可变类型：string、unicode、tuple、frozenset
 不能改变容器的数量和每个的引用，但可以改变每个对象的内容
@@ -1050,11 +1048,11 @@ step缺省或为None时默认为1；
 相关模块
 copy        提供浅拷贝copy(obj)和深拷贝deepcopy(obj)的能力（为了优化深拷贝的性能，对于包含的完全是不可变类型的对象，即使使用深拷贝，执行的也是浅拷贝）
 
-#### 1.2.1 字符串
+### 2.1 字符串
 引号之间的字符集合（单引号和双引号均可）。
 *注*：如果两个字符串写在一起，如"aa" 'bb'，这两个字符串将在编译时就连接为一个字符串了，这种写法便于分行写字符串，并给以行注释）。
 
-##### unicode & bytes
+#### unicode & bytes
 在Python2 中，str串（无前缀引号）默认是字节串，unicode字符串需要在引号前面使用u 前缀
 前者是对外IO（包括存储和网络传输）交互使用的，后者是python内使用的，这也就是之所以`s->u`叫做解码decode，反之`u->s`叫做编码encode。
 若字节串字面值中使用了超出ASCII 的字符串，需要在代码文本开头加上编码注释
@@ -1068,7 +1066,7 @@ bytes 序列中的每个值的大小被限制为 0 <= x < 256 (否则将抛 Valu
     是分隔的多字节长度bytes_per_sep，默认是1，若bytes_per_sep 是正，则返回的字符串从右开始，每bytes_per_sep 为一组，每组使用sep 分隔；若bytes_per_sep 是负，则从左开始
 类方法：bytes.fromhex(str): 将hex() 格式的字符串编码为bytes（其间的空白符会被忽略）
 
-###### bytearray
+##### bytearray
 bytes 是不可变序列，而bytearray 就是对应的可变的字节序列
 
 bytearray()             空实例
@@ -1078,23 +1076,23 @@ bytearray(b'Hi!')       通过缓冲区协议复制现有的二进制数据
 
 支持bytes 的所有方法
 
-##### raw string
+#### raw string
 引号前面使用r 前缀（u在r前）
 字符串中的所有字符都直接按照字面值给出，不存在转义或不能打印的字符（常用于构造正则表达式）。
 转义方法类同标准C，有点不同就是，如果"\"和后面无法匹配转义，则"\"将保留在字符串中。（使用ASCII码表示的字符，可以使用八进制如\134或十六进制如\x5C表示；使用Unicode表示的字符，可以使用\u1234表示）
 
-##### 三引号字符串
+#### 三引号字符串
 三引号（三个连续的单引号或者双引号）之间的字符是一种所见即所得的字符串，因为该串中的换行，制表和引号等特殊字符无需转义。
 对于长字符串，需要跨行写的情况，如果用普通字符串，则在换行前使用"\"（此时，"\"和换行都将忽略，而不会出现在字符串中），否则会有语法错误。而使用三引号字符串，则可以直接跨多行书写（此时，换行将以"\n"保留在字符串中）。
 *注：多行字符串是从前三引号就已经开始到后三引号结束的所有字符，其中包含了换行和缩进*
 
-##### 构造函数
+#### 构造函数
 bytes()             Python3 对原字节串的支持，bytes(10) 是用0填充的字节序列，bytes(range(20)) 是用整数序列填充，如果对对象使用该函数，则通过缓冲区协议进行复制
 str()               ''（空串）（如果对对象使用该函数，则调用对象的`__str__()`方法）
 unicode()           u''（Unicode空字符串）（如果对对象使用该函数，则调用对象的`__unicode__()`方法）
 basestring()        抽象工厂函数，作用仅仅是为前两者提供父类，因此，不能调用实例化
 
-##### 字符操作
+#### 字符操作
 Python没有字符类型，所以字符串可以被视为一种自包含的容器。不过，却有以下函数：
 ord(ch)：ch是一个单字符的字符串（ASCII或Unicode），该函数返回相应的ASCII或Unicode值。
 chr(num)：返回给定数字（0<=num<=255）对应的ASCII字符。
@@ -1102,7 +1100,7 @@ unichr(num)：返回给定数字对应的Unicode字符，接受的码值范围�
 
 由于字符串的自包含特性，所以，对于[not] in运算符，不仅支持单字符的判断，还支持子串的判断。
 
-##### 字符串格式化
+#### 字符串格式化
 格式为：`template_string % fill_data`
 其中
 `template_string`是模板字符串，在模板字符串中可以使用占位符，用于填充，占位符的格式为`%[(name)][flag][width.precision]typecode`
@@ -1124,7 +1122,7 @@ width 和 precision 可以使用 `*` 表示宽度和精度的设置来自于`fil
 `fill_data`是填充数据，可以是元组或字典，元组是按序和占位符对应，字典是使用name 和占位符对应
 无论`template_string`还是`fill_data`只要有一个包含Unicode字符串，结果就返回Unicode字符串，否则返回字节串
 
-###### f-string
+##### f-string
 在Python2 中使用的是字符串自身的format 方法，而在Python3 中可以直接在字符串前加上f，而后字符串内就可以直接使用当前的变量
 ```py
 # in Python 2，当然{} 中可以使用位置参数的数字索引、关键字参数的名称、也可以省略
@@ -1140,12 +1138,12 @@ print(f'Car({key!r}')   # 打印repr
 print(f'{{batch}}')     # 两层{} 则表示转义，将输出一组{} 并且其中的内容也只认为是普通字符串
 ```
 
-##### 判断
+#### 判断
 `startswith(obj, start=0, end=len)`方法：检查字符串的指定子串是否以obj开头
 `endswith(obj, start=0, end=len)`方法：检查字符串的指定子串是否以obj结尾
 `isalpha()`方法：是否是非空字母串
 `isascii()`：Python3.7，是否所有字符都是 ASCII（空串也返回True）
-`isdigit()`方法：是否是数字串
+`isdigit()`方法：是否是数字串（不能含小数点）
 `isnumeric()`方法：是否只含数字字符（目前只对Unicode字符串存在）
 `isalnum()`方法：是否是非空字母或数字串
 `isdecimal()`方法：是否只含十进制数
@@ -1155,14 +1153,14 @@ print(f'{{batch}}')     # 两层{} 则表示转义，将输出一组{} 并且其
 `istitle()`方法：是否是非空标题化（见title()）的字符串
 `isidentifier()`: 是否是有效的标识符，可以用keyword.iskeyword(s) 检测字符串 s 是否为保留标识符
 
-##### 查找
+#### 查找
 `find(substr, start=0, end=len)`方法：正向查找子串，找到返回开始的索引值，找不到返回-1
 `rfind(substr, start=0, end=len)`方法：反向查找子串
 `index(substr, start=0, end=len)`方法：同find，只不过，找不到抛出ValueError异常
 `rindex(substr, start=0, end=-1)`方法：同rfind，只不过，找不到抛出ValueError异常
 `count(substr, start=0, end=len)`方法：查找子串，返回找到的个数
 
-##### 串变换（不改变原串，返回一个新字符串）
+#### 串变换（不改变原串，返回一个新字符串）
 `upper()`/`lower()`方法：将所有字符变成大写/小写
 `swapcase()`方法：大小写互换
 `capitalize()`方法：首字母大写
@@ -1178,9 +1176,9 @@ print(f'{{batch}}')     # 两层{} 则表示转义，将输出一组{} 并且其
 `rjust(width[, fillchar])`方法：同上，右对齐
 `zfill(width)`方法：返回一个原字符右对齐，前面填充0的新字符串（若带有+、- 前缀，则在符号之后填充）
 `replace(str1, str2, num=count)`方法：把串中str1替换为str2，如果指定num，则替换不超过num次
-`translate(table)`方法：table是一个长度为256的字符串，用于提供一个字符映射表，该方法就将字符串中的字符按给定的字符映射表进行转换。table 可以使用静态方法str.maketrans() 进行创建。
+`translate(table)`方法：table是一个长度为256的字符串，用于提供一个字符映射表，该方法就将字符串中的字符按给定的字符映射表进行转换。table 可以使用静态方法str.maketrans() 进行创建，该方法可以有1到3个参数，若只有一个参数，则必须是一个字典（key必须是单字符，value可以是任意字符串，或者None 表示移除）；若有2个参数，则必须是相同长度的字符串；若有第3个参数，则是一个字符串表示要移除的字符。
 
-##### 合并与拆分
+#### 合并与拆分
 `join(str_seq)`方法：参数是一个字符串构成的序列，该方法将序列按序用该字符串连接起来。（比+运算符更高效，因为+需要为每一个参与连接的字符串重新分配内存，以产生新的字符串）
 `split(str, num=count)`方法：分割字符串为列表，默认按一个或多个空白字符分割，如果给定一个字符串参数，则按该字符串作为分割元；如果指定num，则仅分割为num个子串
 `rsplit(str, num=count)`: 从 最右边 开始
@@ -1188,7 +1186,7 @@ print(f'{{batch}}')     # 两层{} 则表示转义，将输出一组{} 并且其
 `partition(str)`方法：把字符串分成字符串三元组，即str前部分，str（从左侧首次出现），str后部分，如果字符串中找不到str这个字符，则str前部分为原串，后两项为空串
 `rpartition(str)`方法：同上，不过从右边查找str（于是，如果找不到，则str后部分为原串，前两项为空）
 
-##### 编码
+#### 编码
 `decode(encoding='UTF-8', errors='strict')`方法：对字节串按encoding解码为python的unicode串（和unicode(str, encoding)等效）。如果转码失败，除非errors指定为'ignore'或'replace'，否则出错抛出ValueError异常。注意：该方法仅对str串有效，因此，如果unicode串调用该方法，实际上是先str(unicode)转为str串（默认ascii编码）而后进行解码的。
 `encode(encoding='utf-8', errors='strict')`方法：以encoding指定方式编码字符串为str字节串。如果转码失败，除非errors指定为'ignore'或'replace'，否则出错抛出ValueError异常。注意：该方法仅对unicode串有效，因此，如果str串调用该方法，实际上是先unicode(str)转为unicode串而后进行编码的。
 ******
@@ -1236,13 +1234,14 @@ sys模块有个sys.setdefaultencodeding方法，该方法可以修改解释器�
 但在python的启动过程中，自动执行的site.py脚本会`del sys.setdefaultencodeding`，所以查看sys模块找不到该方法
 可以通过`reload(sys)`重获该方法，但在IDLE 环境下，由于sys.stdout/sys.stderr/sys.stdin都是特定的，如果reload之后，这三个变量都会被重置导致IDLE下IO都失灵，因此，需要在reload之前先将这三个变量保存一下，在reload之后用保存的值进行恢复即可（最好使用其他方法解决编码问题，因为reload(sys)会衍生一些问题）
 
-##### string 模块
+#### string 模块
 import string
 预制的字符串：
 `string.ascii_uppercase`（ASCII大写字母串）string.uppercase（Unicode大写字母串）
 `string.ascii_lowercase`（ASCII小写字母串）string.lowercase（Unicode小写字母串）
 `string.ascii_letters`（ASCII字母串）string.letters（Unicode字母串）
 string.digits（数字串）
+string.whitespace（空白符字符串）
 方法：
 string.upper(str)	返回str的大写字符串
 `string.join(str_seq, sep=' ')`	等价于`sep.join(str_seq)`
@@ -1252,7 +1251,7 @@ string.upper(str)	返回str的大写字符串
 s.substitute(lang='Python', howmany=3)，必须给出全部$变量的替换，否则将跑出KeyError异常
 `s.safe_substitute(lang='Python')`，可以不给出全部的$变量，仅作部分替换
 
-##### re 模块
+#### re 模块
 <https://docs.python.org/zh-cn/3/library/re.html>
 内置的正则工具，支持Perl 类似的正则
 支持Unicode 和 bytes 两种字符串，但不能混用
@@ -1266,7 +1265,7 @@ pos：编译失败的 pattern 的位置索引
 lineno：对应 pos (可以是 None) 的行号
 colno：对应 pos (可以是 None) 的列号
 
-###### 模块函数
+##### 模块函数
 + compile(pattern, flags=re.NOFLAG): 返回一个正则对象。flags 可以使用re.A/I/L/M/S/X（优先级弱于正则表达式中内嵌的模式），以及它们可以使用`|` 进行组合
     re.A: 只对Unicode样式有效，表示内置的字符类只匹配ASCII
     re.I: 忽略大小写匹配
@@ -1287,7 +1286,7 @@ colno：对应 pos (可以是 None) 的列号
 + subn(pattern, repl, string, count=0, flags=0): 跟sub 函数一样，只不过返回(替换后字符串, 替换次数) 二元组
 + escape(pattern): 将pattern 中的特殊字符转义返回，用于需要匹配大量正则特殊字符
 
-###### Pattern 对象
+##### Pattern 对象
 属性
 pattern: 正则原始字符串
 flags：编译时指定的标记
@@ -1304,7 +1303,7 @@ groupindex：正则中命名分组的名字到序号的映射
 + sub(repl, string, count=0)
 + subn(repl, string, count=0)
 
-###### Match 对象
+##### Match 对象
 对象的布尔值始终为True
 
 属性
@@ -1322,16 +1321,16 @@ lastgroup: 最后一个匹配的分组的名字，如果未命名或没有捕获
 + groupdict(default=None): 返回所有命名分组匹配的字典（key 是分组名，val 是匹配到的字符串）
 + start(group=0)、end(group=0)、span(group=0): 返回指定分组匹配到字符串的开始、结束索引、以及两个索引的二元组。未匹配返回索引为-1，负数、超界、未知命名会抛IndexError。
 
-##### regex 模块
+#### regex 模块
 功能更强大的正则库
 
 安装：`pip install regex`
 兼容re: `import regex as re`
 
-##### difflib 模块
+#### difflib 模块
 比较序列对象间的不同
 
-###### 模块函数
+##### 模块函数
 + context_diff(a, b, fromfile='', tofile='', fromfiledate='', tofiledate='', n=3, lineterm='\n'): 比较两个字符串列表，返回一个diff 的generator
   + fromfile, tofile, fromfiledate, tofiledate 都是为了指定表头
   + 上下文行数由n 指定
@@ -1341,11 +1340,11 @@ lastgroup: 最后一个匹配的分组的名字，如果未命名或没有捕获
   + cutoff 是一个 [0, 1] 范围内的浮点数。 与 word 相似度得分未达到该值的候选匹配将被忽略。
   + 
 
-###### SequenceMatcher 类
+##### SequenceMatcher 类
 核心类，可用于比较任何类型的序列对，只要序列元素可哈希
 基于Ratcliff-Obershelp 算法，默认使用启发式计算来自动将特定序列项视为垃圾（大量重复出现的文本片段），通常是分隔或定界符
 
-###### Differ
+##### Differ
 用于比较文本序列，基于SequenceMatcher 完成比较和行内的近似匹配
 其返回通过行首的两个字符完成该行的特点：
 `- `: 序列 1 所独有
@@ -1353,7 +1352,7 @@ lastgroup: 最后一个匹配的分组的名字，如果未命名或没有捕获
 `  `: 两序列共有
 `? `: 两序列都没有
 
-###### HtmlDiff
+##### HtmlDiff
 可用于创建 HTML 表格（或包含表格的完整 HTML 文件）以并排地逐行显示文本比较
 
 构造
@@ -1367,11 +1366,11 @@ HtmlDiff(tabsize=8, wrapcolumn=None, linejunk=None, charjunk=IS_CHARACTER_JUNK)
   + 当只要显示上下文差异时就将 context 设为 True（numlines 指定上下文行数），否则默认值 False 为显示完整文件。
 + make_table(fromlines, tolines, fromdesc='', todesc='', context=False, numlines=5): 比较 fromlines 和 tolines (字符串列表) 并返回一个字符串，表示一个包含各行差异的完整 HTML 表格，行间与行外的更改将突出显示。
 
-##### hashlib 模块
+#### hashlib 模块
 多种不同安全哈希算法和信息摘要算法的API
 之前还有md5 模块可以进行MD5信息摘要，python3 移除，统一使用hashlib
 
-##### 其他相关模块
+#### 其他相关模块
 struct      字符串和二进制之间的转换
 base64      Base 16/32/64数据编解码
 baseascii       ASCII编解码
@@ -1386,22 +1385,22 @@ stringprep  提供用于IP协议的Unicode字符串
 textwrap        文本打包和填充
 unicodedata Unicode数据库
 
-#### 1.2.2 列表
+### 2.2 列表
 列表（[a, b, c]）能保存任意数量任意类型的 Python 对象（有序）
 PEP8 运行最后一个元素后面带一个逗号
 
-##### 构造函数
+#### 构造函数
 list()					[]
 list((1, 2, 3))			[1, 2, 3]（浅拷贝构造，即元素使用引用原容器元素），其中可以使用`*it`，来将一个可迭代对象展开到列表中
 list("fjal")			['f', 'j', 'a', 'l']（可将其他可迭代对象转换为列表）
 
-###### 数字列表生成器
+##### 数字列表生成器
 ```
 range([start,] stop[, step])
 ```
 start默认为0，stop标定终止数字（结果不含该数字），step是步进值，可正可负，默认为1。它将生成从start开始的，每项递增step，最后一项小于（step为正）或大于（step为负）的列表（Python3 是生成器对象）
 
-##### 方法
+#### 方法
 append(x)：追加一个元素
 extend(iter)：追加一个可迭代对象的所有元素（比+=运算符更高效，因为+=会创建一个新list，而extend是本地操作）
 insert(i, x)：在i位置插入元素
@@ -1416,7 +1415,7 @@ del alist[i]：删除列表的第i项（还可以删除一个切片）
 `alist[1:3] = []`：切片更新操作（等号右侧必须是一个可迭代对象），将指定切片替换为赋值的列表，例子所示为删除，`[1:1]`相当于在1的位置插入，其他相当于替换（区别`[1:2]`和`[1]`，前者的替换是扩展式的，即右侧的可迭代对象的元素替换切片元素；而后者单索引替换则是使用右侧的对象整体替换索引位置的元素）
 *注：并没有拷贝函数，所以浅拷贝可以使用`c = a[:]` 或c = list(a) 或copy.copy 函数*
 
-##### 列表解析
+#### 列表解析
 ```
 [expression for var1 in iterable1 if cond1
 			for var2 in iterable2 if cond2
@@ -1427,12 +1426,12 @@ del alist[i]：删除列表的第i项（还可以删除一个切片）
 例如：`[x ** 2 for x in range(8) if not x % 2]`，该列表含有x取值 0~7 的满足条件的x的平方
 注：若expression不含某个迭代变量，则相当于在该迭代变量变化中，取得的值都是相同的。
 
-##### 生成器表达式
+#### 生成器表达式
 由于列表解析意味着必须生成整个列表，也就意味着可能需要占用大量的内存，而实际使用的可能仅仅是遍历其元素，而不是真的需要整个列表。于是就有了更节省内存的生成器表达式，即为列表解析中的 [] 替换为 ()（当用作函数参数时可以省略）。
 生成器表达式每次仅仅产生（yield）一个元素，非常适合于迭代。只不过，生成器表达式返回的是一个生成器（generator），也是一种迭代器。
 生成器只能迭代一次，不能多次使用，也不能使用[]、len() 进行切片和计算长度
 
-##### array 模块
+#### array 模块
 一种受限的可变序列类型array，要求所有元素都必须是同一类型，它需要在构造时，指定它受限的类型：
 |代码 | 等价的C类型 | 最小字节数 |
 |---|---|---|
@@ -1461,37 +1460,37 @@ a.tofile(file)				# 将数组转换为字节序列写入到指定的文件对象
 a.fromfiles(file, count)		# 从文件对象中读取count个元素追加到数组尾
 a.byteswap()				# 交换数组中元素的字节顺序
 
-#### 1.2.3 元组
+### 2.3 元组
 元组（(a, b, c)，括号在不引起歧义的情形下是可选的）能保存固定数量任意类型的 Python 对象（有序）（注意：只有一个元素的元祖也要保留一个逗号，用以区分括号中的标量）
 元组就是一个const语义的list，也就是说它只能保证自己是不可变的，而如果其中有可变对象，如果该可变对象变化，而由于可变对象的id没有变化，并不与元组的不可变性矛盾。
 
-##### 构造函数
+#### 构造函数
 tuple()				()
 tuple([1, 2, 3])	(1, 2, 3) （浅拷贝构造，即元素使用引用原容器元素），其中可以使用`*it`，来将一个可迭代对象展开到元组中
 tuple("fjal")		('f', 'j', 'a', 'l')（可将其他可迭代对象转换为元组）
 
-##### 多元赋值
+#### 多元赋值
 实际上是隐式的元组赋值
 例如：`x, y, z = 1, 2, 'a string'`，也即圆括号是可以被省略的。并且一个变量出现在右侧不会因左侧的变化而受影响，也就是其结果好像是同一计算好了右值构造了一个新的元组对象赋给左侧的各个对象。（这样就可以使用一条语句进行变量值交换）
 
-#### 1.2.4 字典
+### 2.4 字典
 字典（{ak:av, bk:bv, ck:cv}）保存无序的键值映射（Python3.6+，字典将保留构造和插入的顺序）
 几乎所有不可变类型（可哈希类型）都可以作为键，一般常用整数和字符串，值可以是任何类型。各个元素的键的类型都可以不同，同样值的类型也都可以不同
 
-##### 构造函数
+#### 构造函数
 dict()						{}
 dict(x=1, y=2)				{'x':1, 'y':2}
 dict([(ak, av), (bk, bv)])	{ak:av, bk:bv}（二元可迭代对象构造字典，二元不一定是元组）
 dict(d)				使用另一个字典构造，比copy方法慢
 
-##### 字典推导
+#### 字典推导
 类似于列表解析
 ```
 { key_expr: value_expr for value in collection if condition }
 ```
 在Python3.6+ 中，生成的字典会保留它们在collection 中的顺序
 
-##### 方法
+#### 方法
 d[key] = value：有则改值，无则添加key:value（注：当aaa[key]不存在且作为右值时，则将抛出KeyError，不会添加）
 setdefault(key, default=None)方法：有key则返回对应值（并不会修改字典），无key则将key:default加入字典，返回default
 get(key, default=None)方法：类似[key]，如果存在该key则返回value；如果不存在，get返回default
@@ -1500,7 +1499,7 @@ key in d：判断key是否是字典的一个键
 keys()、values()、items()：返回所有key、value、(k,v)二元组的列表（Python3 返回的是一个view 对象，可以及时反映出原始dict 对象的变化，该对象可迭代、支持len 和in 操作）
 ~~iterkeys()/itervalues()/iteritems()方法：同上，只不过返回的是一个迭代子，而不是列表~~（Python3 废弃）
 update(dict)方法：将另一个字典dict合并到本词典中，冲突的键，则覆盖之
-Python3.5+ 支持`|` 和`|=`运算，`|` 相当于`{**dict_x, **dict_y}`，`|=` 相当于update() 方法（都是右值覆盖左值）
+Python3.5+ 支持`|` 和`|=`运算，`|` 相当于`{**dict_x, **dict_y}`（相当于后者覆盖前者），`|=` 相当于update() 方法（都是右值覆盖左值）
 del d[key]：将key对应的键值对从字典中删除，若key不存在则抛出KeyError
 pop(key[, default])方法：如果key存在，将key对应的键值对从字典中删除，并返回对应值；否则若key不存在，若给出default，返回default，否则没提供default就抛出KeyError异常
 popitem()方法：按print序删除并返回一个元素（作为二元组形式），若字典为空，则抛出KeyError异常
@@ -1513,10 +1512,10 @@ dict.fromkeys(iterkey, value=None)函数：返回一个字典，字典的键来�
 + 不支持连接`+`和重复`*`操作
 + 不支持一到多的映射，相同的key，会用后value覆盖前value，即使在一个{}中，靠后的也会覆盖前面的同key项。还要注意的是相同的key不是指id相同，而是指hash相同，于是，即使类型不同，只要哈希相同，就被认定为同key.
 
-##### 继承dict
+#### 继承dict
 dict 的子类可以实现`__missing__(key)` 的方法，那么当d[key]不存在且作为右值时，就会调用该方法返回值
 
-#### 1.2.5 集合
+### 2.5 集合
 一组无序可哈希的对象。
 集合有两种：
 可变集合set和不可变集合frozenset
@@ -1528,10 +1527,10 @@ frozenset只能使用frozenset(iterable) 进行构造
 1. 首先根据`__hash__`进行预判
 2. 若hash 相同，在使用`__eq__`进行等值判断
 
-##### 集合推导
+#### 集合推导
 类似于列表解析，只不过把`[]`换成`{}`
 
-##### 集合运算
+#### 集合运算
 比较运算符表示集合的包含关系
 `&`	表示交运算
 `|`	表示合运算
@@ -1539,7 +1538,7 @@ frozenset只能使用frozenset(iterable) 进行构造
 `^`	表示对称差分
 这些运算和集合的类型无关
 
-##### 可变集合方法
+#### 可变集合方法
 `add(obj)`方法：向集合增添一个元素，如果已存在则无效果
 `remove(obj)`方法：从集合中删除一个元素，如果不存在，则抛出KeyError
 `discard(obj)`方法：从集合中删除一个元素，如果不存在则无效果
@@ -1550,7 +1549,7 @@ frozenset只能使用frozenset(iterable) 进行构造
 `symmetric_difference_update(iter)`方法：剔除共有元素，加上iter独有元素（做差分运算，等价于^=）
 `clear()`方法：清空集合
 
-##### 通用方法
+#### 通用方法
 `issubset(iter)`方法：本集合是否是s集合的子集，即<=运算
 `issuperset(iter)`方法：本集合是否是s集合的超集，即>=运算
 `intersection(iter)`方法：返回本集合和s集合的交集，即&运算
@@ -1560,7 +1559,7 @@ frozenset只能使用frozenset(iterable) 进行构造
 上述运算返回的结果的类型取决于左操作数，即本集合的类型。方法和操作符的区别，在于方法支持传入一个可迭代对象，而运算符只支持集合间的运算
 `copy()`方法：浅拷贝一个自己的副本，比构造函数要快
 
-#### 1.2.6 collections 模块
+### 2.6 collections 模块
 提供一些高性能容器数据类型和容器的抽象基类（ABC）
 
 容器的抽象基类可以使用isinstance()函数进行实例判断
@@ -1579,7 +1578,7 @@ frozenset只能使用frozenset(iterable) 进行构造
 | Hashable | `__hash__` |
 | Callable | `__call__` |
 
-###### namedtuple
+#### namedtuple
 生成一个命名元组类，通过该类构造的元组，可以类似访问属性的方式访问成员（而不必用索引），而且其很轻量，不比普通元组占用更多内存。
 生成函数：
 ```python
@@ -1600,7 +1599,7 @@ module 可以指定返回类型对象的`__module__`属性，缺省则为当前�
 
 使用namedtuple 可以很容易定义枚举常量
 
-###### deque
+#### deque
 双端队列类，支持常数时间，线程安全的双端操作
 ```
 deque([iterable[, maxlen]])
@@ -1623,7 +1622,7 @@ rotate(n)：如果n为正，则队列循环右移n 个位置；n为负则向左
 支持容器通用操作，可迭代，可pickle，支持reversed，可使用copy模块进行拷贝  
 支持索引，但不支持切片（访问中间位置的元素具有线性复杂度，因此不适合随机访问）
 
-###### defaultdict
+#### defaultdict
 带默认值生成器的字典（dict的子类）
 ```py
 defaultdict(default_factory=None[, ...])
@@ -1634,7 +1633,7 @@ default_factory默认值的行为和dict 一样，可以指定一个无参的函
 **注意：仅当索引key失败会触发生成器，如果使用get()等方法，则不会而保持其默认行为**
 这是由于它实现了dict 的`__missing__(key)` 方法，并使用default_factory 获取默认值，然后调用setdefault 返回
 
-##### OrderedDict
+#### OrderedDict
 有序字典（按插入顺序）（dict的子类）  
 **注意：对于使用关键字参数的构造器和update方法，其顺序将丢失，因为python使用dict 进行参数传递**  
 更新值并不影响顺序  
@@ -1645,7 +1644,7 @@ move_to_end(key, last=True)：将指定的key 放到尾部（默认）或头部�
 还支持reversed()函数进行逆序
 Python3.9 支持`|`和`|=` 进行合并操作
 
-###### Counter
+#### Counter
 计数器类（dict的子类）
 ```
 Counter([iterable-or-mapping])
@@ -1671,20 +1670,20 @@ c1 & c2：取每个计数的最小值
 c1 | c2：取每个计数的最大值  
 **注意：返回结果会丢弃那些不大于0 的计数值**
 
-##### ChainMap（Python3.3+）
+#### ChainMap（Python3.3+）
 多层映射结构，MutableMapping 的list，当查找时进行深度搜索，修改和删除仅仅操作第一层映射
 整体操作上，依然可以当做一个dict
 
 ChainMap(*maps): 可以使用0个或多个进行构造（0个将初始化一个空字典）
 
-###### 属性
+##### 属性
 maps: 内部的映射列表，第一个就是第一层，该属性可写，也会会直接反应对应映射的更新
 parents: 等价于 ChainMap(*d.maps[1:])
 
-###### 方法
+##### 方法
 new_child(m=None, **kwargs): m 默认相当于{}，然后m.update(kwargs)，该函数相当于返回ChainMap(m, *d.maps)
 
-##### UserDict/UserList/UserString
+#### UserDict/UserList/UserString
 这三个类用于子类化dict、list、str（其中UserList 子类必须重写一个接受0个或1个参数的构造器，这个参数是一个序列）
 都有一个data 属性，保留其常规类型的值（保留的是copy 而不是引用）
 
@@ -1708,10 +1707,10 @@ d.update(three=3)       # {'one': [1, 1], 'two': [2, 2], 'three': [3, 3]}
 ```
 可以看到dict 的子类，构造和update 都不会调用`__setitem__`，语义并不一致；而UserDict 语义是一致的
 
-#### 1.2.7 heapq 模块
+### 2.7 heapq 模块
 堆队列，该实现是一个最小堆，即`heap[k] <= heap[2*k+1] and heap[k] <= heap[2*k+2]`，故最小的元素是 heap[0]
 
-##### 模块函数
+#### 模块函数
 heapify(x)：把一个list 转换成一个最小堆（原地，线性时间）
 heappush(heap, item)：给堆加入一个元素，并保持堆的特性
 heappop(heap)：弹出heap[0]，并保持堆的特性  
@@ -1723,29 +1722,29 @@ nlargest(n, iterable[, key])：返回迭代器中n 个最大的数组成的列�
 nsmallest(n, iterable[, key])：返回迭代器中n 个最小的数组成的列表，key 可以提供一个获取比较key 的函数  
 *注：nlargest 和nsmallest 仅当n 较小时比较有效，如果较大，使用sorted() 更有效，如果n == 1，则使用min 和max 更有效*
 
-### 2. 其他内建类型
-类型type
-None（等价于 NULL）
-文件file
-函数function/方法instancemethod
-模块
-类classobj
-object()
+## 3. 其他内建类型
+类型对象，type 是所有类型的类型，也是所有类型的元类
+object 是所有对象的基类
+None（等价于 NULL）单例
 
-### 3. 内部类型
-#### 代码
+函数function/方法instancemethod：本质上都是可调用对象，差别在于是否绑定参数
+类 classobj：python2 中的经典类的类型，Python3 已移除
+模块对象
+文件file对象
+
+### 代码
 代码对象是编译过的Python源代码片段，是可执行对象。通过调用内建函数compile()可以得到代码对象。代码对象可被exec命令或eval()内建函数执行。对象本身不含任何执行环境信息，在被执行时动态获得上下文。事实上，代码对象是函数的一个属性（函数还有其他属性，如函数名、文档字符串等）
 
-#### 帧（frame）
+### 帧（frame）
 帧对象表示Python的执行栈帧。包含了所有Python解释器所需的执行环境信息。每次函数调用就会产生一个新的帧。
 
-#### 跟踪记录（traceback）
+### 跟踪记录（traceback）
 当异常发生时，一个含有该异常的堆栈跟踪信息的跟踪记录对象被创建。如果一个异常有其处理程序，处理程序就可以访问这个对象。
 
-#### 切片（slice）
+### 切片（slice）
 可以使用内建函数`slice([start,] stop, [step])` 来创建一个切片对象，切片对象可以直接用在序列的索引上
 
-#### XRange
+### XRange
 当调用内建函数xrange()时，将生成一个XRange对象，该函数用于需要节省内存时或range()函数无法完成的超大数据集的场合，它只被用在for循环中，性能远高于range()。
 
 
@@ -2182,6 +2181,7 @@ def func():
 func = deco1(deco_arg)(deco2(func))
 ```
 装饰器通常使用闭包实现，即在装饰器函数内定义一个函数，作为替换函数，该函数会调用被装饰函数，从而完成装饰，最后装饰器返回该替换函数。
+装饰器也可以使用类来实现，相当于`__init__` 是外层的装饰函数，`__call__` 是内层的替换函数
 由于装饰器返回的了装饰后的函数对象，所以装饰后，原函数的函数属性将被覆盖，如果想要原函数的函数属性（函数名、docstring、参数列表），可以使用`functools.wraps` 装饰器，该装饰器是个有参装饰器，参数是被装饰的函数对象，如：
 ```py
 from functools import wraps
@@ -2193,6 +2193,20 @@ def deco2(func):
 	return wrapped_function
 ```
 wraps 实际上是调用了update_wrapper(new, old, assigned = WRAPPER_ASSIGNMENTS, updated = WRAPPER_UPDATES) 方法，WRAPPER_ASSIGNMENTS 是`('__module__', '__name__', '__qualname__', '__doc__', '__annotations__')` 这个元组，WRAPPER_UPDATES 是`('__dict__',)` 这个元组，也就是默认会把这些属性从old 覆写到new 上
+
+装饰器除了可以用在函数装饰之外，还可以用在类上。
+那么外层的装饰器函数的参数是这个类对象，内层替换函数替换的是这个类的`__init__` 调用。
+例如：用装饰器实现一个单例
+```py
+def singleton(cls):
+    _ins = None
+    def inner(*args, **kwargs):
+        nonlocal _ins
+        if _ins is None:
+            _ins = cls(*args, **kwargs)
+        return _ins
+    return inner
+```
 
 ### cache
 functools.cache 装饰器可以让函数针对不同的参数进行结果缓存，可以理解成一个字典（因此参数的必须都是可哈希的）
@@ -2287,7 +2301,7 @@ super(type[, obj]) 方法
 在Python3 中，如果两者都缺省，则type 就是当前代码位置的类，obj 是self，所以这种方式仅仅能用于拥有self 的方法内。除此之外，则并不限制其使用位置
 
 ## 2. 内置属性
-`__class__` 实例对应的类对象，也可以作为一个可调用对象使用（调用的是构造器）
+`__class__` 实例对应的类对象（即使调用的是从父类继承而来的方法，self也是当前实例，所以该属性也始终是该实例对应的那个子类），也可以作为一个可调用对象使用（调用的是构造器）
 `__name__` 对象的名字(字符串)
 `__qualname__` 对象的限定名（带有点分限定的名字）
 `__doc__` 对象的文档字符串
@@ -2349,6 +2363,17 @@ class C:
 2. 实现单例模式
 3. 实现自定义的metaclass
 
+例如：
+```py
+class Singleton:
+    _ins = None
+    def __new__(cls, *args, **kwargs):
+        if cls._ins is None:
+            cls._ins = object.__new__(cls)
+        return cls._ins
+```
+这个类本身就是单例类，这种方式的缺点就是需要给每个单例类加这样的一个`__new__`方法，而且`__init__` 方法仍会执行，进而对单例进行再次初始化
+
 `__init__(self)` 初始化方法（self 就是`__new__()`方法返回的当前类的实例），如果没有显式定义该方法，则默认提供一个空的构造器（对于子类会自动调用父类的构造器）。
 该方法不需要返回（若返回了一个非None 值将报错）
 foo = ClassName()就创建了一个该类的实例。当一个实例被创建，`__init__()`就会被自动调用。
@@ -2386,8 +2411,7 @@ class C:
 
 #### 魔术方法
 `__hash__`: 供hash() 调用
-`__bool__`: 用于真值测试 以及 bool() 调用
-`__nonzero__`:
+`__bool__`/`__nonzero__`: 用于真值测试 以及 bool() 调用（前者是Python3，后者是Python2）
 
 `__str__`: 供str() 以及 format() 和 print() 调用
 `__repr__`: 供 repr() 调用，用于调试
@@ -2643,6 +2667,10 @@ g.get_name()执行结果是GBAF
 Mixin最大的优势是使用者可以随时安插这些功能,并且可以在必要的时候覆写他们
 Mixin 类并不表示一个实体概念，而仅仅是一系列行为的组合，以便于重用，所以Mixin 类绝不实例化。为了明确指示该类的目的，通常这种类都使用Mixin 后缀
 
+### 内置的类方法
+`__subclasses__()`: 获取该类的所有子类的列表
+
+
 ### 方法重写
 使用 typing_extensions.override 装饰器，可以
 + 进行签名检查，确保重写的方法前面跟父类一致
@@ -2651,30 +2679,40 @@ Mixin 类并不表示一个实体概念，而仅仅是一系列行为的组合�
 在多重继承中可以以一个父类作为参数，表示重载的是那个父类的方法
 
 ## 6. 元类
-它也是一个类，其实例是类对象，通过元类可以当创建类时能够自动地改变被创建的类
-它形式上就是一个可调用对象，接受类的描述信息(name, bases, attrd)，返回一个类对象
+元类就是类的类，所以它本身也是一个类，其实例是类对象，所有类默认的元类是type
+通过元类，可以当创建类时，能够自动地改变被创建的类
+
+它形式上就是一个可调用对象，接受类的描述信息(name, bases, attrd)，返回一个类对象，attrd 是一个字典，表示当前类的namespace
 所以元类相对与类，就像装饰器相对于函数，都是对原来的类型或函数对象进行修改，而后回赋给原对象
 
-在执行类定义时，解释器就会
+### 在执行类定义时，解释器会
 1. 查找元类metaclass：
 	1. 先寻找当前类属性`__metaclass__`，如果此属性存在，就将这个属性赋值给此类作为它的元类；
 	2. 否则它会向上查找父类中的`__metaclass__`；
 	3. 若所有父类都没有定义`__metaclass__`，则在模块层次中去寻找`__metaclass__`
 	4. 如果还是找不到`__metaclass__`, Python就会用内置的type来创建这个类对象
-2. 获取头参数，准备namespace: `namespace = metaclass.__prepare__(name, bases, **kwds)`，kwds 是类头自定义的关键字参数
+2. 获取类头参数，准备namespace: `namespace = metaclass.__prepare__(name, bases, **kwds)`，name是当前类的类名，bases 是当前类的基类元组，kwds 是基类类头自定义的关键字参数。返回的namespace 是一个字典。
 3. 执行元类体，将元类体中定义的属性和方法注入到namespace 中: `exec(body, globals(), namespace)`
 4. 执行元类构造器（或元类函数）: ` metaclass(name, bases, namespace, **kwds)`，其返回结果回赋给这个类对象
-	1. 在执行`__new__` 方法，在方法中使用`type.__new__` 创建这个类型时，调用父类的`__init_subclass__(cls)` 方法，kwds 也会经由`__new__` 传给`__init_subclass__`（注意，object 的`__init_subclass__` 函数并不接受kwds 参数，所以这时`type.__new__` 调用不要带kwds）
+	1. 在执行`__new__` 方法，在方法中使用`type.__new__` 创建这个类型时，会调用父类的`__init_subclass__(cls)` 方法，kwds 也会经由`__new__` 传给`__init_subclass__`（注意，object 的`__init_subclass__` 函数并不接受kwds 参数，所以这时`type.__new__` 调用不要带kwds）
 
-指定元类
+### 在执行类实例化时，解释器会
+1. 执行元类的`__call__(cls, *args, **kwargs)`方法cls 是当前类的类对象，后面是实例化参数。返回一个实例化对象。该方法的默认实现是返回调用`cls.__new__`的结果。
+2. 若在`__call__` 中调用父类的`__call__` 则执行当前类的`__new__` 以及`__init__`（是否执行`__init__` 取决于`__new__` 的返回）
+
+### 在查询类属性时
+优先查找当前类的继承链中定义的属性，若找不到，再到元类的继承链中去找对应的属性
+
+### 示例
+#### 指定元类
 ```py
 class FooMeta(type):				# 元类继承自type 或type 的子类
-	def __new__(cls, name, bases, attrd):		# 目标类创建时调用（即类定义时，可以通过参数查看类定义的描述信息），这里的cls 是FooMeta
-		t = type.__new__(cls, name, bases, attrd)
-		return t
-	def __init__(cls, name, bases, attrd):		# 目标类初始化时调用（也是类定义时，可以通过参数查看类定义的描述信息），这里的cls 是目标类，也就是__new__ 的返回值
+	def __new__(cls, name, bases, attrd, **kwargs):     # 目标类创建时调用（即类定义时，可以通过参数查看类定义的描述信息），这里的cls 是FooMeta
+		return type.__new__(cls, name, bases, attrd)
+	def __init__(cls, name, bases, attrd, **kwargs):    # 目标类初始化时调用（也是类定义时，可以通过参数查看类定义的描述信息），这里的cls 是目标类，也就是__new__ 的返回值
 		super(FooMeta, cls).__init__(name, bases, attrs)
 	def __call__(cls, *args, **kwargs):		# 在目标类进行实例化的时候被调用（先于目标类的__new__）
+        return super().__call__(*args, **kwargs)    # 默认调用__new__ -> __init__
 
 def func_meta(name, bases, attrd):	# 元类也可以是一个函数
 	return type(name, bases, attrd)	#  type 还可以作为一个工厂方法来声明一个类型，name 就是这个类型的名字，bases 是这个类型父类的元组，attrd 是类字典属性（属性和方法）
@@ -2685,6 +2723,16 @@ class Foo(object):
 class Simple1(object, metaclass=func_meta, other_opt=''):	# Python3 这样定义元类，还可以自定义其他参数
 ```
 
+#### 单例meta
+```py
+class Singleton(type):
+    _ins = None
+    def __call__(cls, *args, **kwargs):
+        if cls._ins is None:
+            cls._ins = super().__call__(*args, **kwargs)    # 这里会给当前类设置静态成员，然后会屏蔽meta 的静态成员
+        return cls._ins
+```
+这种方式缺点是有参调用构造器时，会屏蔽掉`__new__` 的调用
 
 ## 7. 抽象类
 可以通过使用abc.ABCMeta 或其派生类作为元类，来使一个类变为抽象基类；或者也可以通过继承abc.ABC 来完成（抽象基类不能实例化，除非它的全部的抽象方法和特征属性均已被重载）
@@ -3019,11 +3067,11 @@ else:
 
 ## 2. 命名空间
 命名空间是标识符到对象的映射集合
-Python 解释器首先加载内建名称空间，即`__builtins__`中的标识符；而后加载模块的全局命名空间；当调用函数时创建局部命名空间
+Python 解释器首先加载内建名称空间，即`__builtins__`（在python3中是`builtins`）中的标识符；而后加载模块的全局命名空间；当调用函数时创建局部命名空间
 （Python3 中，内置模块更名为builtins，当需要修改内置标识符时可以导入该模块）
 可以通过globals() 和 locals() 内建函数判断出某一名字属于哪个名称空间
-globals()：返回当前全局标识符到对象映射的字典
-locals()：返回当前局部标识符到对象映射的字典（函数作用域下，包括了函数参数和此前定义的局部变量）（在全局作用域下调用，返回和globals()函数相同）
+globals()：返回当前全局标识符名到对象映射的字典（包括import 进来的对象，无论是模块、类、函数）
+locals()：返回当前局部标识符名到对象映射的字典。在函数作用域下，是包括函数参数在内的局部变量（也包括函数对象和类对象，但不包括自由变量）；在全局作用域下，返回和globals()函数相同
 
 模块包和类定义，都会创建一个新的命名空间
 
@@ -3395,7 +3443,7 @@ file(name, mode=’r’, buffering=1)
 + next()：为文件对象进行迭代。
 
 #### 1.3.3 写文件
-+ write(str)：向文件写入字符串str。由于buffer，需要调用flush或close才能刷新到文件。
++ write(str)：向文件写入字符串str（不会带额外的换行）。由于buffer，需要调用flush或close才能刷新到文件。
 + writelines(str_iter)：将字符串迭代对象逐个写入文件（并不会写入额外的换行符）
 
 #### 1.3.4 文件指针
@@ -5078,7 +5126,11 @@ dialect：只读的
 [参考](../data/json.md)
 
 ## html
-### HTMLParser 模块
+### html 模块方法
++ escape(s, quote=True)：将`&, <, >` 转义为html 安全字符序列，quote=True则引号也会被转义
++ unescape(s)：将转义后的html 字符序列反转义，映射表可以看html.entities.html5 这个字典
+
+### HTMLParser 模块（Python3 改为html.parser）
 #### HTMLParser 类
 一般通过继承该类，实现若干事件处理函数，当处理遇到tag/text/comment等文本时回调对应的handle
 该类无构造参数（并且该类不支持super关键字，因此其子类调用父类的构造函数只能是`HTMLParser.__init__(self)`）
@@ -5159,7 +5211,7 @@ Tag类标签可以使用 find 和 find_all 方法进行搜索（搜索当前结�
 `find_all(name=None, attrs={}, recursive=True, text=None, limit=None, **kwargs)`
 name 为标签名过滤器，可以使用上面五种参数类型（函数参数的参数为Tag 结点对象）
 attrs 为标签属性过滤器，可以提供一个字典参数
-text 为标签文本过滤器，可以使用上面五种参数类型（函数参数的参数为NavigableString 结点对象）
+string ~~text废弃~~ 为标签文本过滤器，可以使用上面五种参数类型（函数参数的参数为NavigableString 结点对象）
 kwargs 可以指定标签属性名作为参数名，作为标签属性过滤器，可以使用字符串、正则、列表、True，其中True表示具有某属性，None表示没有某属性；不过，由于有些属性不满足python的命名规范，所以这些属性不能用于kwargs 过滤，比如HTML5中的`data-*` 属性；另外，class属性因为是Python关键字也不能使用，不过可以使用`class_` 作为属性名查找（可以使用字符串、正则、True、函数对象，函数参数为字符串），另外由于class 是一个多值属性，所以使用任何一个class 的字符串都可以独立进行查找，当然可以使用所有的class 的字符串进行完全匹配（要求顺序也必须一致）
 limit 限定返回结果集的数量（到达数据就会停止搜索，可以加快返回）；
 recursive 默认为True，进行递归搜索，可以设为False，则只搜索直接子节点。

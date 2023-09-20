@@ -69,6 +69,7 @@ math.random(n)
 ## string
 字符串，不可变类型，字节序列，因此可以保存二进制数据
 使用单引号和双引号均可
+支持C 的转义字符
 `"\u{3b1} \u{3b2} \u{3b3}"` 可以使用UTF-8 编码的字符
 
 `#str` 获取字符串str（可以是变量，也可以是常量）的长度
@@ -96,14 +97,14 @@ Lua 5.2及其之后引入了一个转义符`\z`，它将忽略后面的明文空
 `string.char(97,98,100)` 将使用各个字节码表示的字符组成一个字符串
 `string.byte(str, idx=1, ...)` 返回指定位置字符的字节码，若未指定默认为首字符（位序从1 开始），限于栈容量，最多返回一百万个值
 `string.format(fmt, arg...)` 类似sprintf，fmt 可以使用`%s %02d %x %f %.2f` 等形式的占位符，flag：cdioux表示的是不同格式的一个整数；efg表示不同格式的一个浮点数；sq表示一个字符串（q返回一个使用双引号包围的原字符串，并对其中的双引号进行转义）
-`string.len(str)` 相当于`#str`
-`string.find(str, pattern, pos=1)` 从str的pos 位置开始找pattern（可以是正则表达式，可以用`%a %d %s` 分别表示字母、数字、空白符），返回找到模式在原字符串中的起始和结束位置返回，找不到返回nil
+`string.len(str)` 相当于`#str`（只计算ASCII 字符串，若含中文，使用utf8.len 函数）
+`string.find(str, pattern, pos=1, plain=false)` 从str的pos 位置（可以是负数，表示倒数）开始找pattern（当plain=false可以是正则表达式，可以用`%a %d %s` 分别表示字母、数字、空白符），返回找到目标串在原字符串中的起始和结束位置返回，找不到返回nil
 `string.rep(str, n)` 重复n 次连接
 `string.reverse(str)` 反转
 `string.lower('Hello')`
 `string.upper('Hello')`
 `string.sub(str, start, end)` 返回位序从start 到end（包括）的子串（支持负位序，最后一个位序为-1）
-`string.gsub(str, pattern, replace)` 模式替换，返回替换后的字符串和替换次数
+`string.gsub(str, pattern, replace, [n])` 模式替换，返回替换后的字符串和替换次数。默认全部替换，可以使用n 指定最大替换次数
 
 ## table
 关联数组，可以模拟array/dict/struct等多种数据结构。
@@ -152,7 +153,7 @@ table.pack(...)                将多值封装为一个table，按序对
 其余按优先级如下
 
 ## 长度运算符
-`#` 用于字符串或table的前，返回字符串的字节数或 table 中序列成分的长度
+`#` 用于字符串或table的前，返回字符串的字节数或 table 中序列成分的长度（不过有时容许有1个空槽）
 
 ## 算术运算符
 `+ - * / % ^`和`取负-`
@@ -174,6 +175,15 @@ and    or    not
 其中，not 返回布尔值。而其他两个返回的并非布尔值，而是短路返回，如下： 
 a and b    a为false，返回a；否则返回b
 a or b     a为true，返回a；否则返回b
+
+not 为单目，优先级跟负号`-` 一致
+and 高于 or
+
+### 三目表达式
+没有该表达式，不过可以通过短路求值来实现
+`(condition and {result1} or {result2})[1]`
+这里使用table 将result 框起来，是为了避免result1 为false 时，返回result2，因为table 恒为true，可以避免该问题
+如果可以确保result1 不是nil/false 则，可以简单写作`condition and result1 or result2`
 
 ## 赋值
 支持多元赋值（多元之间使用逗号分隔），过程是统一计算好右值之后，依次赋给左值。如果右值个数较多则多余将被忽略，如果右值个数较少，则不足部分被赋为 nil

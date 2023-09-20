@@ -3,6 +3,8 @@ syntax on		" syntax highlight
 "set nocompatible	" remove compatible to vi to avoid some limitation of early version
 "set nobackup		" overwrite file without backup
 "set backupcopy=yes	" set backup to overwrite
+"set noundofile     " not generate .xxx.un~ file
+"set noswapfile     " not generate .xxx.swp file
 set helplang=cn		" set help info language
 set autochdir		"自动切换当前目录为当前文件所在的目录
 filetype plugin indent on	" equivalent to 3 line cmd:
