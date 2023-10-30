@@ -1013,6 +1013,7 @@ conjugate()方法：返回共轭复数
     - randint(a, b)：返回[a, b]中的一个随机整数
     - randrange([start,] stop [, step])：在range(start, stop, step)生成的列表中随机选择一项（并不实际生成列表）
     - choice(seq)：从非空序列seq中随机选出一个元素
+    - choices(seq, weights=None, *, cum_weights=None, k=1)：从非空序列seq中随机选出k个元素，可以设置权重和累计权重（必须跟seq等长），其内部会自动将weights转换为cum_weights，比如weights=[1,2,3,4]，那么就对应了cum_weights=[1,3,6,10]
     - shuffle(x [, random])：将序列x原地打乱，random是一个0元函数返回`[0, 1)`之间的随机数，默认使用random()函数。
     - sample(population, k)：从序列population中随机选取k个元素组成一个新的序列返回
 [参考](https://docs.python.org/2/library/random.html)
@@ -1199,7 +1200,7 @@ UTF-16是定长的16位编码（易于读写）（这里的定长是针对基本
 2. 在Web应用中，数据库这边只需确保每张表都用UTF-8编码即可。数据库适配器（如MySQLdb）需要考察其是否支持Unicode，以及需要哪些设置来配置为Unicode字符串。Web开发框架方面（如Django、`mod_python`、cgi、Zope、Plane）同样需要考察哪些配置来支持Unicode。
 
 注意：python代码中的字符串字面值是以文件本身的编码进行保存的，为了让python解析器识别其编码，需要在源码文件中的第一行或第二行进行编码说明（以cp936为例）：
-```
+```py
 # coding=cp936
 # -*- coding: cp936 -*-
 # vim: set fileencoding=cp936 :
@@ -1211,7 +1212,7 @@ UTF-16是定长的16位编码（易于读写）（这里的定长是针对基本
 ******
 此外，python，还有一些非字符的编码集(non-character-encoding-codecs)：
 比如16进制的编码：
-```
+```py
 '\n'.encode('hex') == '0a'
 u'\n'.encode('hex') == '0a'
 '0a'.decode('hex') == '\n'
@@ -1222,13 +1223,14 @@ u'0a'.decode('hex') == '\n'
 比如回转13编码：rot13
 比如`string_escape`、uu
 再比如：
+```py
+#py2
+print u'\\u0203'.decode('unicode_escape')
+print u'\\u53eb\\u6211'.decode('unicode_escape')
+#py3
+'中文'.encode('unicode_escape') # 可以查看字符串对应的Unicode 编码
 ```
-print u'\\u0203'.decode('unicode-escape')
-print u'\\u53eb\\u6211'.decode('unicode-escape')
-```
-参考
-<http://docs.python.org/library/codecs.html>
-<http://wiki.woodpecker.org.cn/moin/PyCkBk-3-18>
+
 ******
 sys模块有个sys.setdefaultencodeding方法，该方法可以修改解释器对字符的默认编码
 但在python的启动过程中，自动执行的site.py脚本会`del sys.setdefaultencodeding`，所以查看sys模块找不到该方法
@@ -1367,15 +1369,28 @@ HtmlDiff(tabsize=8, wrapcolumn=None, linejunk=None, charjunk=IS_CHARACTER_JUNK)
 + make_table(fromlines, tolines, fromdesc='', todesc='', context=False, numlines=5): 比较 fromlines 和 tolines (字符串列表) 并返回一个字符串，表示一个包含各行差异的完整 HTML 表格，行间与行外的更改将突出显示。
 
 #### hashlib 模块
-多种不同安全哈希算法和信息摘要算法的API
+多种不同安全哈希算法和信息摘要算法的API，支持增量输入的哈希计算
 之前还有md5 模块可以进行MD5信息摘要，python3 移除，统一使用hashlib
+
+##### 常量
+algorithms_guaranteed: 各个平台都存在的哈希算法名称（字符串）集合
+algorithms_available: new()函数，有效的算法名。algorithms_guaranteed总是其子集
+
+##### 构造器
+总是存在的
+sha1(), sha224(), sha256(), sha384(), sha512(), sha3_224(), sha3_256(), sha3_384(), sha3_512(), shake_128(), shake_256(), blake2b() 和 blake2s()
+通常可用，使用稀有的 "FIPS 兼容" Python 编译版时它可能会缺失或被屏蔽
+md5()
+通用的
+`new(name, [data, ]\*, usedforsecurity=True)`: name 就是有效的算法名，data 是初始化的算法输入数据
+
 
 #### 其他相关模块
 struct      字符串和二进制之间的转换
 base64      Base 16/32/64数据编解码
 baseascii       ASCII编解码
 uu          格式编解码
-codecs      解码器注册和基类
+[codecs](http://docs.python.org/library/codecs.html)      解码器注册和基类
 crypt       进行单方面加密
 hma         HMAC信息鉴权算法
 rotor       提供多平台的加解密服务
@@ -2421,7 +2436,7 @@ class C:
 `__setitem__`: 按照索引赋值，也支持切片key
 `__getitem__` 按照索引获取值
 `__missing__` 在找不到指定的键时调用
-`__getattribute__`: x.name 的使用（包括对内置属性），也可以供getattr(obj, attr[, default]) 调用，这些调用都会直接进入该函数，除非通过super() 委托给同名方法，才会查看是否已经定义了指定的属性或方法 或者 抛AttributeError 但这种情况也会跳过定义的属性或方法，直接去调用`__getattr__`
+`__getattribute__`: x.name 的使用（包括对内置属性），也可以供getattr(obj, attr[, default]) 调用，这些调用都会直接进入该函数，除非通过super() 委托给同名方法，才会查看是否已经定义了指定的属性或方法 或者 抛AttributeError（但这种情况也会跳过定义的属性或方法，直接去调用`__getattr__`）
 `__getattr__`: x.name 的使用，也可以供getattr(obj, attr[, default]) 调用（若不存在attr指定的属性或方法，则返回default，否则会引发AttributeError，可以先用hasattr(obj, attr) 进行测试）若类已定义了指定的属性或方法，则直接使用之，该方法不再调用
 `__setattr__`: x.name 的赋值，也可以供setattr(obj, attr, val) 调用
 `__delattr__`: x.name 的删除，也可以供delattr(obj, attr) 调用
@@ -3561,7 +3576,7 @@ mkfifo
 #### 2.3.1 模块方法
 + basename(path)            去掉路径，返回文件名
 + dirname(path)                去掉文件名，返回目录（不含最后一个os.sep）
-+ split(path)                按当前的os.sep属性将path分割成为一个(basename, dirname)的二元组。分割位置为path中最右的os.sep（若没有os.sep，则二元组第一个元素为空串；如果是以os.sep结束的，则二元组第二个元素为空串）
++ split(path)                按当前的os.sep属性将path分割成为一个(dirname, basename)的二元组。分割位置为path中最右的os.sep（若没有os.sep，则二元组第一个元素为空串；如果是以os.sep结束的，则二元组第二个元素为空串）
 + join(path1,path2,…)        将指定的这些路径用os.sep连接起来，如果这些路径的字符串不以os.sep结束，则将自动添加上os.sep（注意，不要以os.sep作为字符串开头，否则将认为从该位置开始作为根，则前面的参数都将被忽略）
 + splitext(path)                将指定的路径分割出扩展名，返回一个二元组，以path中最后一个os.sep之后的最后一个’.’定界，含有’.’的右半部分作为二元组的第二个元素，其余作为第一个元素。若最后一个os.sep后面没有’.’，则第二个元素为空串。
 + exists(path)                判断path指定的路径是否存在
@@ -4991,7 +5006,7 @@ handler 基类
 + parse_qs(qs, keep_blank_values=False, strict_parsing=False, encoding='utf-8', errors='replace'): 解析query 部分（application/x-www-form-urlencoded 格式）为一个字典（val 是值列表），若解析失败，默认静默忽略，若strict_parsing=True，错误会抛ValueError，encoding 和errors 是用于解码和解码错误的处理方式。
 + parse_qsl(qs, keep_blank_values=False, strict_parsing=False, encoding='utf-8', errors='replace'): 解析query 部分为一个二元组列表
 + urlencode(query, doseq=False, safe='', encoding=None, errors=None, quote_via=quote_plus): parse_qs 和 parse_qsl 的逆操作，可以用于生成request 的 data 参数（application/x-www-form-urlencoded 格式）
-+ urljoin(base, url): 用url 部分替换base 中的内容，返回一个新的URL（一般会替换path 中的filename 部分，以及query、fragment部分）
++ urljoin(base, url): 用url 部分替换base 中的内容，返回一个新的URL（若url是以`/`开头，则取base的path 之前的部分与url 连接；否则 base 最后一个`/`之前的部分(含)与url 连接）
 + urldefrag(url): 返回(pure_url, fragment)的named tuple，pure_url 是不含fragment 的部分，若没有fragment 则其为空串
 + quote(string, safe='/', encoding=None, errors=None): 用 %xx 转义符替换 string 中的特殊字符。 字母、数字和 '_.-~' 等字符一定不会被转码（safe参数可以额外指定）。默认只对路径部分进行转码。
 + quote_plus(string, safe='', encoding=None, errors=None): 还会使用加号来替换空格，而且safe 为空

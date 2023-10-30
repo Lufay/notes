@@ -96,19 +96,28 @@ Lua 5.2及其之后引入了一个转义符`\z`，它将忽略后面的明文空
 ### string库
 `string.char(97,98,100)` 将使用各个字节码表示的字符组成一个字符串
 `string.byte(str, idx=1, ...)` 返回指定位置字符的字节码，若未指定默认为首字符（位序从1 开始），限于栈容量，最多返回一百万个值
-`string.format(fmt, arg...)` 类似sprintf，fmt 可以使用`%s %02d %x %f %.2f` 等形式的占位符，flag：cdioux表示的是不同格式的一个整数；efg表示不同格式的一个浮点数；sq表示一个字符串（q返回一个使用双引号包围的原字符串，并对其中的双引号进行转义）
+`string.format(fmt, arg...)` 类似sprintf，fmt 可以使用`%-8s %02d %x %f %.2f` 等形式的占位符，flag：cdioux表示的是不同格式的一个整数；efg表示不同格式的一个浮点数；sq表示一个字符串（q返回一个使用双引号包围的原字符串，并对其中的双引号进行转义）
 `string.len(str)` 相当于`#str`（只计算ASCII 字符串，若含中文，使用utf8.len 函数）
-`string.find(str, pattern, pos=1, plain=false)` 从str的pos 位置（可以是负数，表示倒数）开始找pattern（当plain=false可以是正则表达式，可以用`%a %d %s` 分别表示字母、数字、空白符），返回找到目标串在原字符串中的起始和结束位置返回，找不到返回nil
+`string.find(str, pattern, pos=1, plain=false)` 从str的pos 位置（可以是负数，表示倒数）开始找pattern（当plain=false可以是正则表达式），返回找到目标串在原字符串中的起始和结束位置返回，找不到返回nil
+`string.match(str, pattern, idx=1)` 从str的idx 位置开始找pattern，返回匹配的字符串或所有匹配分组，若没有匹配，则返回nil
+`string.gmatch(str, pattern)` 返回一个迭代器函数，每一次调用这个函数，返回一个在字符串 str 找到的下一个符合 pattern 描述的子串。如果参数 pattern 描述的字符串没有找到，迭代函数返回nil。
 `string.rep(str, n)` 重复n 次连接
 `string.reverse(str)` 反转
-`string.lower('Hello')`
-`string.upper('Hello')`
-`string.sub(str, start, end)` 返回位序从start 到end（包括）的子串（支持负位序，最后一个位序为-1）
-`string.gsub(str, pattern, replace, [n])` 模式替换，返回替换后的字符串和替换次数。默认全部替换，可以使用n 指定最大替换次数
+`string.lower('Hello')` 全部转为小写字母
+`string.upper('Hello')` 全部转为大写字母
+`string.sub(str, start, end=-1)` 返回位序从start 到end（包括）的子串（支持负位序，最后一个位序为-1）
+`string.gsub(str, pattern, replace, [n])` 按字节码进行模式替换，replace 可以使用%n 捕获第n个（1-9）分组，返回替换后的字符串和替换次数。默认全部替换，可以使用n 指定最大替换次数
+
+### 正则
+可以用`%a %c %d %l %s %u %w` 分别表示字母、控制字符、数字、小写字符、空白符、大写字符、字母数字，大写则取非
+也用% 做转义
+`*` 对应的非贪婪是`-`
+`%bxy` 这里的 x 和 y 是两个明确的字符； 这个条目匹配以 x 开始 y 结束， 且其中 x 和 y 保持 平衡 的字符串。 意思是，如果从左到右读这个字符串，对每次读到一个 x 就 +1 ，读到一个 y 就 -1， 最终结束处的那个 y 是第一个记数到 0 的 y。 举个例子，条目 %b() 可以匹配到括号平衡的表达式。
+`%f[set]` 边境模式； 这个条目会匹配到一个位于 set 内某个字符之前的一个空串， 且这个位置的前一个字符不属于 set 。 匹配出的那个空串之开始和结束点的计算就看成该处有个字符 '\0' 一样。
 
 ## table
-关联数组，可以模拟array/dict/struct等多种数据结构。
-key 可以是除nil和NaN之外的任何Lua类型（数字key都会被转换为接近的整数），value可以是nil外的任意类型
+动态关联数组，可以模拟array/dict/struct等多种数据结构。
+key 可以是除nil和NaN之外的任何Lua类型（数字key都会被转换为接近的整数，未指定key 从1 开始计数为key），value可以是nil外的任意类型
 
 ### 构造table
 构造时，会先将指定key 的字段，从左到右的先后次序放入table中；再将未指定的key 按从左到右先后次序，用从1开始的连续整数作为key（这被称为表的序列成分）放入table 中
@@ -128,6 +137,7 @@ t.field 这里field 会自动转换为字符串作为索引
 `t[field]` 这里是更一般的用法
 
 将指定key 赋值为nil，就相当于删除这个key
+所以访问一个未赋值的索引也会得到nil
 
 ### table库
 table.insert(tbl, pos, item)      将item插入表tbl的pos位置（从原pos位置元素后依次后移，代价较大）；若pos缺省，则为push操作

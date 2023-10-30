@@ -1,6 +1,15 @@
 # JavaScript
 [TOC]
 
+## 历史概念
+ECMAScript 是这个脚本语言的标准，而JavaScript 是一种实现（其他实现还有JScript 和ActionScript）
+Babel 转码器可以将ES6 的代码转为ES5 的代码。配置文件是.babelrc，然后就可以使用babel-cli 工具进行转码、替代node直接执行、require自动转码、或者直接调用其API。
+Traceur 是Google 的转码器，自动识别标记type=module 的代码进行转码
+ESLint 用于静态代码检查语法和风格。配置文件是.eslintrc
+Mocha 是一个测试框架
+
+## 语言特性
+
 ### js 代码为什么受到吐槽
 永远不要假定JavaScript或者Ajax一定可用
 > 最佳实践：
@@ -119,18 +128,18 @@ var 的声明是原有的声明方式，拥有函数级作用域（不带任何�
 3. for 循环中var 声明的变量实际会被提升到函数首，所以在该语句块结束后，在函数中依然可以使用
 4. 若在全局作用域使用var 声明，则将成为window对象的属性
 let 声明是块作用域，不会声明提升
-1. 声明前使用会报错
-2. 不允许重复声明同一名字，否则报错
+1. 声明前使用会报错ReferenceError
+2. 块内不允许重复声明同一名字，否则报错。块内声明前是暂时性死区（temporal dead zone），即使有同名的全局变量也不能使用。
 3. 即使在在全局作用域声明，也不会成为window对象的属性
 const 也是块作用域，而且名字和对象会绑定，不允许改绑
 
 ```js
 for (let i=0; i<5; i++) {
     setTimeout(() => {
-        console.log(i)
+        console.log(i)  // i 只对当前迭代有效
     }, 0);
 }
-// 如果不支持ES6 就只能这样：
+// 如果不支持ES6 就只能使用立即执行的匿名函数（IIFE）：
 for (var i=0; i<5; i++) {
    (function(k){
     setTimeout(function(){console.log(k)},1000)
@@ -620,7 +629,7 @@ function func_name(args) {
 ```
 函数声明会提升，所以可以后声明先使用
 多个参数使用逗号分隔，在调用时不必给出全部参数，也可以给超出参数列表个数的参数，没有给出的参数将是undefined，超出部分可以使用arguments获取
-支持默认参数值
+函数参数在ES6中默认是使用let 声明的局部变量。支持默认参数值
 单入口单出口原则：单出口就是要确保函数只有一个return语句（当然除非这些return语句是为了避免陷入过深的逻辑嵌套）
 函数也是一个对象，它有prototype 属性，该属性默认就是Object()
 
