@@ -250,6 +250,8 @@ function someWorklet(greeting) {
   const w = anotherWorklet();
   // 调用普通函数（异步调用）
   runOnJS(someFunc)(greeting + w);
+  // 调用其他方法
+  runOnJS(this.method.bind(this))(args);
 }
 
 // 在JS 线程中
@@ -288,8 +290,13 @@ Page({
 })
 ```
 当手指在 circle 节点平滑的拖动时，会触发handlepan回调，修改共享变量的值
-applyAnimatedStyle 的第二个参数updater 是一个worklet 函数，当共享变量offset 的值发生变化时，updater 会重新执行，应用到selector 指定的节点上，也就产生了动画
 worklet.cancelAnimation(SharedValue): 可以取消由 SharedValue 驱动的动画
+applyAnimatedStyle，当sharedValue 值更新时，updater 函数将被重新执行，并将新的 style 应用到选中节点上。默认新的样式会在下一个渲染时间片上生效，flush: sync 可使得在当前渲染时间片上生效
++ 第二个参数updater 是一个worklet 函数，返回的key为 css 属性的驼峰写法，应用到selector 指定的节点上，也就产生了动画；
++ 第三个参数userConfig 是`{immediate: true, flush: "async"}`，用于指定是否立即执行updater，以及刷新时机（async / sync）
++ 第三个参数callback 是当完成时的回调，`(res) => {res.styleId}`，可以获取到styleId，用于清除样式绑定。
+clearAnimatedStyle(selector, styleIds, callback)：若styleIds 为空，则清除节点上所有的样式绑定。只是解绑，样式不会重置。
+
 
 ###### 内置的手势组件
 其为虚组件，不会进行布局，真正响应事件的是其直接子节点，并且仅能含有一个直接子节点，否则不生效，因此，可以嵌套多种手势组件。
@@ -367,7 +374,7 @@ enum State {
 5. 若手势识别失败 或 不派发事件，则state = 4
 
 ##### 变化函数
-该函数的返回值可以直接复制给共享变量的value
+该函数的返回值可以直接赋值给共享变量的value
 
 + worklet.timing(toValue, options, callback): 基于时间。toValue 是变化的目标值，options 是`{duration: 300, easing: Easing.inOut(Easing.quad)}`的obj，callback 是动画完成时的回调函数，动画被取消时，返回 fasle，正常完成时返回 true。
 + worklet.spring(toValue, options, callback): 基于物理。options 是含有以下字段的obj

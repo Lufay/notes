@@ -118,7 +118,7 @@ var a, b, c;    // 不推荐
 const d = {}    // ES6推荐1，必须初始化并绑定
 let e, f;       // ES6推荐2
 ```
-声明的变量是限定作用域的（函数级，若是在全局域声明，则具有DontDelete，即不能被delete），而未声明的变量（以及函数）是全局的（从属于一个全局对象，也就是全局的this，比如浏览器的window，可以被delete）
+声明的变量是限定作用域的（函数级，若是在全局域声明，则具有DontDelete，即不能被delete），而未声明的变量（以及函数）是全局的（从属于一个全局对象，被称为顶层对象，也就是全局的this，比如浏览器的window,Node的global，顶层对象的属性可以被delete）
 标识符名除了一般的标识符规则外，还可以包含 $ 字符（一般用于DOM elements）
 JavaScript是一种弱类型语言，声明并不确定类型，类型由赋值时确定
 
@@ -126,12 +126,12 @@ var 的声明是原有的声明方式，拥有函数级作用域（不带任何�
 1. 声明之前就可以使用该变量，但值是undefined（用到的是声明提升的特性，即var 声明会提升到函数体首）
 2. 对于同一个名字，可以多次声明，离使用位置最近的一处生效
 3. for 循环中var 声明的变量实际会被提升到函数首，所以在该语句块结束后，在函数中依然可以使用
-4. 若在全局作用域使用var 声明，则将成为window对象的属性
+4. 若在全局作用域使用var 声明，则将成为顶层对象的属性
 let 声明是块作用域，不会声明提升
 1. 声明前使用会报错ReferenceError
 2. 块内不允许重复声明同一名字，否则报错。块内声明前是暂时性死区（temporal dead zone），即使有同名的全局变量也不能使用。
-3. 即使在在全局作用域声明，也不会成为window对象的属性
-const 也是块作用域，而且名字和对象会绑定，不允许改绑
+3. 即使在在全局作用域声明，也不会成为顶层对象的属性
+const 也是块作用域，而且名字和对象会绑定，不允许改绑（也就是说对象的属性和成员可以变动，想要完全不可变，需要使用`Object.freeze(obj)`）
 
 ```js
 for (let i=0; i<5; i++) {
@@ -321,7 +321,7 @@ Object 无法直接for-of遍历，需要Object.keys(o)/Object.values(o)/Object.e
 不能把方法复制给一个变量，因为会调用时会丢失this：
 ```js
 let f = obj.method
-f() // 会丢失this，此时this 将成为undefined 或者global object(window)
+f() // 会丢失this，此时this 将成为undefined 或者global object(顶层对象)
 ```
 
 #### 原型链
@@ -578,7 +578,7 @@ entries(): [key, val] 的迭代
 const foo = ['one', 'two', 'three'];
 const big = ['four', 'five', ...foo]    // 解包扩展，扩展不限定是最后一个
 
-const [one, two, three] = foo;
+const [one, two, three] = foo;  // 即使嵌套数组也可以
 [a, ...rest] = foo  // rest 也是一个Array
 [a, ,b] = [1, 2, 3, 4, 5]   // a = 1, b = 3，长度不需要对齐，若左侧较多，则值为undefined
 [a=9, ,b] = [, 2, 3, 4, 5]  // a = 9, 当长度不足，或者undefined、null 时使用默认值，默认值可以是任意表达式，仅当启用默认值时才进行表达式计算
@@ -595,6 +595,15 @@ const { a, b: { c: d } } = obj; // a = obj.a, d = ojb.b.c
 const { a, ...others } = { a: 1, b: 2, c: 3 };  // others 也是一个obj
 ```
 数组解包的右侧不仅限于Array，只要支持可迭代协议，都可以对其进行解包
+
+### do 语句块（提案中）
+```js
+let x = do {
+  let t = f();
+  t * t + 1;
+}
+```
+常规的语句块没有返回值，而do 语句块可以相当于一个表达式，可以获得语句块中最后一个表达式的值
 
 ## 控制语句
 同C
@@ -627,7 +636,7 @@ function func_name(args) {
 (args) => expression    // 相当于{ return expression }
 // 若只有一个参数，可以省略小括号
 ```
-函数声明会提升，所以可以后声明先使用
+函数声明会提升，所以可以后声明先使用（在ES6 中，函数声明相当于let 语句，具有块作用域，但依然会提升到所在块的头部，所以行为类似var语句）
 多个参数使用逗号分隔，在调用时不必给出全部参数，也可以给超出参数列表个数的参数，没有给出的参数将是undefined，超出部分可以使用arguments获取
 函数参数在ES6中默认是使用let 声明的局部变量。支持默认参数值
 单入口单出口原则：单出口就是要确保函数只有一个return语句（当然除非这些return语句是为了避免陷入过深的逻辑嵌套）
@@ -1015,3 +1024,9 @@ window.addEventListener('popstate', function (event) {
 	}
 }, false);
 ```
+
+# Node
+node 环境的顶层变量是global，可以使用全局的this 获取。但
++ 模块的this 返回的是当前模块
++ 函数的this 在非严格模式是global，在严格模式是undefined。作为方法，则是这个对象
++ `new Function('return this')()` 总是返回顶层对象
