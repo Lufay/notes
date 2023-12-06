@@ -3061,6 +3061,8 @@ sys.path 默认值是第一个元素是空串，表示当前目录，而后是PY
 还支持从zip 归档文件中导入模块（.py, .pyc, .pyo），只需要将归档文件当做一个目录即可
 只不过Python 不会为py 文件生成pyc 文件，所以如果zip 归档中如果没有pyc，导入速度会较慢
 
+*注意：如果sys.path路径上一旦找到 import 的前缀模块，那么无论最终是否能找到目标模块，都不会继续搜索sys.path 后续的若干个路径。也就是找不到会直接抛 ModuleNotFoundError*
+
 ### 1.2 importlib
 该包以编程方式提供import 的实现
 比如：
