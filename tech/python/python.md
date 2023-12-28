@@ -3082,6 +3082,8 @@ else:
     print(f"can't find the {name!r} module")
 ```
 
+import_module(name, package=None): 支持绝对和相对导入，相对方式需要指定package作为锚点
+
 ## 2. 命名空间
 命名空间是标识符到对象的映射集合
 Python 解释器首先加载内建名称空间，即`__builtins__`（在python3中是`builtins`）中的标识符；而后加载模块的全局命名空间；当调用函数时创建局部命名空间
