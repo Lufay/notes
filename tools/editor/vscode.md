@@ -23,6 +23,9 @@ cmd+p
 ## 命令面板
 cmd+shift+p
 
+### 工作区命令
+将文件夹从工作区删除：可以删除指定vscode项目
+
 ## tab 操作
 cmd+\ 向右拆分屏
 cmd+opt+左右方向键 左右切换tab

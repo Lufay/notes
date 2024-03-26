@@ -113,6 +113,7 @@ with replace_print():
 *附*:str() 与repr() 的区别：
 str() 目的在于可读性较好的字符串表示
 repr() 目的在于可重建对象的字符串表示，对于一个对象obj，一般 obj == eval(repr(obj))
+对于内置的容器对象，会默认str=repr，所以容器元素也会默认调用repr
 
 print 语句相当于函数`sys.stdout.write('xxxx\n')'`，只不过后者需要import sys模块。
 
@@ -253,7 +254,7 @@ ArgumentParser的方法：
 	- 位序参数（字符串），可以指定一个positional argument，也可以指定option argument（可以提供short和long两个）
 	- action，默认为'store'（直接保存值）
     其他
-    `store_const` flag使用，保存为const的值
+    `store_const` flag使用（仅指定标识，不指定参数），保存const参数的值
     `store_true` 和`store_false` flag使用，保存为True和False
     `append` 用于可多次指定，每次指定都将参数值插入列表中
     `append_const` 用于可多次指定，每次指定都将插入const的值到列表
@@ -285,7 +286,7 @@ ArgumentParser的方法：
 *注*：
 1. 如果没有add任何argument，也会自动生成一个-h/--help选项
 2. 支持分隔式给定参数值，long格式=给定参数值，short格式和参数值连用，short格式一起连用；支持前缀指定参数（在不造成混淆的情况下）
-参考：<https://docs.python.org/2/library/argparse.html#module-argparse>
+参考：<https://docs.python.org/zh-cn/3/library/argparse.html>
 
 ### 1.4 帮助
 + help([obj]): 如果给出obj，则将给出其的帮助信息（文档字符串等），如果没有给出参数，则进入交互式帮助。
@@ -3052,6 +3053,18 @@ sys.modules 变量是一个字典，它保存了已经加载的模块名和模�
 模块导入遵循作用域原则，模块顶层导入的有全局作用域，函数中导入的，是局部作用域
 首次导入模块会加载模块的代码，即会执行模块的顶层代码
 
+from-import 语法 实际上是个语法糖：
+```py
+from a import v
+# 大体上相当于（当然并不能直接引用a）
+import a
+v = a.v
+```
+所以from-import 就有一个问题，就是它相当于在本文档建立了一个原模块变量的一个引用
+那么，如果改引用，就意味着跟原模块的变量进行了解绑，而并不会对应修改原模块的变量值
+另一方面，如果原模块变量改引用，这里绑定的仍然是原来的引用，所有也无法立即提现出对应的变化
+综上：对于可能存在的模块变量的引用修改，一定要使用`import a`，然后在使用时在使用`a.v`，不要使用from-import 这个语法糖
+
 ### 1.1 搜索路径
 想要成功导入模块，就要确保该模块在搜索路径中可以找到
 搜索路径在启动Python时，通过环境变量PYTHONPATH（冒号分隔的一组路径）读入。在解释器启动后，搜索路径被保存在sys.path 变量里，该变量是一个字符串列表，可以进行动态修改
@@ -3246,6 +3259,7 @@ year、month、day
 today()：返回本地的当天日期对象
 fromtimestamp(timestamp)：将一个时间戳（秒级时间戳，可以是浮动数）转换为日期对象
 fromordinal(ordinal)：将一个日期序数转换为日期对象，以date(1, 1, 1)为1，date(1, 1, 2)为2，以此类推
+fromisoformat('YYYY-MM-DD'): isoformat方法的逆操作，python3.7引入，3.11还支持'YYYYMMDD'/'2021-W01-2'（该年第一个完整周的周二）这两种格式
 ##### 实例方法
 replace(year=None, month=None, day=None)：修改日期中某部分的值，生成一个新的日期对象
 timetuple()：返回`time.struct_time`类型的9元组
@@ -3268,6 +3282,8 @@ hashable（可用于字典key）
 ##### 类属性
 min/max
 resolution：最小时间差（timedelta(microseconds=1)）
+##### 类方法
+fromisoformat('hh:mm:ss'): isoformat方法的逆操作，python3.7引入（仅支持isoformat方法返回的格式），3.11还支持更多格式
 ##### 实例属性（只读）
 hour、minute、second、microsecond、tzinfo
 ##### 实例方法
@@ -3292,6 +3308,7 @@ year、month、day、hour、minute、second、microsecond、tzinfo
 today()：返回本地的当前的datetime对象
 fromtimestamp(timestamp[, tz])：将一个时间戳转换为本地的datetime 对象
 fromordinal(ordinal)：将一个日期序数转换为datetime 对象（时分秒均为0，tz为None），以date(1, 1, 1)为1，date(1, 1, 2)为2，以此类推
+fromisoformat('YYYY-MM-DDThh:mm:ss'): isoformat方法的逆操作，python3.7引入（仅支持isoformat方法返回的格式），3.11还支持更多格式
 now([tz])：如果不带tz参数，相当于today()方法，如果带tz参数，则其为tzinfo的一个子类实例，这样当前时间将被转化为指定的time zone。
 utcnow()：返回当前的UTC datetime 对象
 utcfromtimestamp(timestamp)：UTC 版本的fromtimestamp
@@ -4731,15 +4748,15 @@ is_set(): 返回内部标识状态
 
 ## multiprocessing 模块
 三种启动进程的方法：
-1. spawn: 启动一个新的Python解释器进程（启动较慢），子进程仅仅从父进程继承足以满足run() 方法使用的资源。macOS 的默认方式
-2. fork: 父进程使用 os.fork() 来产生 Python 解释器分叉。父进程的所有资源都由子进程继承。只用于Unix
-3. forkserver: 选择该方式启动程序将启动服务器进程。每次需要新进程时，父进程就会连接到服务器并请求它分叉一个新进程。分叉服务器进程是单线程的，因此使用 os.fork() 是安全的。 没有不必要的资源被继承。
-在主模块（`__main__`）中调用set_start_method('spawn') 进行设置，而且只能调用一次
-或者可以调用get_context('spawn') 获取ctx 对象，该对象跟模块有相同的API，只不过不会影响到整个程序（不同启动方式的进程可能不兼容，创建的相应对象不能混用）
+1. spawn: 启动一个新的Python解释器进程（启动较慢），子进程仅仅从父进程继承足以满足run() 方法使用的资源。全平台可用，macOS、Windows 的默认方式
+2. fork: 父进程使用 os.fork() 来产生 Python 解释器分叉。父进程的所有资源都由子进程继承，当进程有多线程时不推荐。只用于POSIX 系统
+3. forkserver: 选择该方式启动程序时将启动一个服务器进程。每次需要新进程时，父进程就会连接到服务器并请求它分叉一个新进程。分叉服务器进程是单线程的，因此使用 os.fork() 是安全的。没有不必要的资源被继承。在支持通过 Unix 管道传递文件描述符的 POSIX 平台上可用。
+在主模块的`__main__`中调用set_start_method('spawn') 进行设置，而且只能调用一次
+或者可以调用get_context('spawn') 获取ctx 对象，该对象跟模块有相同的API，不过不会影响到整个程序（不同启动方式的进程可能不兼容，创建的相应对象不能混用）
 
 在 Unix 上通过 spawn 和 forkserver 方式启动多进程会同时启动一个 资源追踪 进程，负责追踪当前程序的进程产生的、并且不再被使用的命名系统资源(如命名信号量以及 SharedMemory 对象)。当所有进程退出后，资源追踪会负责释放这些仍被追踪的的对象。通常情况下是不会有这种对象的，但是假如一个子进程被某个信号杀死，就可能存在这一类资源的“泄露”情况。（泄露的信号量以及共享内存不会被释放，直到下一次系统重启，对于这两类资源来说，这是一个比较大的问题，因为操作系统允许的命名信号量的数量是有限的，而共享内存也会占据主内存的一片空间）
 
-必须在主模块（`__main__`）中启动Process 和 Pool
+必须在主模块的`__main__`中创建Process、Pool、Manager 等多进程对象
 
 ### 模块函数
 active_children(): 返回当前进程存活的子进程的列表
@@ -4755,7 +4772,8 @@ set_start_method(method, force=False): 只能用在主模块，并且在`if __na
 ### Process 类
 跟Thread 一样的构造方式
 Process(group=None, target=None, name=None, args=(), kwargs={}, *, daemon=None)
-group 应始终为None，仅用于兼容Thread 接口
++ group 应始终为None，仅用于兼容Thread 接口
++ target: 必须是可以pickle序列化的全局可访问的函数（def 函数/方法和`__call__`对象都可以，但lambda 不行，定义在`__main__`中的函数不行，若是方法，则实例的成员也必须是可以pickle序列化的）
 
 继承该类，可以重写`__init__()` 和 run() 方法
 重写`__init__()`，应首先调用基类构造器`Process.__init__()`
@@ -4787,6 +4805,15 @@ with Pool(5) as p:
 ```
 如果可迭代对象为空，则无参执行一次
 
+同Process的target，apply_async的f 也必须是可以pickle 序列化的全局可访问的函数/方法
+
+apply_async的f 是执行在进程池的一个进程中
+apply_async的callback 是执行在当前进程中
+进程空间不同，变量是不共享同步的，除非使用同步通信机制
+
+pool 中的进程和当前进程无继承关系（inheritance），所以诸如Lock、Queue 等对象，是无法通过参数或者实例成员传到pool 中的进程中
+此时就应当使用manager 创建Lock()、Queue() 等，其创建的这些对象是可以传到pool 中
+
 ### 进程同步
 建议使用消息机制，而不是同步原语
 
@@ -4798,6 +4825,7 @@ Lock/RLock/Semaphore/BoundedSemaphore.acquire(block=True, timeout=None): 第一�
 
 #### 共享内存
 由于经过同步器包装过，所以进程和线程安全的。
+默认只能往子进程单向传参数，共享内存变量在子进程改动后，主进程可以获取到改动后的值
 
 Value(typecode_or_type, *args, lock=True)
 Array(typecode_or_type, size_or_initializer, *, lock=True)
@@ -4890,12 +4918,25 @@ join(): 阻塞至队列中所有的元素都被接收和处理完毕。
 `yield from Iterable` 相当于 `for i in Iterable: yield i`，不同的是后者是语句没有返回值，前者是表达式，其返回值就是StopIteration.value，也就是生成器函数的返回值
 具有该表达式的函数同样是生成器函数，只不过每次调用next/send 都会将请求转发给Iterable，直到其迭代返回
 
-### async-await
-在函数定义前加上async（即async def xxx），相当于将该函数包装成一个协程对象（在3.5之前，使用@asyncio.coroutine 装饰器），直接调用该函数，将返回这个协程对象（类似于生成器对象，不会立即执行函数体，需要特定的方式触发）
+### async-def & await
+在函数定义前加上async（即async def xxx），相当于将该函数包装成一个*协程函数*（在3.5之前，使用@asyncio.coroutine 装饰器）
+直接调用该函数，将返回一个*协程对象*（类似于生成器对象，不会立即执行函数体，需要特定的方式触发执行）
 
-`await Awaitable`，该表达式语句只能在async修饰的函数（协程对象函数）中使用。该语句是使这个可调度对象参与到事件循环的调度中
+`await Awaitable`，该表达式语句只能在async修饰的函数（协程对象函数）中使用。该语句是将这个可调度对象放进事件循环的调度中，然后让出控制权，由事件循环调用一个协程对象执行
 协程对象的类Coroutine继承了Awaitable，此外，Future，Task对象也都是Awaitable
 事件循环：检索一个任务列表的所有任务，并执行所有未执行任务，直至所有任务执行完成。这些任务共享一个CPU核心，在进行IO 或者主动让出CPU时，进行任务切换和调度
+
+#### async-for
+自动调用迭代器的`async def __anext__` 方法
+
+#### async-with
+自动调用`async def __aenter__` 和`async def __aexit__` 方法
+```py
+# 3.11 引入
+async with asyncio.TaskGroup() as tg:
+    task1 = tg.create_task(a_func())
+    task2 = tg.create_task(a_func())
+```
 
 ### asyncio 模块
 提供事件循环调度的工具
@@ -4903,17 +4944,36 @@ join(): 阻塞至队列中所有的元素都被接收和处理完毕。
 #### 函数
 高层级API：
 + run(coro)：驱动协程函数执行，当有其他 asyncio 事件循环在同一线程中运行时，此函数不能被调用。此函数总是会创建一个新的事件循环并在结束时关闭之。
-+ sleep(secends)
-+ create_task(coro)：将协程coro进一步封装为Task（也是Awaitable），其中包含任务的各种状态，可以使用await 可以并发执行，返回async_task的result。在Python3.7 之前使用ensure_future(async_task)
++ sleep(secends, result=None): 返回一个阻塞休眠的协程对象，可以指定返回结果。secends=0，就是单纯的让出控制权，让事件循环进行调度
 + wait_for(aw, timeout)：等待 aw 可等待对象 完成，返回一个协程对象。指定 timeout 秒数后超时，超时会取消async_task
 + wait(aws,timeout=None, return_when=ALL_COMPLETED)：（弃用，Python3.11将移除）可以将一组Awaitable组合为一个协程对象，这些aws可以并发执行，可以指定超时时间和返回情况，超时不会取消async_task。若使用await 执行，则返回(dones, pendings)，前者是已完成的任务集合（若async_tasks 是协程，则返回的时封装的task，若async_tasks 是task，则返回的就是原来的task）
 + gather(*aws)：并发执行，返回一个协程对象。若使用await 执行，则返回results
 + as_completed(aws, timeout=None)：返回一个协程的迭代器，遍历await 则会并发执行aws，当遇到最早执行完成的，就返回其结果，而后执行循环体，而后await 则等待下一个完成的，直到所有aws 都完成则结束。
-+ shield(aw)：保护aw 不会被取消，返回一个Awaitable
++ shield(aw)：保护aw 不会被取消，返回一个Awaitable。（CancelledError 仍会被抛出，但并不终止aw 的执行）
 
 低层级API：
 + get_event_loop()：返回消息循环对象，可以调用run_until_complete(futrue)方法，进行任务调度，通过close方法结束消息循环
 + Future()：返回future对象也是一个Awaitable
+
+#### Task
+可以通过 create_task(coro, *, name=None, context=None) 创建
+即将协程coro 封装为Task（也是Awaitable），其中包含任务的各种状态，可以使用await 可以并发执行，返回async_task的result。
+Python3.11 新增的context 参数可以指定自定义的 contextvars.Context
+在Python3.7 之前使用ensure_future(async_task) 创建
+在Python3.11 也可以通过TaskGroup.create_task() 创建
+
+支持任务的取消、保护、回调等操作
+任务取消会抛出 asyncio.CancelledError
+**注意** 需要持有任务对象的引用，因为事件循环只保存其弱引用，若不持有可能会被垃圾回收清理
+
+#### TaskGroup
+异步上下文管理器，其退出时，其中的所有任务都将被等待
+
+它跟gather 方法的不同点在于若其中一个子任务发生异常
+gather(*aws, return_exceptions=False)：默认，会将异常立刻传给gather 任务，其他子任务不会取消，会继续执行（除非gather 任务被取消，则其中所有的任务都被取消）
+gather(*aws, return_exceptions=True)：异常会和成功的结果一样处理，并聚合至结果列表
+TaskGroup：剩余已排期的任务将被取消
+
 
 # 网络编程
 HTTP协议中，定义了八种方法来操作指定的资源：
