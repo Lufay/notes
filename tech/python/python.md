@@ -5103,7 +5103,7 @@ post(url, data = {'key':'value'})
 + data：可以是字符串（直接发出）、（提交表单，此时Content-Type会被设置为application/x-www-form-urlencoded）字典或二元组序列（当一个key 下有多个值使用这种）、文件对象（流式上传）、生成器或迭代器（分块传输）
 + json: 可以自动将参数使用json.dumps 进行编码，然后作为字符串发出（此时Content-Type会被设置为application/json）
 + files: 一个字典key 为'file'，value 为一个文件对象（最好用二进制模式打开）、二元组（文件名, 字符串）、四元组（文件名, 文件对象, 文件类型, 请求头）；或者一个二元组列表，二元组为(表单name, 文件信息)，其中文件信息为三元组（文件名、文件对象、文件类型）
-大文件requests 不支持，requests-toolbelt 是支持的
+大文件requests 不支持（会内存不足而崩溃），requests-toolbelt 是支持的
 
 put(url, data = {'key':'value'})
 
@@ -5113,6 +5113,62 @@ head(url)
 
 options(url)
 
+
+#### 文件上传
+##### 单文件上传
+```py
+# 只给出文件对象的value
+files = {'file1': open('logo.png', 'rb')}
+# 四元组的value
+files = {'file1': ('logo.png',  # 显式指定文件名
+                    open('logo.png', 'rb'),
+                    'image/png',  # 请求头Content-Type字段对应的值
+                    {'Expires': '0'})}
+resp = requests.post(url, files=files)
+```
+
+##### 多文件上传
+```py
+files = [
+    ('file1', ('1.png', open('logo.png', 'rb'), 'image/png')),
+    ('file2', ('2.png', open('logo.png', 'rb'), 'image/png'))
+]
+resp = requests.post(url, files=files)
+```
+
+##### 流式上传（适合大文件）
+本质上是通过multipart/form-data 提交数据
+需要安装`pip install requests-toolbelt`
+```py
+form = {
+    'name': 'logo.com',
+    'file1': ('1.png', open('logo.png', 'rb'), 'image/png'),
+    'file2': ('2.png', open('logo.png', 'rb'), 'image/png') 
+}
+m = MultipartEncoder(fields=form)
+# 还可以将其封装到一个监视器中，这样可以实时查看上传进度
+def my_callback(monitor):
+    progress = (monitor.bytes_read / monitor.len) * 100
+    print("\r 文件上传进度：%d%%(%d/%d)" % (progress, monitor.bytes_read, monitor.len), end=" ")
+m = MultipartEncoderMonitor(m, my_callback)
+# 无论是MultipartEncoder 还是MultipartEncoderMonitor 使用上都是一样的
+resp = requests.post(url, data=m, headers={'Content-Type': m.content_type})
+```
+
+#### 文件下载
+对于python2 可以直接使用`urllib.urlretrieve`，但该函数在python3 将被废弃，所以，可以使用以下的替代方案
+
+```py
+with urllib.request.urlopen(url) as resp, open(output_file, 'wb') as f:
+    shutil.copyfileobj(resp, f)     # 默认会分块循环处理，当然也可以指定第三个length 参数，指定缓冲区大小
+
+# use requests
+with contextlib.closing(requests.get(url, stream=True)) as r:
+    r.raise_for_status()
+    with open(filename, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=8_192):
+            f.write(chunk)
+```
 
 ### 类
 #### Request

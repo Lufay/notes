@@ -310,16 +310,59 @@ SCRIPT FLUSH：从脚本缓存中移除所有脚本
 SCRIPT KILL：杀死当前正在运行的 Lua 脚本，当且仅当这个脚本没有执行过任何写操作时，这个命令才生效。执行这个脚本的客户端会从 EVAL 命令的阻塞当中退出，并收到一个错误作为返回值。
 
 ## Python client
-安装redis 模块，该模块提供两个类Redis和StrictRedis用于实现Redis的命令，StrictRedis用于实现大部分官方的命令，并使用官方的语法和命令，Redis是StrictRedis的子类，用于向后兼容旧版本。
+安装redis 模块 `pip install redis`
+该模块提供两个类Redis和StrictRedis用于实现Redis的命令，StrictRedis用于实现大部分官方的命令，并使用官方的语法和命令，Redis是StrictRedis的子类，用于向后兼容旧版本。
 ```python
 __init__(self, host='localhost', port=6379, db=0, password=None, socket_timeout=None, socket_connect_timeout=None, socket_keepalive=None, socket_keepalive_options=None, connection_pool=None, unix_socket_path=None, encoding='utf-8', encoding_errors='strict', charset=None, errors=None, decode_responses=False, retry_on_timeout=False, ssl=False, ssl_keyfile=None, ssl_certfile=None, ssl_cert_reqs=None, ssl_ca_certs=None, max_connections=None)
 ```
 该模块使用connection pool来管理对一个redis server的所有连接，避免每次建立、释放连接的开销。
 默认，每个Redis实例都会维护一个自己的连接池。可以直接建立一个连接池，然后作为参数Redis，这样就可以实现多个Redis实例共享一个连接池
+因此，一般会这样初始化客户端实例：
+```py
+import redis
+pool = redis.ConnectionPool(host='localhost', port=6379, decode_responses=True)
+r = redis.Redis(connection_pool=pool)
+```
 
 ### Redis 类方法
 一般都和对应的命令名相同（全小写），不过也有一些例外：
 `delete(*name)`：删除一个或多个key
+
+### 锁
+lock(name, timeout=None, sleep=0.1, blocking_timeout=None, lock_class=None, thread_local=True): 返回一个lock 对象，支持上下文协议（自动调用锁的acquire和release方法）
++ timeout: 锁的超时（单位秒，可以使用小数，支持毫秒级），默认不会过期，除非主动释放。超时后再调用release 会报错redis.exceptions.LockNotOwnedError
++ sleep: 尝试获锁的休眠间隔，默认0.1s
++ blocking_timeout: 尝试获锁的最长等待时间，默认一直尝试
++ lock_class: 指定锁的实现
++ thread_local: 
+
+```py
+with r.lock('mylock'):
+    print('get lock')
+```
+
+#### 方法
+acquire(self, blocking=None, blocking_timeout=None, token=None): 当设置了blocking=False时，表示拿不到锁时不阻塞，直接返回False；本质上是循环尝试set lock token nx px；若未指定token，会自动使用uuid 生成一个使用
+locked(): 该锁是否被任何一个线程锁住
+owned(): 该锁是否被当前线程拥有（当前线程通过threading.local()来保存token确认）
+extend(additional_time, replace_ttl=False): 延长锁的timeout时间，replace_ttl=True 时是重置（该接口仅对未超时的锁有效）
+
+#### redis 锁的一些问题
+##### timeout 提前释放可能导致的双写问题
+因为提前释放，会被另一个线程抢到锁，就会导致两个线程同时操作一个资源
+此时，需要开启一个守护线程，定时去检测这个锁的失效时间，如果锁快要过期了，操作共享资源还未完成，那么就自动对锁进行续期，重新设置过期时间。比如Java的Redisson
+针对该问题，默认的Lock 实现有展期接口，但需要自己写守护进程（需要确保当主线程未完全卡死之前，能够保持存活且持续展期）
+
+#### timeout 释放可能导致释放了别人的锁
+跟上面场景类似，前一个线程完成后，还是会执行release，这样就有可能释放了后一个线程的锁（会导致后一个执行到release 时会报错）
+这个问题，对于默认的Lock 实现而言是不存在的，因为它通过token保证了每个线程只会释放自己锁
+
+#### 分布式环境，主库未及时同步给从库就挂掉
+Redlock方案：部署多个相互独立的主库（至少5个），每次加锁依次请求所有的库，超过半数加锁成功并且此时未超过锁的超时时间，就可以返回给客户端加锁成功；若失败则向所有节点发起释放锁的请求
+此外，还补充了fecing token 方案，锁服务可以提供一个递增的 token，操作资源时当持有该token，会自动拒绝后续更大的token 请求（对资源能力有要求，MySQL是可以通过条件事务完成，其他资源未必）
+
+其他分布式锁方案：基于Zookeeper的临时节点（当维护Session的心跳机制失效会自动删除临时节点）、基于ETCD的租约（节点与带超时时间的租约关联）
+这些方案都无法规避进程长时间hang住（比如GC）无法发送心跳导致锁超时释放
 
 ### 管道（pipeline）
 redis在提供单个请求中缓冲多条服务器命令的基类的子类。它通过减少服务器-客户端之间反复的TCP数据库包，从而大大提高了执行批量命令的功能。

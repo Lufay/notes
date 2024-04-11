@@ -14,6 +14,10 @@ V8 JavaScript engine
 
 [标准库](https://nodejs.org/api/)
 
+## 模块内置成员
+`__dirname` 当前文件模块所属目录的绝对路径
+`__filename` 当前文件的绝对路径
+
 # 库
 ## IO
 ```js
@@ -36,6 +40,12 @@ try {
 } finally {
     console.log('end')
 }
+```
+
+## path
+```js
+var path = require('path')
+path.join(__dirname, 'a.txt')
 ```
 
 ### http/https
