@@ -1411,7 +1411,7 @@ list((1, 2, 3))			[1, 2, 3]（浅拷贝构造，即元素使用引用原容器�
 list("fjal")			['f', 'j', 'a', 'l']（可将其他可迭代对象转换为列表）
 
 ##### 数字列表生成器
-```
+```py
 range([start,] stop[, step])
 ```
 start默认为0，stop标定终止数字（结果不含该数字），step是步进值，可正可负，默认为1。它将生成从start开始的，每项递增step，最后一项小于（step为正）或大于（step为负）的列表（Python3 是生成器对象）
@@ -1738,6 +1738,54 @@ nlargest(n, iterable[, key])：返回迭代器中n 个最大的数组成的列�
 nsmallest(n, iterable[, key])：返回迭代器中n 个最小的数组成的列表，key 可以提供一个获取比较key 的函数  
 *注：nlargest 和nsmallest 仅当n 较小时比较有效，如果较大，使用sorted() 更有效，如果n == 1，则使用min 和max 更有效*
 
+### 2.8 sortedcontainers 模块
+#### 安装
+```
+python3 -m pip install sortedcontainers
+```
+
+### 2.9 bitarray 模块
+使用C 实现
+支持序列操作、位操作（~, &, |, ^, <<, >>）、和二进制数据的交互
+#### 安装
+```
+pip3 install bitarray
+```
+
+#### 使用
+bitarray(2 ** 20)   整数构造
+bitarray('1001 011')  01字符串构造
+bitarray(iterable)    整数0/1 或者bool 的可迭代对象构造
+
+方法：
+a[1:15:3] = 5 * bitarray('1')   切片赋值
+a[1:15:3] = True                切片赋值（更快更简易）
+del a[12::3]                    切片删除
+count
+setall
+endian()                        默认 'big'，可以在构造时指定endian='little' 转换
+tobytes/frombytes/tofile/fromfile
+
+### 容器总结
+
++ list: 有序可变序列，尾部append/pop
+  + array.array: 数值类型list（字符、整数、浮点数）
+  + bitarray.bitarray: 0/1 array
+  + collections.deque: 双端append/pop
+  + heapq: 最小堆，堆头push/pop
+  + sortedcontainers.SortedList: 自动排序的list
++ tuple: 有序不可变序列
+  + collections.namedtuple: 生成命名的tuple 子类
++ set: 无序可变序列，可以add/discard 以及集合运算
+  + sortedcontainers.SortedSet: 自动排序的set
++ frozenset: 无序不可变序列
++ dict: 无序可变映射（Python3.6+ 有序）
+  + collections.OrderedDict: 有序可变映射
+  + collections.defaultdict: 支持动态默认值的dict
+  + collections.ChainMap: 多dict 的合并视图（Python3.3+ 支持）
+  + collections.Counter: value 为计数值的特殊dict
+  + sortedcontainers.SortedDict: 自动排序的dict
+
 ## 3. 其他内建类型
 类型对象，type 是所有类型的类型，也是所有类型的元类
 object 是所有对象的基类
@@ -2051,10 +2099,10 @@ next(iterator[, default])
     - all(iter)：如果可迭代对象iter为空，或所有元素x的bool(x)都为True，则返回True，否则返回False
     - sum(iter, init=0)：返回数值序列和init的总和（效果同reduce(operator.add, seq, init)）
     - max(iter, key=None)，min(iter, key=None)：key是一个函数返回一个用于比较的值，按该函数返回的值选出迭代对象中的最大和最小值。（此外，这两个函数还有一个可变参数版本：max(arg1, arg2, …, key=None)，min(arg1, arg2, …, key=None)
-    - reduce(func, iter[, init])：func是一个需要两个参数的函数对象，每次从iter中取出一个元素和上次func的结果作为本次func的参数，如果提供了init参数，则初始init作为上次func的结果，如果未提供init参数，则首次取iter的两个元素作为func的参数。这里func不能是None。
+    - reduce(func, iter[, init])：（该方法在Python3 被移入functools 模块）func是一个需要两个参数的函数对象，每次从iter中取出一个元素和上次func的结果作为本次func的参数，如果提供了init参数，则初始init作为上次func的结果，如果未提供init参数，则首次取iter的两个元素作为func的参数。这里func不能是None。
 
 ##### 相关模块
-itertools
+###### itertools 模块
 1. 无限迭代器
 	+ count(start=0, step=1)：无限版range: `start, start+step, start+2*step, start+3*stemp, ...`
 	+ cycle(iterable)：无限循环迭代生成器
@@ -2074,14 +2122,26 @@ itertools
 		- islice(iterable, stop) 和islice(iterable, start, stop, step=1)：相当于用range 产出（不支持负索引）的下标遍历iterable，返回一个生成器，可以使用它对生成器进行切片
 		- compress(data, selectors): (d for d, s in zip(data, selectors) if s)
 	+ tee(iterable, n=2): 返回一个n 元组，每个元素都是一个iterable 构成的生成器（非线程安全）（一旦使用该函数，原来的iterable 就不要使用了，因为它的动作都不会通知给tee 返回的生成器）
-1. 排列组合
+2. 排列组合
 	+ `product(*iterables, repeat=1)`: iterables * repeat 后，每个iterable 取一个元组进行笛卡尔积（类似多层嵌套循环）返回一个生成器，每个元素时一个元组（每次迭代，最右侧元素最先步进）
 	+ permutations(iterable, r=None): 从iterable 取出r 个元素进行全排列
 	+ combinations(iterable, r): 从iterable 取出r 个元素进行组合
 	+ combinations_with_replacement(iterable, r): 从iterable 取出r 个（可重复）元素进行组合
 支持无限迭代的输入
 
-#### 2.3 continue、break、pass
+###### functional 模块
+安装`pip install functional`
+python3 的支持不太好，不推荐（主要是Python3 的next 方法统一成了__next__，该库并未兼容）
+
+函数
+iterate(func, init): 返回一个生成器(init, func(init), func(func(init)), ...)
+scanl(func, start, iter): 返回一个迭代器(start, reduce(func, iter[0:1], start), reduce(func, iter[0:2], start), ...)
+take(n, iter): 从iter 取 前n 的元素，返回生成器
+drop(n, iter): 从iter 去掉前n 的元素，返回生成器
+compose(func1, func2): 返回一个函数对象，相当于func1(func2())
+flip(func): 返回一个函数对象，交换前两个参数
+
+### 2.3 continue、break、pass
 continue语句：跳过循环中剩下语句，进行下次迭代（进行条件检查或调用next()）
 break语句：跳出循环
 pass语句：空语句的占位符
@@ -2286,6 +2346,12 @@ print dec(10)
 创建生成器之后，必须首先使用next() 或者send(None) 进行预热，才能调用其他方法，否则在进入生成器函数之前就会抛异常
 一旦生成器函数不是通过yield 退出，就无法再调用next/send 方法了，否则将抛出StopIteration 异常
 换句话说，只有停在yield 处的生成器，才能使用上述方法进行交互，否则都将有异常
+
+## 7. 函数式相关的库
+[functional-list](https://pypi.org/project/functional-list/): ListMapper 封装支持流水线的list
+[functional-streams](https://pypi.org/project/functional-streams/): 类似Java 的stream
+[functional-pipeline](https://pypi.org/project/functional-pipeline/): 函数pipeline
+[functional-python](https://pypi.org/project/functional-python/): 提供Some/Option 的支持
 
 # 第六章. 对象和类
 ## 1. 类定义
@@ -3843,13 +3909,18 @@ pickle 和 marshal 模块
 
 #### 6.1.1 共性
 都可以将很多种Python数据类型序列化为字节流以及反序列化。
+*pickle 模块并不保证反序列化数据的安全性，因为在反序列化过程中可能会执行恶意代码。请考虑使用 hmac 来对数据进行签名，确保数据没有被篡改*
 
-序列化格式是Python特定的，与机器架构无关的。优点是没有外部标准的限制，可以跨平台使用，缺点是序列化结果无法用于非Python程序反序列化。
-pickle有三种序列化格式协议：
-0：ASCII表示，可读性好，但空间和时间性能都不好。（默认）
-1：旧式的二进制格式，兼容旧版本的Python。
-2：Python 2.3引入的新的二进制格式，序列化新式的class更有效。
-如果给的协议号为负或`pickle.HIGHEST_PROTOCOL`都表示使用最大的协议号。
+序列化格式是Python特定的，与机器架构无关的。优点是没有外部标准的限制，可以跨平台使用，缺点是序列化结果无法用于非Python程序反序列化。  
+pickle目前有六种序列化格式协议：  
+0：ASCII表示，可读性好，但空间和时间性能都不好。  
+1：旧式的二进制格式，兼容旧版本的Python。  
+2：Python 2.3引入的二进制格式，序列化新式的class更有效。  
+3：Python 3.0引入，不能使用Python2反序列化，Python 3.0-3.7 的默认协议  
+4：Python 3.4引入，支持存储非常大的对象，Python 3.8使用的默认协议  
+5：Python 3.8引入，增加了对带外数据的支持，并可加速带内数据处理  
+如果给的协议号为负或`pickle.HIGHEST_PROTOCOL`都表示使用最大的协议号。  
+可以使用`pickle.DEFAULT_PROTOCOL`来指定使用默认协议号。
 
 这两个模块只负责序列化，并不保证对数据源序列化时的安全性，并不处理持久化对象及其并发访问的问题。但也因此可以灵活的将其用于持久化文件、数据库、网络传输。
 
