@@ -83,6 +83,18 @@ JavaScript 是基于原型系统的， 而 Python 则遵循传统的面向对象
 # 第二章. 开始
 Python之禅，输入import this就可以查看
 
+## 0. 源码编译
+```sh
+apt-get install libssl-dev  # zlib1g-dev libffi-dev 也可能需要带上，因为在pip 安装内置的C包也可能会报错
+                            # 其他的还有build-essential libncurses5-dev libgdbm-dev libnss3-dev libreadline-dev libsqlite3-dev wget libbz2-dev
+# 或 yum install -y openssl openssl-libs  openssl-devel openssl-static
+./configure --enable-optimizations --with-ssl
+make -j4
+sudo make install   # 或使用 sudo make altinstall，这样不会覆盖默认的Python 二进制
+```
+由于pip 下载会依赖ssl 模块，所以需要提前安装ssl 相关的lib库，并且在编译配置中带上
+第一步安装lib 库必须在编译python 前完成，否则没有编译进去将依然会报错（除非改用动态链接库so，然后配置LD_LIBRARY_PATH或修改/etc/ld.so.conf）
+
 ## 1. 交互REPL
 Python 的主提示符( >>> )和次提示符( ... )，其功效类似于SHELL中的主提示符( $ )和次提示符( > )。主提示符是解释器告诉你它在等待你输入下一个语句，次提示符告诉你解释器正在等待你输入当前语句的其它部分。
 退出交互：使用exit()函数或者输入EOF（Linux下的Ctrl+D，Windows下的Ctrl+Z）
@@ -1532,9 +1544,9 @@ dict.fromkeys(iterkey, value=None)函数：返回一个字典，字典的键来�
 dict 的子类可以实现`__missing__(key)` 的方法，那么当d[key]不存在且作为右值时，就会调用该方法返回值
 
 ### 2.5 集合
-一组无序可哈希的对象。
+一组无序可哈希的对象（所以set 里要用frozenset，而不能用set）。
 集合有两种：
-可变集合set和不可变集合frozenset
+可变集合set（不可哈希）和不可变集合frozenset（可哈希）
 其中：
 set([1,3,6]) 可以直接使用 `{1,3,6}` 构造（空集合只能用set()），其中可以使用`*it`，来将一个可迭代对象展开到集合中
 frozenset只能使用frozenset(iterable) 进行构造
@@ -1648,6 +1660,15 @@ default_factory默认值的行为和dict 一样，可以指定一个无参的函
 该类的实例有一个同名属性default_factory，可以动态修改这个生成器  
 **注意：仅当索引key失败会触发生成器，如果使用get()等方法，则不会而保持其默认行为**
 这是由于它实现了dict 的`__missing__(key)` 方法，并使用default_factory 获取默认值，然后调用setdefault 返回
+
+最常见的用法就是构造类似multimap 的结构：
+```py
+sum_map = defaultdict(list)
+for i, a in enumerate(arr):
+    for j, b in enumerate(arr[i+1:]):
+        sum_map[a+b].append((i, j+i+1))
+```
+这段代码就构造了一个以数组中两数之和为key，其坐标索引的list为value的dict
 
 #### OrderedDict
 有序字典（按插入顺序）（dict的子类）  

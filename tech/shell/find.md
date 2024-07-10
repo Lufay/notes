@@ -85,6 +85,7 @@ expression 是查找表达式，缺省为 `-print`
 -ls			返回true。对每个查询结果使用ls –dils命令进行输出
 -fls file	返回true。同-ls，只不过结果输出到文件，其他参照-fprint
 -print		返回true。每行显示一个查询结果
+-print0		返回true。每个结果用'\0'分隔，通常可以接上xargs -0。这样可以避免结果中包含分隔符而导致的错误
 -fprint file	返回true。将print的结果输出到文件。如果该文件不存在，则创建文件；如果该文件已存在，则文件内容将被覆盖。有一些特殊的文件“/dev/stdout”和“/dev/stderr”指定了标准输出和标准错误输出“/dev/null”则指丢弃输出。此外，即使没有匹配项，该文件也会被创建
 -printf format	返回true。使用“\”转义字符和“%”占位符（表示文件的各种属性，可以参照man手册），进行格式化输出
 	+ 常用转义字符：
