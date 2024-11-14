@@ -94,11 +94,13 @@ nonNull
 
 ### 3. 枚举
 #### 本质
-enum类同class（证据是编译源文件后也会有一个.class文件），也是创建一种类型，尽管只需声明其常量，但更多的工作编译器完成，如toString()方法、name()方法、ordinal()方法、values()静态方法、valueOf(name)静态方法。但其特别之处就在于可以用于switch语句（case中不必使用枚举名引用）。
-枚举内部也可以定义成员（变量和方法），当有构造器定义是，声明的常量需要调用这些构造器进行初始化。
-values() 返回一个数组，可以使用ordinal() 返回的值作为索引获取到对应的枚举。
+enum类同class（证据是编译源文件后也会有一个.class文件），也是创建一种类型，差别在于其所有实例都是在类内定义好的，所以可以理解成都是常量，而且更多的工作编译器会自动完成，如toString()方法、name()方法、ordinal()方法、values()静态方法、valueOf(name)静态方法。此外，其特别之处还在于可以用于switch语句（case中不必使用枚举名引用）。
+枚举内部也可以定义成员（变量和方法），当有构造器定义时，声明的常量需要调用这些构造器进行初始化。
 
 枚举有着严格的实例化控制（不能克隆、反序列化、反射构造，有限实例化，只有枚举内定义的枚举常量），可以直接使用`==` 进行等值比较，equals 方法的实现也是直接使用`==`（并且是final 方法）。而且最好使用`==`，因为可以有更严格的编译期检查，也不会因为枚举变量为null 而抛空指针异常。
+
+#### 方法
+values() 返回一个数组，可以使用ordinal() 返回的值作为索引获取到对应的枚举。
 
 ### 4. 字符串
 #### 4.1 构造String
@@ -119,13 +121,31 @@ String.format(format, args...)方法
 首先，说明的是，使用引号的字符串常量本身就是一个String对象，可以直接调用这些String类的方法："".fn()，而无需用new String("...").fn()这种复杂形式
 虽然重载了+和+=操作符，但并未重载==操作符，因此，对两个字符串进行比较的时候一定要用equals或equalsIgnoreCase方法（不区分大小写），同理，进行比较时也要用compareTo方法或compareToIgnoreCase方法
 
-+ split(regex, limit=0): 字符串的正则分割，如果regex是空串""，则等价于toCharArray()，只不过得到的是String[]，虽然每个String都是单字符，而toCharArray()得到的是char[]（中文也算单个字符），第二个参数是分割后String[]数组的最大容量，即如果第二个参数为n，则只会对前n-1次匹配进行分割。当然第二个参数可省，效果是对串进行尽可能多次的匹配。如果第二个参数小于等于0，其效果和省略第二个参数相同
+查找
++ indexOf(s): 找到就返回该字符串中第一次出现的s的索引，如果没有，返回-1
++ lastIndexOf(s, fromIndex): 从fromIndex开始反向查找，找到就返回该字符串中最后一次出现的s的索引，如果没有，返回-1（fromIndex 超出长度，就查找整串，若为负，则直接返回-1）
++ contains(s): 如果包含，返回true，否则返回false
++ match(regex): 正则匹配，如果匹配成功，返回true，否则返回false
+
+处理
++ split(regex, limit=0): 字符串的正则分割，如果regex是空串""，则等价于toCharArray()，只不过得到的是String[]，其每个String都是单字符，而toCharArray()得到的是char[]（中文也算单个字符），第二个参数是分割后String[]数组的最大容量，即如果第二个参数为n，则只会对前n-1次匹配进行分割。当然第二个参数可省，效果是对串进行尽可能多次的匹配。如果第二个参数小于等于0，其效果和省略第二个参数相同
+  + 这里的正则需要注意反斜杠转义，比如"\\s+", "\\."
 + replace: 支持单字符、字符串的替换
 + replaceFirst/replaceAll 支持正则替换
 + intern(): 调用该方法后，Java将到常量池中找和该字符串有相同内容的存储对象，如果找到，就返回在常量池中找到的对象引用；如果找不到，就在常量池中添加该字符串对象，返回其引用。
 
 #### 4.3 StringBuffer类和StringBuilder类
 String是一种不变（immutable）类（对于封装器类型也是），如果字符串频繁变化，将导致产生很多废弃对象，此时，应当采用StringBuffer类。不过该类型是一个线程安全的类，因此从效率上会打折扣，如果你的程序是单线程的，或者你决定自己负责线程安全，就应该使用更有效的StringBuilder类。它们可以预指定缓冲长度，用append和insert方法加载字符串，当在需要时，用toString方法转换为String
+
+#### StringTokenizer
+构造：StringTokenizer(String str, String delim=" \t\n\r\f", boolean returnDelims=false)
+delim 也可以指定其他分隔符，默认切割后的子串不包括分隔符，也不包括空串（即连续的分隔符会被忽略）
+```java
+StringTokenizer st = new StringTokenizer("hello world");
+while (st.hasMoreTokens()) {
+	System.out.println(st.nextToken());
+}
+```
 
 #### 4.4 关于中文字符串
 关于这一点和汉字机内码有关，一般大陆常用的是GBK，港台采用的是Big5（更多参见http://zh.wikipedia.org/wiki/GBK）
@@ -262,8 +282,11 @@ hashCode值来决定元素的存储位置，同时使用链表维护元素的次
 非线程安全
 
 #### Map
-+ putAll(map)：批量添加
++ putAll(map)：将另一个map 合并到本map 里
 + remove(key): 单条删除。批量删除可以：map.keySet().removeAll()
++ compute(key, (k, v) -> newValu): 在map 中找key和对应的value，传入第二个参数的函数中（没有这个key，则传入的value为null），若函数返回为null，则从map中删除对应的k-v，否则将返回的新值替换原来的value。该函数的返回值始终为新值（也就是第二个参数的函数的返回值）
++ computeIfAbsent(key, k -> value): 若key 存在，则直接返回，不调用函数；否则，则将key 传入第二个参数的函数中，返回的结果作为新的value，放入map 中。该函数的返回值始终为新值
++ computeIfPresent(key, (k, v) -> newValu): 若key 不存在，则直接返回null；否则跟compute方法一样
 
 ##### HashMap
 哈希表实现，使用链表解决冲突，默认的负载因子是0.75，当超载后自动扩充2 倍后，进行rehash
@@ -432,9 +455,9 @@ groupingBy(classifier, downstream)
 返回一个`Map<key, X>`
 
 toMap(keyMapper, valueMapper, mergeFunction)
-第一个参数表示如何从元素中获取到key
-第二个参数表示如何从元素中获取到value，不允许为null，否则会抛NPE
-第三个参数可省，表示当key 冲突时，如何选取合并为一个value（若缺省冲突则抛异常）
+第一个参数形如item->key表示如何从元素中获取到key
+第二个参数形如item->value表示如何从元素中获取到value，不允许为null，否则会抛NPE
+第三个参数形如(a, b)->c可缺省，表示当key 冲突时，如何选取合并为一个value（若缺省，冲突时则抛IllegalStateException）
 
 collectingAndThen(downstream, finisher)
 先用downstream 进行收集（这个类似collect方法），在用finisher 进行一个集合转换（入参是collect 收集完成的集合）
@@ -1066,6 +1089,31 @@ System.currentTimeMillis()，以毫秒为单位，返回当前时间戳（从197
 它和new Date().getTime(); 和 Calendar.getInstance().getTimeInMillis();得到的结果是相同的。（Calendar 的方式最慢，因为要处理时区问题）
 
 System.nanoTime()，以纳秒为单位，返回一个时间差值，其基准时间是一个任意的但固定的值，返回的就是当前到这个基准时间的纳秒差。这个基准时间是由JVM所定的，所以不同JVM上的基准时间一般不同。但同样不能保证绝对精确。返回类型为long
+
+### UUID
+```java
+// Java内置的生成方式，可能会重复，概率很小（高并发可能发生）
+import java.util.UUID;
+
+UUID uuid = UUID.randomUUID();
+// 或
+long time = System.currentTimeMillis();
+int random = (int) (Math.random() * Integer.MAX_VALUE);
+UUID uuid = new UUID(time, random);
+uuid.toString()
+
+// 使用Apache Commons IO库
+import org.apache.commons.io. UUIDUtils;
+UUIDUtils.randomUUID().toString();
+```
+不同库的实现方式不同，格式有差异
+
+其他还有
+Google Guice库中的UUIDGenerator类
+JDK的MessageDigest类和SecureRandom类：可以通过Hash算法和随机数生成UUID
+使用Snowflake算法生成UUID，可以在多个节点上生成唯一的ID
+使用Redis集群的redisson框架提供的RUID类生成UUID
+利用SecureRandom类生成
 
 ## 十四. 调用其他语言
 ### Groovy
