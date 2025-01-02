@@ -282,6 +282,8 @@ hashCode值来决定元素的存储位置，同时使用链表维护元素的次
 非线程安全
 
 #### Map
++ put(key, value): 始终覆盖放入。返回的是旧值，若不存在，则返回null
++ putIfAbsent(key, value): key 不存在或为null才放入。返回的是旧值，若不存在，则返回null
 + putAll(map)：将另一个map 合并到本map 里
 + remove(key): 单条删除。批量删除可以：map.keySet().removeAll()
 + compute(key, (k, v) -> newValu): 在map 中找key和对应的value，传入第二个参数的函数中（没有这个key，则传入的value为null），若函数返回为null，则从map中删除对应的k-v，否则将返回的新值替换原来的value。该函数的返回值始终为新值（也就是第二个参数的函数的返回值）
@@ -436,7 +438,7 @@ Stream.of(T...) 和Stream.empty()
 IntStream.range 和rangeClosed
 
 ##### 中间操作（intermediate operation）
-+ map(mapper): 可以是类的无参方法，也可以是单参数的静态方法，有一个特殊的是Function.identity() 表示原样返回
++ map(mapper): mapper可以是类的无参方法，也可以是单参数的静态方法，有一个特殊的是Function.identity() 表示原样返回
 + flatMap(mapper): 这个mapper 的返回值是一个stream，通过拼接这些stream，来实现将二级集合拍平
 + filter(Predicate): 相当于一个where 条件，过滤掉返回false 的元素
 + distinct(): 使用 hashCode() 和 eqauls() 方法来区分不同的元素，来进行去重
@@ -444,15 +446,21 @@ IntStream.range 和rangeClosed
 
 ##### 结尾操作（terminal operation）
 ###### collect 的Collectors
+toList()
 toArray(String[]::new)
 
 toCollection(collectionFactory)
-collectionFactory 是一个Supplier 返回一个Collection 的实例，常用于toList、toSet 方法返回的不能保证mutability, serializability, or thread-safety时，可以自己指定具体的实例类
+collectionFactory 是一个Supplier 返回一个Collection 的实例（比如TreeSet::new）
+常用于toList、toSet 方法返回的不能保证mutability, serializability, or thread-safety时，可以自己指定具体的实例类
 
 groupingBy(classifier, downstream)
-第一个参数表示如何从元素中获取到key，也就是分组的key
-第二个参数，缺省时为toList()，否则使用downstream 进行收集
+第一个参数形如item->key表示如何从元素中获取到key，也就是分组的key
+第二个参数，缺省时为toList()，否则使用downstream 进行收集（即又是一个Collectors 的方法）
 返回一个`Map<key, X>`
+
+partitioningBy(predicate, downstream)
+跟groupingBy 的区别在于第一个参数是一个Predicate，来划分两个分组
+返回一个`Map<boolean, X>`
 
 toMap(keyMapper, valueMapper, mergeFunction)
 第一个参数形如item->key表示如何从元素中获取到key
@@ -465,17 +473,17 @@ collectingAndThen(downstream, finisher)
 mapping(mapper, downstream)
 先用mapper 将集合中每个元素进行map，然后用downstream 将这些元素收集
 
-partitioningBy	分组
+
 
 reducing	用于内部reduce
 
-counting	计数
-summingX	求和
-averagingX	求平均
-minBy
+minBy(comparator)  comparator 可以是Comparator.comparing(Person::getAge)
 maxBy
+counting()	计数，类似stream 的count() 方法
+summingX	求和，比如summingInt(Employee::getSalary)
+averagingX	求平均，比如averagingDouble(Person::getWeight)
 summarizingX
-joining		字段串连接
+joining(", ")		字段串连接
 
 ###### 其他归集函数
 ```

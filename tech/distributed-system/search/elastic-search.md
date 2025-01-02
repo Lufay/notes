@@ -152,7 +152,7 @@ eager_global_ordinals 用于聚合的字段上，优化聚合性能，但不适�
 fielddata=false 查询时内存数据结构，在首次用当前字段聚合、排序或者在脚本中使用时，需要字段为fielddata数据结构，并且创建倒排索引保存到堆中。
 fields 给field创建多字段，用于不同目的（全文检索或者聚合分析排序）。
 format 比如date的格式
-null_value：为 null 值设置默认值。
+null_value：为 null 值设置默认值。注意，这里并不会影响`_source`中的数据的值，只会在检索时用默认值参与。另外，null值也是会覆盖其他值的。
 similarity：为字段设置相关度算法，和评分有关。支持BM25、classic（TF-IDF）、boolean。
 store=false：设置字段是否仅查询，默认不做单独的存储。一般开启用于关闭_source，使用该选项仅单独保存某些字段
 
@@ -413,6 +413,7 @@ POST _reindex
 
 ## 文档
 ### 创建文档
+PUT 和 POST 都行
 ```
 POST {index_name}/_doc/{doc_id}
 {
@@ -434,14 +435,35 @@ POST _bulk
 ```
 
 ### 修改文档
-```
-# 局部修改
+<https://www.elastic.co/guide/en/elasticsearch/reference/7.6/docs-update.html>
+支持script 和 doc 两种修改模式，如果同时指定，则忽略doc
+doc 是局部更新的方式，即其中指定的字段，进行覆盖更新，未指定的字段，则保持原状
+```json
 POST {index_name}/_update/{doc_id}
 {
+  "script" : {
+    "source": "ctx._source.counter += params.count",  // 累积
+    // "source": "ctx._source.tags.add(params.tag)",  // 数组增添
+    // "source": "if (ctx._source.tags.contains(params.tag)) { ctx._source.tags.remove(ctx._source.tags.indexOf(params.tag)) }",  // 数组移除
+    // "script" : "ctx._source.new_field = 'value_of_new_field'"  // 增加新字段
+    // "script" : "ctx._source.remove('new_field')" // 字段删除
+    // "source": "if (ctx._source.tags.contains(params.tag)) { ctx.op = 'delete' } else { ctx.op = 'none' }"  // 当条件满足时，删除文档，否则无操作
+    "lang": "painless",   // default
+    "params" : {
+      "count" : 4,
+      "tags" : "blue"
+    }
+  },
   "doc":{
     "title":"苹果11",
     "price":5800.00
-  }
+  },
+  "detect_noop": false,   // 默认为true，即若探测到doc 中对于已保存的文档不存在更新，则不再执行修改和写入，返回"result": "noop"。这里false强制更新
+  "upsert" : {      // 当doc_id 指定的文档不存在时，则使用这里的默认文档存入，存在时才执行script
+    "counter" : 1
+  },
+  "scripted_upsert":true,    // 无论文档是否存在，都执行script
+  "doc_as_upsert" : true    // 当doc_id 指定的文档不存在时，使用doc 进行存入
 }
 ```
 
