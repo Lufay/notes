@@ -190,6 +190,48 @@ UTF-8的编码是用 byte 这种类型来定义的，Unicode是用 rune 来定�
 ### math 包、math/cmplx 包
 Sqrt(f): 对浮点数求开方
 
+### 随机数
+#### math/rand 包
+基于种子的伪随机数
+
+##### 包函数
+Seed(seed int64)：初始化随机数状态，如果未被调用，则默认认为seed=1，通常使用time.Now().Unix()。同时，seed 会被%(2^32-1)，也就是说同余会有相同的随机序列。该函数并发安全
+
+Int()、Int31()、Int63()、Uint32()、Uint64()：返回一个非负整数
+Intn(n)、Int31n(n)、Int63n(n)：返回一个`[0,n)` 之间的整数，n 必须大于0
+Float32()、Float64()：返回一个`[0.0,1.0)` 之间的浮点数
+NormFloat64()：返回一个标准正态分布(mean = 0, stddev = 1)的浮点数[-math.MaxFloat64, +math.MaxFloat64]
+ExpFloat64()：返回一个指数分布的浮点数(0, +math.MaxFloat64]，其期望系数为1
+
+Perm(n int) []int：返回[0,n) 的整数随机排列
+Read(p []byte) (n int, err error)：生成随机字节写入p，返回n=len(p)，线程安全
+Shuffle(n int, swap func(i, j int))：n 为打乱序列长度，swap 是交换函数，通过多次调用交换函数完成打乱
+
+##### Rand
+New(src Source)：构造函数
+方法和包函数完全一致，但不是线程安全的
+
+##### Source、Source64
+```go
+type Source interface {
+	Int63() int64
+	Seed(seed int64)
+}
+
+type Source64 interface {
+	Source
+	Uint64() uint64
+}
+```
+NewSource(seed int64) Source：默认构造，非线程安全
+
+#### crypto/rand 包
+用于加解密的更安全的随机数生成器
+
+```go
+result, _ := rand.Int(rand.Reader, big.NewInt(128))
+```
+
 
 ## 2. 字符串 string
 不可变字符串，初始化后不能改写内容
@@ -380,6 +422,14 @@ ParseInt(str, base, size)：字符串转整数（base 是2 到36 进制，如果
 ParseUint(str, base, size)：字符串转无符号整数，返回uint64
 Atoi(str): 字符串转整数，返回(int, error)
 Itoa(int_val): 返回str
+
+### regexp 包
+支持的正则语法可以查看`go doc regexp/syntax`
+所有字符都被认为是UTF-8 编码，会使用utf8.DecodeRune 解码为字节流
+Find(All)?(String)?(Submatch)?(Index)? 组成了16个方法：
++ All 表示找到所有不重叠的匹配，这种方法会带一个n 参数，表示最大匹配个数，若为负数则返回所有
++ String 表示使用string 类型，否则使用[]byte
++ Submatch 表示返回包含括号分组
 
 ## 3. 数组和 slice
 数组长度和类型不可变，长度必须是一个常量表达式，比如`[10]string` 是长度为10的字符串数组，`[3][5]int`是一个二维数组（即3个`[5]int`），可以多维
@@ -1235,6 +1285,12 @@ ioutil.Discard 支持io.Writer 接口
 
 # 网络编程
 ## net 包
+Dial(net, addr) (Conn, error): net 是协议名（如tcp、tcp4、tcp6、udp、udp4、udp6、ip、ip4:icmp、ip4:1、ip6），addr 是地址（IP、域名、端口），若连接成功返回连接对象
+
+### Conn
+实现了io.Reader 和 io.Writer 接口
+Close() 关闭连接
+
 ## net/http 包
 ### 函数
 Get(url string): 返回resp, err
@@ -1729,7 +1785,11 @@ NumCPU(): 获取核心数
 ### context 包
 WithTimeout(ctx, timeout): 封装ctx 带上超时时间返回一个新的context 和 cancel 函数。前者可以调用Done() 方法（返回一个管道）确认是否完成，后者可以`defer cancel()`，也可以手动调用取消
 
-### encoding/json 包
+### json 序列化
+#### encoding/json 包
+标准库，通过reflection和interface来完成工作
+go-simplejson, gabs, jason等都依赖其，增加了易用性，但性能都比较差
+
 序列化：Marshal(&st) (bytes, error)
 参数是序列化结构的指针（该结构需要在成员type 后面标注"name" 也就是映射到json 的key）
 返回[]byte 和错误
@@ -1737,12 +1797,46 @@ WithTimeout(ctx, timeout): 封装ctx 带上超时时间返回一个新的context
 反序列化：Unmarshal(bytes, &st) error
 bytes 是[]byte，如果是string，可以进行强制转换
 st 是一个struct 结构，只不过需要在成员type 后面标注"name" 也就是映射到json 的key
+比如：
+```go
+type Response struct {
+	ErrCode int            `json:"code"`
+	ErrMsg  string         `json:"error"`
+	Data    map[string]any `json:"data"`
+}
+```
+需要确保所有成员都是公有的（即首字母大写）
+
+当解析数字到any类型时，它会将数字解析成float64，对于长整形（比如原来是int64）会导致精度丢失
+解决方案如下：
+```go
+decoder := json.NewDecoder(bytes.NewReader(b))
+decoder.UseNumber()
+decoder.Decode(&t)
+```
+
+#### easyjson, ffjson
+不使用影响性能的reflection， 通过预先定义好的struct，进行命令行配置, 生成相关的解码/编码方法.easyjson甚至使用了unsafe的包, 来减少内存的损耗.
+虽然开发成本变高了,需要额外定义struct文件和编码/解码方法文件, 但性能极速提高.
+
+#### jsonparser
+依赖于bytes，易用性不但好, 而且性能是极高的.
+不需要你了解载入文件的结构，允许你通过提供它们的路径来访问。它可以快速的提取json内容，比encoding/json包的速度高出10倍左右。
+提供指向原始数据结构的指针，无内存分配
+
 
 
 # 反射
 import "reflect"
 
 ```go
+var a A
+ta := reflect.TypeOf(a)
+for i := 0; i < ta.NumField(); i++ {
+	f := ta.Field(i)
+	fmt.Printf("FieldName: %v, FieldType: %v, Value: %v", f.Name, f.Type.Name(), f.Value)
+}
+
 s := reflect.ValueOf(&A{"aaa", 10}).Elem()
 typeofT := s.Type()
 for i := 0; i < s.NumField(); i++ {
