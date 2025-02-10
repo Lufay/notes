@@ -235,7 +235,7 @@ GET /<index>/_search
 - prefix: 前缀匹配
 - wildcard: 单字段的通配符匹配
 - regexp: 正则匹配
-- range：查询找出那些落在指定区间内的数字或者时间，操作符包括gt、gte、lt、lte。
+- range：查询找出指定字段落在指定区间内的数字或者时间的文档，操作符包括gt、gte、lt、lte。
 - exists: 存在指定的字段且有值
 - missing: 无值字段
 - bool: 组合查询条件，可以是以下条件的组合
@@ -251,6 +251,8 @@ GET /<index>/_search
   - filter: 跟bool 中的filter 一样
   - boost：设置的打分固定值
 - function_score: 用于用户干预相关度打分，有多种辅助函数可以对原相关分进行修改
+
+指定字段时，支持使用点分形式（要求对应的字段是被索引的）
 
 ## 排序
 默认按照相关性打分_score进行排序
@@ -272,7 +274,8 @@ from+size 不能超过10000，因为集群每个节点都要查top10000，然后
         { "match": { "title": "action" } }      // 包含关键词 "action"
       ],
       "filter": [
-        { "range": { "rating": { "gte": 8 } } } // 评分在8分以上
+        { "range": { "rating": { "gte": 8 } } },    // 评分在8分以上
+        { "exists": { "field": "release_date.module0" } }  // 必须有release_date.module0 字段
       ]
     }
   },
@@ -335,19 +338,43 @@ from+size 不能超过10000，因为集群每个节点都要查top10000，然后
 ### 嵌套聚合
 - aggs: 可以嵌套使用聚合，这样就在上述分组中再进行聚合
 
+### 自定义聚合
+- scripted_metric: 支持脚本实现自定义聚合
+  - init_script: 初始化脚本，在聚合开始前执行一次，用于初始化一些变量
+  - map_script: 映射脚本，在每个文档上执行，用于处理文档并更新聚合结果
+  - combine_script: 合并脚本，在所有文档处理完成后执行，用于合并所有文档的聚合结果
+  - reduce_script: 归约脚本，在所有分片的聚合结果合并后执行，用于最终的聚合结果
 
-### 距离
+### 举例
 ```json
 {
   "size": 0,    // 不要查询结果，只要聚合结果
   "aggs": {     // aggregations的缩写
-    "aggregation_name": {  // 这里的名字可以自定义
-      "AGG_NAME": {<聚合属性>}
+    "distinct_uid": {  // 这里的名字可以自定义
+      "terms": {
+        "field": "uid",
+        "size": 100
+      },
+      "aggs": {     // 聚合属性内可以再次使用aggs 进行嵌套聚合
+        "uid_cat": {
+          "scripted_metric": {
+            "init_script": "state.values_list = []",
+            "map_script": "state.values_list.add(doc['uid'].value)",
+            "combine_script": "return state",
+            "reduce_script": """
+            ArrayList valuesList = new ArrayList();
+            for (a in states) {
+              valuesList.addAll(a.values_list);
+            }
+            return String.join(",", valuesList);
+            """
+          }
+        }
+      }
     }
   }
 }
 ```
-
 
 ## 索引
 ### 创建&删除索引

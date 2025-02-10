@@ -101,7 +101,7 @@ NetCat，可通过TCP或UDP协议传输读写数据。支持二进制数据
 ## 格式
 ```sh
 # 作为client
-nc [-options] hostname port[s]
+nc [-options] hostname port[s]  # 可以使用 < file 用标准输入流输入
 # 作为server
 nc -lp port     # 在mac 环境不带p
 ```
