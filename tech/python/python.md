@@ -463,21 +463,32 @@ if __name__ == "__main__":
 
 #### doctest
 可以将测试代码写进docstring 中，使用该模块会自动提取并执行
+既可以验证代码是否符合预期，又可以验证docstring 中的用例是否是最新的
 默认情况下，该模块只显示不符合预期的结果，除非使用了-v 选项则会展示所有结果
 
 例如：
 ```py
 def dive(a, b):
-    '''
+    '''Return quotient and remainder
     >>> q, r = dive(2026, 10)
     >>> q
     202
     >>> r
     6
+    >>> q, r = dive(1, 0)
+    Traceback (most recent call last):
+      ...
+    ZeroDivisionError: integer division or modulo by zero
     '''
     return a//b+1, a%b
 ```
 然后执行`python3 -m doctest -v test_doctest.py` 就可以看到执行结果
+上面的命令相当于：
+```py
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod(verbose=True)   // 若带上该参数，则不再检查sys.argv 中的-v 选项
+```
 
 #### unittest
 [参考](https://docs.python.org/2/library/unittest.html)
@@ -1063,7 +1074,8 @@ SciPy有最优化、线性代数、积分、插值、特殊函数、快速傅里
 容器通用操作
 1. 可以使用 len() 函数获得一个**序列（字符串、列表、元组）**或字典、集合的长度（大小）
 len()函数实际上是调用对象类中的`__len__()`方法
-2. obj [not] in container，判断obj是否是序列或集合的元素，或者obj是否是字典的键
+2. `obj [not] in container`，判断obj是否是序列或集合的元素（对于序列会线性搜索），或者obj是否是字典的键
+*in 运算也可以用于自定义对象，执行机制是：首先检查其是否已经定义了__contains__方法，若有则直接调用，否则会尝试用for-in遍历该对象，然后逐个进行__eq__比较*
 
 序列通用操作
 1. `+` 序列连接（类似的也支持`+=`运算）
@@ -2107,14 +2119,14 @@ else:             # 可选：迭代结束后执行，当break跳出则不执行
 
 #### for 实现机制 与 迭代器
 for循环的机制：
-1. 若可迭代对象有`__iter__()`方法
-   1. 调用可迭代对象的`__iter__()`方法获得迭代器（通过iter()这个内建方法）
-   2. 每次循环迭代调用迭代器的`__next__()`方法获得遍历的下一个数据（通过next()这个内建方法）
-   3. 当捕获到StopIteration异常，循环结束（当全部数据取完后会抛出一个StopIteration异常，以告知迭代完成）
-2. 若可迭代对象没有`__iter__()`方法，但有`__getitem__`方法
-   1. 会从索引0开始调用`__getitem__`方法，直到IndexError异常结束循环
+1. 通过iter()这个内建方法获取可迭代对象的迭代器
+   1. 若可迭代对象有`__iter__()`方法，则调用之返回
+   2. 若可迭代对象没有`__iter__()`方法，但有`__getitem__`方法，就返回这样一个迭代器：
+      1. 每次next()调用会从索引0/1/2/...调用`__getitem__`方法，直到IndexError异常结束迭代
+2. 每次循环迭代，通过next()这个内建方法，调用迭代器的`__next__()`方法获得遍历的下一个数据
+3. 当捕获到StopIteration异常，循环结束（当全部数据取完后会抛出一个StopIteration异常，以告知迭代完成）
 
-+ 可迭代对象是一个有`__iter__()`方法的对象，该方法返回这个可迭代对象的迭代器。
++ 所以可迭代对象是一个有`__iter__()`方法或`__getitem__`方法的对象。
 + 迭代器是一个有`__next__()`方法的对象（当然，通常迭代器本身也是可迭代对象，所以可以在`__iter__()`方法中返回自身）。
 
 *注：迭代器只能单向遍历（不能回溯），而且不能复制，只能重新创建。*
@@ -2548,7 +2560,7 @@ class C:
 
 `__len__`: 供 len() 调用
 `__setitem__`: 按照索引赋值，也支持切片key
-`__getitem__` 按照索引获取值
+`__getitem__` 按照索引获取值，也支持切片key
 `__missing__` 在找不到指定的键时调用
 `__getattribute__`: x.name 的使用（包括对内置属性），也可以供getattr(obj, attr[, default]) 调用，这些调用都会直接进入该函数，除非通过super() 委托给同名方法，才会查看是否已经定义了指定的属性或方法 或者 抛AttributeError（但这种情况也会跳过定义的属性或方法，直接去调用`__getattr__`）
 `__getattr__`: x.name 的使用，也可以供getattr(obj, attr[, default]) 调用（若不存在attr指定的属性或方法，则返回default，否则会引发AttributeError，可以先用hasattr(obj, attr) 进行测试）若类已定义了指定的属性或方法，则直接使用之，该方法不再调用
