@@ -2144,7 +2144,7 @@ next(iterator[, default])
 
 #### 与迭代有关的函数
 **注意：以下返回的迭代器，支持惰性计算，但不支持[]索引、len()计算长度、bool()判断空，并且只能迭代一次，无法重复使用**
-+ reversed(seq)：返回该序列seq的逆序*迭代器*
++ reversed(seq)：返回该序列seq的逆序*迭代器*（对象有`__getitem__`方法也可以支持）
 + sorted(iter, cmp=None, key=None, reverse=False)：返回一个有序的列表，其他的可选参数同列表的sort方法（Python3 移除了cmp 参数）
 + enumerate(iterable[, start])：iterable为一个可迭代对象，start设置迭代的起始位置，返回一个*迭代器*，该对象每次next会生成一个由(位序, 值)构成的二元组。
 + filter类
